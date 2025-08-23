@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Copy, Share } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { decode, encode } from "./encoding"
 import { EmojiSelector } from "@/components/emoji-selector"
 import { ALPHABET_LIST, EMOJI_LIST } from "./emoji"
@@ -20,6 +23,8 @@ export function Base64EncoderDecoderContent() {
   const [selectedEmoji, setSelectedEmoji] = useState("😀")
   const [outputText, setOutputText] = useState("")
   const [errorText, setErrorText] = useState("")
+  const [copyButtonText, setCopyButtonText] = useState("Copy")
+  const [showShare, setShowShare] = useState(false)
 
   // Update URL when mode changes
   const updateMode = (newMode: string) => {
@@ -51,13 +56,42 @@ export function Base64EncoderDecoderContent() {
     if (!searchParams.has("mode")) {
       updateMode("encode")
     }
+    if (navigator.share) {
+      setShowShare(true)
+    }
   }, [searchParams, updateMode])
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator
+        .share({
+          text: outputText,
+        })
+        .catch((err) => {
+          console.error("Could not share text: ", err)
+        })
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(outputText).then(
+      () => {
+        setCopyButtonText("Copied!")
+        setTimeout(() => {
+          setCopyButtonText("Copy")
+        }, 2000)
+      },
+      (err) => {
+        console.error("Could not copy text: ", err)
+      },
+    )
+  }
 
   const isEncoding = mode === "encode"
 
   return (
     <CardContent className="space-y-4">
-      <p>This tool allows you to encode a hidden message into an emoji or alphabet letter. You can copy and paste text with a hidden message in it to decode the message.</p>
+      <p className="text-sm sm:text-base">This tool allows you to encode a hidden message into an emoji or alphabet letter. You can copy and paste text with a hidden message in it to decode the message.</p>
 
       <div className="flex items-center justify-center space-x-2">
         <Label htmlFor="mode-toggle">Decode</Label>
@@ -72,28 +106,65 @@ export function Base64EncoderDecoderContent() {
         className="min-h-[100px]"
       />
 
-      <div className="font-bold text-sm">Pick an emoji</div>
-      <EmojiSelector
-        onEmojiSelect={setSelectedEmoji}
-        selectedEmoji={selectedEmoji}
-        emojiList={EMOJI_LIST}
-        disabled={!isEncoding}
-      />
+      <Tabs defaultValue="emoji" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="emoji" disabled={!isEncoding}>
+            Emoji
+          </TabsTrigger>
+          <TabsTrigger value="alphabet" disabled={!isEncoding}>
+            Alphabet
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="emoji">
+          <EmojiSelector
+            onEmojiSelect={setSelectedEmoji}
+            selectedEmoji={selectedEmoji}
+            emojiList={EMOJI_LIST}
+            disabled={!isEncoding}
+          />
+        </TabsContent>
+        <TabsContent value="alphabet">
+          <EmojiSelector
+            onEmojiSelect={setSelectedEmoji}
+            selectedEmoji={selectedEmoji}
+            emojiList={ALPHABET_LIST}
+            disabled={!isEncoding}
+          />
+        </TabsContent>
+      </Tabs>
 
-      <div className="font-bold text-sm">Or pick a standard alphabet letter</div>
-      <EmojiSelector
-        onEmojiSelect={setSelectedEmoji}
-        selectedEmoji={selectedEmoji}
-        emojiList={ALPHABET_LIST}
-        disabled={!isEncoding}
-      />
-
-      <Textarea
-        placeholder={`${isEncoding ? "Encoded" : "Decoded"} output`}
-        value={outputText}
-        readOnly
-        className="min-h-[100px]"
-      />
+      <div className="relative">
+        <Textarea
+          placeholder={`${isEncoding ? "Encoded" : "Decoded"} output`}
+          value={outputText}
+          readOnly
+          className="min-h-[100px] pr-24"
+        />
+        <div className="absolute top-2 right-2 flex space-x-1">
+          {showShare && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-500 hover:text-gray-700"
+              onClick={handleShare}
+              disabled={!outputText}
+              title="Share"
+            >
+              <Share className="h-5 w-5" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-500 hover:text-gray-700"
+            onClick={handleCopy}
+            disabled={!outputText}
+            title={copyButtonText}
+          >
+            <Copy className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
 
       {errorText && <div className="text-red-500 text-center">{errorText}</div>}
     </CardContent>
