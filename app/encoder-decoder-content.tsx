@@ -66,7 +66,7 @@ export function Base64EncoderDecoderContent() {
       </div>
 
       <Textarea
-        placeholder={isEncoding ? "أكتب النص المراد تشفيره" : "الصق الايقونة لفك التشفير"}
+        placeholder={isEncoding ? "الصق الايقونة لفك التشفير" : "أكتب النص المراد تشفيره"}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         className="min-h-[100px]"
@@ -89,7 +89,7 @@ export function Base64EncoderDecoderContent() {
       />
 
       <Textarea
-        placeholder={`${isEncoding ? "Encoded" : "Decoded"} output`}
+        placeholder={`${isEncoding ? "فك التشفير" : "تشفير"} نتيجة`}
         value={outputText}
         readOnly
         className="min-h-[100px]"
