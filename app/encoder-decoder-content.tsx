@@ -57,12 +57,12 @@ export function Base64EncoderDecoderContent() {
 
   return (
     <CardContent className="space-y-4">
-      <p>This tool allows you to encode a hidden message into an emoji or alphabet letter. You can copy and paste text with a hidden message in it to decode the message.</p>
+      <p> اكتب النص الذي تريد تشفيرة</p>
 
       <div className="flex items-center justify-center space-x-2">
-        <Label htmlFor="mode-toggle">Decode</Label>
+        <Label htmlFor="mode-toggle">فك التشفير</Label>
         <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-        <Label htmlFor="mode-toggle">Encode</Label>
+        <Label htmlFor="mode-toggle">تشفير النص</Label>
       </div>
 
       <Textarea
@@ -72,7 +72,7 @@ export function Base64EncoderDecoderContent() {
         className="min-h-[100px]"
       />
 
-      <div className="font-bold text-sm">Pick an emoji</div>
+      <div className="font-bold text-sm">أختر ايقونة للتشفير</div>
       <EmojiSelector
         onEmojiSelect={setSelectedEmoji}
         selectedEmoji={selectedEmoji}
