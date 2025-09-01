@@ -17,7 +17,7 @@ export function Base64EncoderDecoderContent() {
   // Read mode from URL parameters, other state stored locally
   const mode = searchParams.get("mode") || "encode"
   const [inputText, setInputText] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState("😀")
+  const [selectedEmoji, setSelectedEmoji] = useState("🧠")
   const [outputText, setOutputText] = useState("")
   const [errorText, setErrorText] = useState("")
 
@@ -66,7 +66,7 @@ export function Base64EncoderDecoderContent() {
       </div>
 
       <Textarea
-        placeholder={isEncoding ? "Enter text to encode" : "Paste an emoji to decode"}
+        placeholder={isEncoding ? "Enter text to encode" : "الصق الايقونة لفك التشفير"}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         className="min-h-[100px]"
@@ -80,7 +80,7 @@ export function Base64EncoderDecoderContent() {
         disabled={!isEncoding}
       />
 
-      <div className="font-bold text-sm">Or pick a standard alphabet letter</div>
+      <div className="font-bold text-sm">أو أختر حرف او رقم</div>
       <EmojiSelector
         onEmojiSelect={setSelectedEmoji}
         selectedEmoji={selectedEmoji}
