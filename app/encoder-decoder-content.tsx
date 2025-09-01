@@ -66,7 +66,7 @@ export function Base64EncoderDecoderContent() {
       </div>
 
       <Textarea
-        placeholder={isEncoding ? "Enter text to encode" : "الصق الايقونة لفك التشفير"}
+        placeholder={isEncoding ? "أكتب النص المراد تشفيره" : "الصق الايقونة لفك التشفير"}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         className="min-h-[100px]"
