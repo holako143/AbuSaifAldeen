@@ -135,7 +135,7 @@ export function Base64EncoderDecoderContent() {
 
       <div className="relative">
         <Textarea
-          placeholder={`${isEncoding ? "Encoded" : "Decoded"} output`}
+          placeholder={`${isEncoding ? "نتيجة" : "نتيجة"} التشفير`}
           value={outputText}
           readOnly
           className="min-h-[100px] pr-24"
