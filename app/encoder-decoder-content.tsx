@@ -91,16 +91,16 @@ export function Base64EncoderDecoderContent() {
 
   return (
     <CardContent className="space-y-4">
-      <p className="text-sm sm:text-base">This tool allows you to encode a hidden message into an emoji or alphabet letter. You can copy and paste text with a hidden message in it to decode the message.</p>
+      <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 /p>
 
       <div className="flex items-center justify-center space-x-2">
-        <Label htmlFor="mode-toggle">Decode</Label>
+        <Label htmlFor="mode-toggle">فك التشفير</Label>
         <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-        <Label htmlFor="mode-toggle">Encode</Label>
+        <Label htmlFor="mode-toggle">تشفير النص</Label>
       </div>
 
       <Textarea
-        placeholder={isEncoding ? "Enter text to encode" : "Paste an emoji to decode"}
+        placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         className="min-h-[100px]"
@@ -109,10 +109,10 @@ export function Base64EncoderDecoderContent() {
       <Tabs defaultValue="emoji" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="emoji" disabled={!isEncoding}>
-            Emoji
+            الايقونات
           </TabsTrigger>
           <TabsTrigger value="alphabet" disabled={!isEncoding}>
-            Alphabet
+            الحروف
           </TabsTrigger>
         </TabsList>
         <TabsContent value="emoji">
