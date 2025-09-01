@@ -89,7 +89,7 @@ export function Base64EncoderDecoderContent() {
       />
 
       <Textarea
-        placeholder={`${isEncoding ? "فك التشفير" : "تشفير"} نتيجة`}
+        placeholder={`${isEncoding ? "فك التشفير" : "نتيجة"} التشفير`}
         value={outputText}
         readOnly
         className="min-h-[100px]"
