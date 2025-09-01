@@ -91,7 +91,7 @@ export function Base64EncoderDecoderContent() {
 
   return (
     <CardContent className="space-y-4">
-      <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 /p>
+      <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
 
       <div className="flex items-center justify-center space-x-2">
         <Label htmlFor="mode-toggle">فك التشفير</Label>
