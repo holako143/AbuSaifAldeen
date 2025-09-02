@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { decode, encode } from "./encoding"
 import { addToHistory } from "@/lib/history"
+import { getAlphabets, Alphabets } from "@/lib/alphabets"
 import { EmojiSelector } from "@/components/emoji-selector"
-import { ALPHABET_LIST, EMOJI_LIST } from "./emoji"
+
 
 export function Base64EncoderDecoderContent() {
   const router = useRouter()
@@ -26,6 +27,11 @@ export function Base64EncoderDecoderContent() {
   const [errorText, setErrorText] = useState("")
   const [copyButtonText, setCopyButtonText] = useState("Copy")
   const [showShare, setShowShare] = useState(false)
+  const [alphabets, setAlphabets] = useState<Alphabets>({ emojis: [], letters: [] });
+
+  useEffect(() => {
+    setAlphabets(getAlphabets());
+  }, []);
 
   // Update URL when mode changes
   const updateMode = (newMode: string) => {
@@ -135,7 +141,7 @@ export function Base64EncoderDecoderContent() {
           <EmojiSelector
             onEmojiSelect={setSelectedEmoji}
             selectedEmoji={selectedEmoji}
-            emojiList={EMOJI_LIST}
+            emojiList={alphabets.emojis}
             disabled={!isEncoding}
           />
         </TabsContent>
@@ -143,7 +149,7 @@ export function Base64EncoderDecoderContent() {
           <EmojiSelector
             onEmojiSelect={setSelectedEmoji}
             selectedEmoji={selectedEmoji}
-            emojiList={ALPHABET_LIST}
+            emojiList={alphabets.letters}
             disabled={!isEncoding}
           />
         </TabsContent>
