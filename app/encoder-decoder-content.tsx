@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Copy, Share } from "lucide-react"
+import { Copy, Share, ClipboardPaste } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -11,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { decode, encode } from "./encoding"
 import { EmojiSelector } from "@/components/emoji-selector"
+import AES from "crypto-js/aes"
+import Utf8 from "crypto-js/enc-utf8"
 import { ALPHABET_LIST, EMOJI_LIST } from "./emoji"
 
 export function Base64EncoderDecoderContent() {
@@ -25,6 +29,8 @@ export function Base64EncoderDecoderContent() {
   const [errorText, setErrorText] = useState("")
   const [copyButtonText, setCopyButtonText] = useState("Copy")
   const [showShare, setShowShare] = useState(false)
+  const [usePassword, setUsePassword] = useState<boolean>(false)
+  const [password, setPassword] = useState<string>("")
 
   // Update URL when mode changes
   const updateMode = (newMode: string) => {
@@ -63,14 +69,47 @@ export function Base64EncoderDecoderContent() {
   useEffect(() => {
     try {
       const isEncoding = mode === "encode"
-      const output = isEncoding ? encode(selectedEmoji, inputText) : decode(inputText)
-      setOutputText(output)
-      setErrorText("")
+      if (isEncoding) {
+        let textToEncode = inputText
+        if (usePassword && password) {
+          textToEncode = AES.encrypt(inputText, password).toString()
+        }
+        const output = encode(selectedEmoji, textToEncode)
+        setOutputText(usePassword && password ? "🔐" + output : output)
+        setErrorText("")
+      } else {
+        // Decoding
+        if (inputText.startsWith("🔐")) {
+          if (!password) {
+            setErrorText("الرجاء إدخال كلمة المرور لفك التشفير.")
+            setOutputText("")
+            return
+          }
+          const content = inputText.substring(1)
+          const decodedFromEmoji = decode(content)
+          try {
+            const bytes = AES.decrypt(decodedFromEmoji, password)
+            const originalText = bytes.toString(Utf8)
+            if (!originalText) {
+              throw new Error("Invalid password or corrupted data.")
+            }
+            setOutputText(originalText)
+            setErrorText("")
+          } catch (err) {
+            setErrorText("فشل فك التشفير. الرجاء التحقق من كلمة المرور.")
+            setOutputText("")
+          }
+        } else {
+          const output = decode(inputText)
+          setOutputText(output)
+          setErrorText("")
+        }
+      }
     } catch (e) {
       setOutputText("")
-      setErrorText(`Error ${mode === "encode" ? "encoding" : "decoding"}: Invalid input`)
+      setErrorText(`خطأ ${mode === "encode" ? "تشفير" : "فك تشفير"}: مدخل غير صالح`)
     }
-  }, [mode, selectedEmoji, inputText])
+  }, [mode, selectedEmoji, inputText, usePassword, password])
 
   const handleModeToggle = (checked: boolean) => {
     updateMode(checked ? "encode" : "decode")
@@ -96,6 +135,16 @@ export function Base64EncoderDecoderContent() {
         .catch((err) => {
           console.error("Could not share text: ", err)
         })
+    }
+  }
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      setInputText(text)
+    } catch (err) {
+      console.error("Failed to read clipboard contents: ", err)
+      setErrorText("Failed to paste from clipboard.")
     }
   }
 
@@ -125,12 +174,45 @@ export function Base64EncoderDecoderContent() {
         <Label htmlFor="mode-toggle">تشفير النص</Label>
       </div>
 
-      <Textarea
-        placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-        className="min-h-[100px]"
-      />
+      <div className="relative">
+        <Textarea
+          placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          className="min-h-[100px] pl-12"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 left-2 text-gray-500 hover:text-gray-700"
+          onClick={handlePaste}
+          title="Paste"
+        >
+          <ClipboardPaste className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {isEncoding && (
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <Checkbox
+            id="password-toggle"
+            checked={usePassword}
+            onCheckedChange={(checked) => setUsePassword(Boolean(checked))}
+          />
+          <Label htmlFor="password-toggle">حماية بكلمة سر</Label>
+        </div>
+      )}
+      {((isEncoding && usePassword) || (mode === "decode" && inputText.startsWith("🔐"))) && (
+        <div className="relative">
+          <Input
+            type="password"
+            placeholder="أدخل كلمة السر"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="pr-4"
+          />
+        </div>
+      )}
 
       <Tabs defaultValue="emoji" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
