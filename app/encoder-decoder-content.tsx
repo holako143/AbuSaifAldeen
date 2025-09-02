@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { decode, encode } from "./encoding"
+import { addToHistory } from "@/lib/history"
 import { EmojiSelector } from "@/components/emoji-selector"
 import { ALPHABET_LIST, EMOJI_LIST } from "./emoji"
 
@@ -35,10 +36,25 @@ export function Base64EncoderDecoderContent() {
 
   // Convert input whenever it changes
   useEffect(() => {
+    if (!inputText) {
+      setOutputText("")
+      setErrorText("")
+      return
+    }
     try {
       const isEncoding = mode === "encode"
-      const output = isEncoding ? encode(selectedEmoji, inputText) : decode(inputText)
-      setOutputText(output)
+      if (isEncoding) {
+        const output = encode(selectedEmoji, inputText)
+        setOutputText(output)
+        addToHistory({
+          originalText: inputText,
+          encodedText: output,
+          emoji: selectedEmoji,
+        })
+      } else {
+        const output = decode(inputText)
+        setOutputText(output)
+      }
       setErrorText("")
     } catch (e) {
       setOutputText("")
