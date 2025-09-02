@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Copy, Share } from "lucide-react"
+import { Copy, Share, ClipboardPaste } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -10,10 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { decode, encode } from "./encoding"
-import { addToHistory } from "@/lib/history"
-import { getAlphabets, Alphabets } from "@/lib/alphabets"
 import { EmojiSelector } from "@/components/emoji-selector"
-
+import { ALPHABET_LIST, EMOJI_LIST } from "./emoji"
 
 export function Base64EncoderDecoderContent() {
   const router = useRouter()
@@ -27,11 +25,6 @@ export function Base64EncoderDecoderContent() {
   const [errorText, setErrorText] = useState("")
   const [copyButtonText, setCopyButtonText] = useState("Copy")
   const [showShare, setShowShare] = useState(false)
-  const [alphabets, setAlphabets] = useState<Alphabets>({ emojis: [], letters: [] });
-
-  useEffect(() => {
-    setAlphabets(getAlphabets());
-  }, []);
 
   // Update URL when mode changes
   const updateMode = (newMode: string) => {
@@ -42,25 +35,10 @@ export function Base64EncoderDecoderContent() {
 
   // Convert input whenever it changes
   useEffect(() => {
-    if (!inputText) {
-      setOutputText("")
-      setErrorText("")
-      return
-    }
     try {
       const isEncoding = mode === "encode"
-      if (isEncoding) {
-        const output = encode(selectedEmoji, inputText)
-        setOutputText(output)
-        addToHistory({
-          originalText: inputText,
-          encodedText: output,
-          emoji: selectedEmoji,
-        })
-      } else {
-        const output = decode(inputText)
-        setOutputText(output)
-      }
+      const output = isEncoding ? encode(selectedEmoji, inputText) : decode(inputText)
+      setOutputText(output)
       setErrorText("")
     } catch (e) {
       setOutputText("")
@@ -95,6 +73,16 @@ export function Base64EncoderDecoderContent() {
     }
   }
 
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      setInputText(text)
+    } catch (err) {
+      console.error("Failed to read clipboard contents: ", err)
+      setErrorText("Failed to paste from clipboard.")
+    }
+  }
+
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(
       () => {
@@ -121,12 +109,23 @@ export function Base64EncoderDecoderContent() {
         <Label htmlFor="mode-toggle">تشفير النص</Label>
       </div>
 
-      <Textarea
-        placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-        className="min-h-[100px]"
-      />
+      <div className="relative">
+        <Textarea
+          placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          className="min-h-[100px] pl-12"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 left-2 text-gray-500 hover:text-gray-700"
+          onClick={handlePaste}
+          title="Paste"
+        >
+          <ClipboardPaste className="h-5 w-5" />
+        </Button>
+      </div>
 
       <Tabs defaultValue="emoji" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -141,7 +140,7 @@ export function Base64EncoderDecoderContent() {
           <EmojiSelector
             onEmojiSelect={setSelectedEmoji}
             selectedEmoji={selectedEmoji}
-            emojiList={alphabets.emojis}
+            emojiList={EMOJI_LIST}
             disabled={!isEncoding}
           />
         </TabsContent>
@@ -149,7 +148,7 @@ export function Base64EncoderDecoderContent() {
           <EmojiSelector
             onEmojiSelect={setSelectedEmoji}
             selectedEmoji={selectedEmoji}
-            emojiList={alphabets.letters}
+            emojiList={ALPHABET_LIST}
             disabled={!isEncoding}
           />
         </TabsContent>
