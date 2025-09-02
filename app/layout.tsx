@@ -11,10 +11,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head>
+        <meta name="theme-color" content="#8B5CF6" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#ffffff" />
         <link
           rel="icon"
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>😅</text></svg>"

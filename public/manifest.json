@@ -1,0 +1,21 @@
+{
+  "name": "تطبيق التشفير",
+  "short_name": "تشفير",
+  "description": "تطبيق لتشفير وفك تشفير النصوص باستخدام الرموز التعبيرية والحروف.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B5CF6",
+  "icons": [
+    {
+      "src": "/placeholder-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/placeholder-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

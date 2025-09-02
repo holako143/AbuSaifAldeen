@@ -19,8 +19,8 @@ export function Base64EncoderDecoderContent() {
 
   // Read mode from URL parameters, other state stored locally
   const mode = searchParams.get("mode") || "encode"
-  const [inputText, setInputText] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState("😀")
+  const [inputText, setInputText] = useState<string>("")
+  const [selectedEmoji, setSelectedEmoji] = useState<string>("😀")
   const [outputText, setOutputText] = useState("")
   const [errorText, setErrorText] = useState("")
   const [copyButtonText, setCopyButtonText] = useState("Copy")
@@ -32,6 +32,32 @@ export function Base64EncoderDecoderContent() {
     params.set("mode", newMode)
     router.replace(`?${params.toString()}`)
   }
+
+  // Load state from localStorage on initial render
+  useEffect(() => {
+    try {
+      const savedInput = localStorage.getItem("inputText")
+      if (savedInput) {
+        setInputText(savedInput)
+      }
+      const savedEmoji = localStorage.getItem("selectedEmoji")
+      if (savedEmoji) {
+        setSelectedEmoji(savedEmoji)
+      }
+    } catch (error) {
+      console.error("Failed to access localStorage", error)
+    }
+  }, [])
+
+  // Save state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("inputText", inputText)
+      localStorage.setItem("selectedEmoji", selectedEmoji)
+    } catch (error) {
+      console.error("Failed to access localStorage", error)
+    }
+  }, [inputText, selectedEmoji])
 
   // Convert input whenever it changes
   useEffect(() => {
