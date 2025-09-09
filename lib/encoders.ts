@@ -10,11 +10,13 @@ const VARIATION_SELECTOR_END = 0xfe0f;
 const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
 
-function xorCipher(text: string, key: string): string {
-  if (!key) return text;
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+function xorCipherOnBytes(data: Uint8Array, key: string): Uint8Array {
+  if (!key) return data;
+  const keyBytes = new TextEncoder().encode(key);
+  if (keyBytes.length === 0) return data;
+  const result = new Uint8Array(data.length);
+  for (let i = 0; i < data.length; i++) {
+    result[i] = data[i] ^ keyBytes[i % keyBytes.length];
   }
   return result;
 }
@@ -40,11 +42,11 @@ function fromVariationSelector(codePoint: number): number | null {
 }
 
 const emojiCipherEncode = (text: string, options: { password?: string, emoji?: string }): string => {
-    const textToEncode = xorCipher(text, options.password || '');
-    const bytes = new TextEncoder().encode(textToEncode);
+    const bytes = new TextEncoder().encode(text);
+    const encryptedBytes = xorCipherOnBytes(bytes, options.password || '');
     let encoded = options.emoji || '😀';
 
-    for (const byte of bytes) {
+    for (const byte of encryptedBytes) {
         encoded += toVariationSelector(byte);
     }
 
@@ -63,10 +65,10 @@ const emojiCipherDecode = (text: string, options: { password?: string }): string
         }
     }
 
-    let decodedArray = new Uint8Array(decodedBytes);
-    const decodedText = new TextDecoder().decode(decodedArray);
+    const encryptedBytes = new Uint8Array(decodedBytes);
+    const decryptedBytes = xorCipherOnBytes(encryptedBytes, options.password || '');
 
-    return xorCipher(decodedText, options.password || '');
+    return new TextDecoder().decode(decryptedBytes);
 }
 
 // ============== Base64 =================
