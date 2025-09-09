@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { Menu, Moon, Sun, RefreshCw } from "lucide-react"
-
+import { SecurityDropdown } from "./security-dropdown"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -39,6 +39,7 @@ export function Header() {
         </div>
 
         <nav className="flex items-center space-x-2">
+          <SecurityDropdown />
           <Button
             variant="ghost"
             size="icon"
