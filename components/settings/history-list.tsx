@@ -18,9 +18,11 @@ function isValidHistoryItem(item: any): item is HistoryItem {
     typeof item.date === 'string' &&
     (item.mode === 'encode' || item.mode === 'decode') &&
     typeof item.result === 'string' &&
-    (item.mode === 'decode' || (item.mode === 'encode' && typeof item.emoji === 'string'))
+    typeof item.algorithm === 'string'
   );
 }
+
+import { Input } from "@/components/ui/input"
 
 export function HistoryList() {
   const router = useRouter()
@@ -28,6 +30,7 @@ export function HistoryList() {
   const { toast } = useToast()
   const [showShare, setShowShare] = useState(false)
   const [filter, setFilter] = useState<'all' | 'encode' | 'decode'>('all')
+  const [searchTerm, setSearchTerm] = useState("")
   const importInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -104,12 +107,23 @@ export function HistoryList() {
   }
 
   const filteredHistory = history.filter(item => {
-    if (filter === 'all') return true;
-    return item.mode === filter;
+    const modeMatch = filter === 'all' || item.mode === filter;
+    const searchMatch = searchTerm === "" ||
+                        item.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        item.result.toLowerCase().includes(searchTerm.toLowerCase());
+    return modeMatch && searchMatch;
   })
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Input
+          placeholder="ابحث في السجل..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-xs"
+        />
+      </div>
       <div className="flex flex-wrap gap-2 items-center">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="mr-2 h-4 w-4" />
@@ -138,8 +152,11 @@ export function HistoryList() {
         filteredHistory.map((item) => (
           <Card key={item.id} className="card-hover-effect">
             <CardHeader>
-              <CardTitle className="text-sm font-normal">
-                <span className="font-bold">{item.mode === "encode" ? "تشفير" : "فك تشفير"}</span> - {item.date}
+              <CardTitle className="text-sm font-normal flex justify-between">
+                <span>
+                  <span className="font-bold">{item.mode === "encode" ? "تشفير" : "فك تشفير"}</span> - {item.date}
+                </span>
+                <span className="text-muted-foreground font-mono text-xs">{item.algorithm}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -149,7 +166,7 @@ export function HistoryList() {
               <div className="font-mono text-xs break-all">
                 <strong>النتيجة:</strong> {item.result}
               </div>
-              {item.mode === 'encode' && (
+              {item.mode === 'encode' && item.emoji && (
                 <div className="font-mono text-xs">
                   <strong>الايقونة:</strong> {item.emoji}
                 </div>

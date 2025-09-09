@@ -3,6 +3,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AlgorithmProvider } from "@/hooks/use-algorithm"
 import { SecurityProvider } from "@/hooks/use-security"
+import { EncoderStateProvider } from "@/hooks/use-encoder-state"
 import { Header } from "@/components/layout/header"
 
 export const metadata: Metadata = {
@@ -33,10 +34,12 @@ export default function RootLayout({
         >
           <AlgorithmProvider>
             <SecurityProvider>
-              <div className="relative flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-              </div>
+              <EncoderStateProvider>
+                <div className="relative flex min-h-screen flex-col">
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                </div>
+              </EncoderStateProvider>
             </SecurityProvider>
           </AlgorithmProvider>
         </ThemeProvider>

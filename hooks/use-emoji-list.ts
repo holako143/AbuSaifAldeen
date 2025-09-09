@@ -1,63 +1,97 @@
-import { useState, useEffect } from 'react';
+"use client"
+
+import { useState, useEffect, useCallback } from 'react';
 import { EMOJI_LIST as defaultEmojis, ALPHABET_LIST as defaultAlphabet } from '@/app/emoji';
 
-const EMOJI_STORAGE_KEY = 'custom-emoji-list';
-const ALPHABET_STORAGE_KEY = 'custom-alphabet-list';
+const LISTS_STORAGE_KEY = 'shiffration-symbol-lists';
 
-function useStoredList(key: string, defaultList: string[]) {
-  const [list, setList] = useState<string[]>([]);
+export interface SymbolList {
+  id: string;
+  name: string;
+  symbols: string[];
+  isDefault: boolean;
+  isDeletable: boolean;
+}
+
+const defaultLists: SymbolList[] = [
+  {
+    id: 'default-emojis',
+    name: 'Default Emojis',
+    symbols: defaultEmojis,
+    isDefault: true,
+    isDeletable: false,
+  },
+  {
+    id: 'default-alphabet',
+    name: 'Default Alphabet',
+    symbols: defaultAlphabet,
+    isDefault: true,
+    isDeletable: false,
+  }
+];
+
+export function useEmojiList() {
+  const [lists, setLists] = useState<SymbolList[]>([]);
+  const [activeListId, setActiveListId] = useState<string>('default-emojis');
 
   useEffect(() => {
     try {
-      const storedList = localStorage.getItem(key);
-      if (storedList) {
-        setList(JSON.parse(storedList));
+      const storedLists = localStorage.getItem(LISTS_STORAGE_KEY);
+      if (storedLists) {
+        setLists(JSON.parse(storedLists));
       } else {
-        setList(defaultList);
+        setLists(defaultLists);
       }
     } catch (error) {
-      console.error(`Error reading ${key} from localStorage`, error);
-      setList(defaultList);
+      console.error(`Error reading lists from localStorage`, error);
+      setLists(defaultLists);
     }
-  }, [key, defaultList]);
+  }, []);
 
-  const updateList = (newList: string[]) => {
-    setList(newList);
-    localStorage.setItem(key, JSON.stringify(newList));
+  const saveLists = (newLists: SymbolList[]) => {
+    setLists(newLists);
+    localStorage.setItem(LISTS_STORAGE_KEY, JSON.stringify(newLists));
   };
 
-  const addItem = (item: string) => {
-    if (item && !list.includes(item)) {
-      updateList([...list, item]);
-    }
+  const addList = (name: string, symbols: string[]) => {
+    if (!name || symbols.length === 0) return;
+    const newList: SymbolList = {
+      id: new Date().toISOString(),
+      name,
+      symbols,
+      isDefault: false,
+      isDeletable: true,
+    };
+    saveLists([...lists, newList]);
   };
 
-  const deleteItem = (index: number) => {
-    const newList = [...list];
-    newList.splice(index, 1);
-    updateList(newList);
+  const deleteList = (id: string) => {
+    const listToDelete = lists.find(l => l.id === id);
+    if (!listToDelete || !listToDelete.isDeletable) return;
+    saveLists(lists.filter(l => l.id !== id));
   };
 
-  const reorderItem = (fromIndex: number, toIndex: number) => {
-    const newList = [...list];
-    const [movedItem] = newList.splice(fromIndex, 1);
-    newList.splice(toIndex, 0, movedItem);
-    updateList(newList);
+  const updateList = (id: string, updatedSymbols: string[]) => {
+    saveLists(lists.map(l => l.id === id ? { ...l, symbols: updatedSymbols } : l));
   };
   
-  const resetList = () => {
-    updateList(defaultList);
+  const resetListToDefault = (id: string) => {
+      const listToReset = lists.find(l => l.id === id);
+      const defaultList = defaultLists.find(l => l.id === id);
+      if (listToReset && defaultList) {
+          updateList(id, defaultList.symbols);
+      }
   }
 
-  return { list, addItem, deleteItem, reorderItem, resetList };
-}
+  const activeList = lists.find(l => l.id === activeListId) || lists[0];
 
-export function useEmojiList() {
-    const emojis = useStoredList(EMOJI_STORAGE_KEY, defaultEmojis);
-    const alphabet = useStoredList(ALPHABET_STORAGE_KEY, defaultAlphabet);
-
-    return {
-        emojis,
-        alphabet
-    }
+  return {
+    lists,
+    addList,
+    deleteList,
+    updateList,
+    resetListToDefault,
+    activeList,
+    setActiveListId
+  };
 }
