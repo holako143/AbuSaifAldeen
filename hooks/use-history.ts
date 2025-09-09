@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 
 export interface HistoryItem {
-  id: string;
+  id:string;
   text: string;
   date: string;
   mode: 'encode' | 'decode';
   result: string;
+  emoji: string;
 }
 
 const HISTORY_STORAGE_KEY = 'encryption-history';

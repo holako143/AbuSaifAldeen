@@ -17,7 +17,8 @@ function isValidHistoryItem(item: any): item is HistoryItem {
     typeof item.text === 'string' &&
     typeof item.date === 'string' &&
     (item.mode === 'encode' || item.mode === 'decode') &&
-    typeof item.result === 'string'
+    typeof item.result === 'string' &&
+    (item.mode === 'decode' || (item.mode === 'encode' && typeof item.emoji === 'string'))
   );
 }
 
@@ -148,6 +149,11 @@ export function HistoryList() {
               <div className="font-mono text-xs break-all">
                 <strong>النتيجة:</strong> {item.result}
               </div>
+              {item.mode === 'encode' && (
+                <div className="font-mono text-xs">
+                  <strong>الايقونة:</strong> {item.emoji}
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               {showShare && (

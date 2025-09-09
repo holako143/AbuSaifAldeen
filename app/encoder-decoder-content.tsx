@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Copy, Share, ClipboardPaste, Trash2, QrCode, Camera, Download, Share2 } from "lucide-react"
+import { Copy, Share, ClipboardPaste, Trash2, QrCode, Camera, Download, Share2, Eye, EyeOff, Save, FileUp, FileDown } from "lucide-react"
 import QRCode from "react-qr-code"
 import { QrScanner } from "@/components/qr-scanner"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { decode, encode } from "./encoding"
+import { encoders, Algorithm } from "@/lib/encoders"
 import { EmojiSelector } from "@/components/emoji-selector"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEmojiList } from "@/hooks/use-emoji-list"
 import { useHistory } from "@/hooks/use-history"
 import { useToast } from "@/hooks/use-toast"
@@ -37,6 +38,7 @@ export function Base64EncoderDecoderContent() {
   const { emojis, alphabet } = useEmojiList()
   const { settings: securitySettings } = useSecurity()
   const passwordInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const mode = searchParams.get("mode") || "encode"
   const [inputText, setInputText] = useState("")
@@ -48,6 +50,8 @@ export function Base64EncoderDecoderContent() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [algorithm, setAlgorithm] = useState<Algorithm>('emojiCipher')
 
   const updateMode = (newMode: string) => {
     const params = new URLSearchParams(searchParams)
@@ -62,7 +66,8 @@ export function Base64EncoderDecoderContent() {
       return
     }
     try {
-      const decoded = decode(inputText, password)
+      const encoder = encoders[algorithm]
+      const decoded = encoder.decode(inputText, { password })
       setOutputText(decoded)
       setErrorText("")
       toast({ title: "Decoded successfully with password!" })
@@ -76,14 +81,22 @@ export function Base64EncoderDecoderContent() {
 
   useEffect(() => {
     const isEncoding = mode === "encode"
+    const encoder = encoders[algorithm]
+
     if (isEncoding) {
-      const password = securitySettings.isPasswordEnabled ? securitySettings.password : undefined
-      if (securitySettings.isPasswordEnabled && !password) {
-        setOutputText("")
-        setErrorText("Password is set in settings, but it is empty.")
-        return
+      const options: { emoji?: string; password?: string } = {};
+      if (encoder.requiresEmoji) {
+        options.emoji = selectedEmoji;
       }
-      const output = encode(selectedEmoji, inputText, password)
+      if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
+        if (!securitySettings.password) {
+          setOutputText("")
+          setErrorText("Password is set in settings, but it is empty.")
+          return
+        }
+        options.password = securitySettings.password
+      }
+      const output = encoder.encode(inputText, options)
       setOutputText(output)
       setErrorText("")
     } else { // Decoding
@@ -93,17 +106,21 @@ export function Base64EncoderDecoderContent() {
         return
       }
       try {
-        const output = decode(inputText)
+        const output = encoder.decode(inputText, {})
         setOutputText(output)
         setErrorText("")
       } catch (e) {
-        // Decoding failed, assume it's password protected
-        setIsPasswordDialogOpen(true)
-        setOutputText("")
-        setErrorText("This might be password protected. Please enter the password.")
+        if (encoder.requiresPassword) {
+          setIsPasswordDialogOpen(true)
+          setOutputText("")
+          setErrorText("This might be password protected. Please enter the password.")
+        } else {
+          setOutputText("")
+          setErrorText("Decoding failed.")
+        }
       }
     }
-  }, [mode, selectedEmoji, inputText, securitySettings])
+  }, [mode, selectedEmoji, inputText, securitySettings, algorithm])
 
   const handleModeToggle = (checked: boolean) => {
     updateMode(checked ? "encode" : "decode")
@@ -139,6 +156,35 @@ export function Base64EncoderDecoderContent() {
     )
   }
 
+  const handleSave = () => {
+    if (!outputText) {
+      toast({ title: "Nothing to save.", variant: "destructive" });
+      return;
+    }
+    addHistoryItem({
+      text: inputText,
+      result: outputText,
+      mode: mode as 'encode' | 'decode',
+      emoji: selectedEmoji
+    });
+    toast({ title: "Saved to history!" });
+  }
+
+  const handleDownload = () => {
+    if (!outputText) {
+      toast({ title: "Nothing to download.", variant: "destructive" });
+      return;
+    }
+    const blob = new Blob([outputText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = "shiffration-output.txt";
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Output downloaded!" });
+  }
+
   const handleClear = () => setInputText("")
 
   const handlePaste = () => {
@@ -146,6 +192,26 @@ export function Base64EncoderDecoderContent() {
       (text) => setInputText(text),
       (err) => console.error("Failed to read clipboard contents: ", err)
     )
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === 'string') {
+        setInputText(content);
+        toast({ title: "File loaded successfully!" });
+      } else {
+        toast({ title: "Failed to read file.", description: "File content is not text.", variant: "destructive" });
+      }
+    };
+    reader.onerror = () => {
+      toast({ title: "Error reading file.", variant: "destructive" });
+    }
+    reader.readAsText(file);
   }
 
   const getQrCodeAsPng = (): Promise<Blob | null> => {
@@ -221,19 +287,36 @@ export function Base64EncoderDecoderContent() {
   return (
     <CardContent className="space-y-4">
       <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
-      <div className="flex items-center justify-center space-x-2">
-        <Label htmlFor="mode-toggle">فك التشفير</Label>
-        <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-        <Label htmlFor="mode-toggle">تشفير النص</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex items-center justify-center space-x-2">
+          <Label htmlFor="mode-toggle">فك التشفير</Label>
+          <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
+          <Label htmlFor="mode-toggle">تشفير النص</Label>
+        </div>
+        <div className="flex items-center justify-center">
+          <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Algorithm" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.keys(encoders).map((key) => (
+                <SelectItem key={key} value={key}>{encoders[key as Algorithm].name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="relative">
         <Textarea
           placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="min-h-[100px] pl-12"
+          className="min-h-[100px] pr-16"
         />
-        <div className="absolute top-2 left-2 flex flex-col">
+        <div className="absolute top-2 right-2 flex flex-col space-y-1">
+          <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} title="Upload File">
+            <FileUp className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => setIsScannerOpen(true)} title="Scan QR Code">
             <Camera className="h-5 w-5" />
           </Button>
@@ -244,27 +327,33 @@ export function Base64EncoderDecoderContent() {
             <Trash2 className="h-5 w-5" />
           </Button>
         </div>
+        <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
       </div>
-      <Tabs defaultValue="emoji" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
-          <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
-        </TabsList>
-        <TabsContent value="emoji">
-          <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojis.list} disabled={!isEncoding} />
-        </TabsContent>
-        <TabsContent value="alphabet">
-          <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabet.list} disabled={!isEncoding} />
-        </TabsContent>
-      </Tabs>
+      <div className="text-sm text-muted-foreground text-right -mt-2">
+        {inputText.length} characters, {new TextEncoder().encode(inputText).length} bytes
+      </div>
+      {algorithm === 'emojiCipher' && (
+        <Tabs defaultValue="emoji" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
+            <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
+          </TabsList>
+          <TabsContent value="emoji">
+            <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojis.list} disabled={!isEncoding} />
+          </TabsContent>
+          <TabsContent value="alphabet">
+            <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabet.list} disabled={!isEncoding} />
+          </TabsContent>
+        </Tabs>
+      )}
       <div className="relative">
         <Textarea
           placeholder={`${isEncoding ? "نتيجة" : "نتيجة"} التشفير`}
           value={outputText}
           readOnly
-          className="min-h-[100px] pl-12"
+          className="min-h-[100px] pr-16"
         />
-        <div className="absolute top-2 left-2 flex flex-col">
+        <div className="absolute top-2 right-2 flex flex-col space-y-1">
           <Button variant="ghost" size="icon" onClick={() => setIsQrDialogOpen(true)} disabled={!outputText} title="Generate QR Code">
             <QrCode className="h-5 w-5" />
           </Button>
@@ -273,6 +362,12 @@ export function Base64EncoderDecoderContent() {
               <Share className="h-5 w-5" />
             </Button>
           )}
+          <Button variant="ghost" size="icon" onClick={handleSave} disabled={!outputText} title="Save to History">
+            <Save className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleDownload} disabled={!outputText} title="Download Output">
+            <FileDown className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} title={copyButtonText}>
             <Copy className="h-5 w-5" />
           </Button>
@@ -308,12 +403,23 @@ export function Base64EncoderDecoderContent() {
               This content appears to be password protected. Please enter the password to decode it.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Input
-            ref={passwordInputRef}
-            type="password"
-            placeholder="Enter password..."
-            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-          />
+          <div className="relative">
+            <Input
+              ref={passwordInputRef}
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter password..."
+              onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handlePasswordSubmit}>Decode</AlertDialogAction>
