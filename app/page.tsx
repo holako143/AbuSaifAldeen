@@ -4,10 +4,10 @@ import { Base64EncoderDecoderContent } from "./encoder-decoder-content"
 
 export default function EncoderDecoder() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="container max-w-xl py-8">
+      <Card className="card-hover-effect">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">تصدق ان أبو  سيف دلعك !؟</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">شفريشن</CardTitle>
         </CardHeader>
         <Suspense fallback={<CardContent>Loading...</CardContent>}>
           <Base64EncoderDecoderContent />
