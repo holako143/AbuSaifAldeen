@@ -286,34 +286,32 @@ export function Base64EncoderDecoderContent() {
 
   return (
     <CardContent className="space-y-4">
-      <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex items-center justify-center space-x-2">
-          <Label htmlFor="mode-toggle">فك التشفير</Label>
-          <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-          <Label htmlFor="mode-toggle">تشفير النص</Label>
-        </div>
-        <div className="flex items-center justify-center">
-          <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Algorithm" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.keys(encoders).map((key) => (
-                <SelectItem key={key} value={key}>{encoders[key as Algorithm].name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex justify-between items-center">
+        <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
+        <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Algorithm" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(encoders).map((key) => (
+              <SelectItem key={key} value={key}>{encoders[key as Algorithm].name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="relative">
+      <div className="flex items-center justify-center space-x-2">
+        <Label htmlFor="mode-toggle">فك التشفير</Label>
+        <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
+        <Label htmlFor="mode-toggle">تشفير النص</Label>
+      </div>
+      <div>
         <Textarea
           placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="min-h-[100px] pr-16"
+          className="min-h-[100px]"
         />
-        <div className="absolute top-2 right-2 flex flex-col space-y-1">
+        <div className="flex justify-center items-center space-x-2 mt-2">
           <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} title="Upload File">
             <FileUp className="h-5 w-5" />
           </Button>
@@ -346,14 +344,14 @@ export function Base64EncoderDecoderContent() {
           </TabsContent>
         </Tabs>
       )}
-      <div className="relative">
+      <div>
         <Textarea
           placeholder={`${isEncoding ? "نتيجة" : "نتيجة"} التشفير`}
           value={outputText}
           readOnly
-          className="min-h-[100px] pr-16"
+          className="min-h-[100px]"
         />
-        <div className="absolute top-2 right-2 flex flex-col space-y-1">
+        <div className="flex justify-center items-center space-x-2 mt-2">
           <Button variant="ghost" size="icon" onClick={() => setIsQrDialogOpen(true)} disabled={!outputText} title="Generate QR Code">
             <QrCode className="h-5 w-5" />
           </Button>
