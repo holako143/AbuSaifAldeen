@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react';
 
-import type { Algorithm } from '@/lib/encoders';
-
 export interface HistoryItem {
-  id:string;
+  id: string;
   text: string;
   date: string;
   mode: 'encode' | 'decode';
   result: string;
-  algorithm: Algorithm;
-  emoji?: string;
 }
 
 const HISTORY_STORAGE_KEY = 'encryption-history';

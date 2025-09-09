@@ -4,7 +4,7 @@ import { Base64EncoderDecoderContent } from "./encoder-decoder-content"
 
 export default function EncoderDecoder() {
   return (
-    <div className="container max-w-xl">
+    <div className="container max-w-xl py-8">
       <Card className="card-hover-effect">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">شفريشن</CardTitle>

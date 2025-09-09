@@ -7,19 +7,19 @@ import { useAlgorithm } from "@/hooks/use-algorithm"
 import { useEncoderState } from "@/hooks/use-encoder-state"
 import { useSecurity } from "@/hooks/use-security"
 import { useEmojiList } from "@/hooks/use-emoji-list"
-import { useHistory } from "@/hooks/use-history"
 import { useToast } from "@/hooks/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useHistory } from "@/hooks/use-history"
 
 import { CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmojiSelector } from "@/components/emoji-selector"
 import { Input } from "@/components/ui/input"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import QRCode from "react-qr-code"
 import { QrScanner } from "@/components/qr-scanner"
 import { Button } from "@/components/ui/button"
-import { Download, Share2 } from "lucide-react"
+import { Download, Share2, EyeOff, Eye } from "lucide-react"
 
 import { MainControls } from "@/components/encoder/main-controls"
 import { InputArea } from "@/components/encoder/input-area"
@@ -122,7 +122,7 @@ export function Base64EncoderDecoderContent() {
     } else {
       runDecode();
     }
-  }, [inputText, mode, algorithm, selectedEmoji, securitySettings, setOutputText, setErrorText, toast, setIsPasswordDialogOpen]);
+  }, [inputText, mode, algorithm, selectedEmoji, securitySettings, setOutputText, setErrorText, toast, setIsPasswordDialogOpen, addHistoryItem]);
 
   const handlePasswordSubmit = async () => {
     const password = passwordInputRef.current?.value
@@ -218,7 +218,6 @@ export function Base64EncoderDecoderContent() {
 
       <InputArea
         setIsScannerOpen={setIsScannerOpen}
-        setIsPasswordDialogOpen={setIsPasswordDialogOpen}
       />
 
       <div className="text-sm text-muted-foreground text-right -mt-2">

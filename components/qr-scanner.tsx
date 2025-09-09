@@ -16,10 +16,7 @@ export function QrScanner({ onScanSuccess, onScanError }: QrScannerProps) {
       QR_SCANNER_ELEMENT_ID,
       {
         fps: 10,
-        qrbox: (viewfinderWidth, viewfinderHeight) => ({
-          width: Math.min(viewfinderWidth, viewfinderHeight) * 0.8,
-          height: Math.min(viewfinderWidth, viewfinderHeight) * 0.8,
-        }),
+        qrbox: { width: 250, height: 250 },
         rememberLastUsedCamera: true,
       },
       false // verbose

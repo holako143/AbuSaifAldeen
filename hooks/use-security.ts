@@ -1,23 +1,14 @@
-"use client"
-
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 
 const SECURITY_SETTINGS_KEY = 'security-settings';
 
 export interface SecuritySettings {
   isPasswordEnabled: boolean;
-  password: string;
+  password: string; // In a real app, this should be a hash or derived key.
 }
 
-interface SecurityContextType {
-  settings: SecuritySettings;
-  setSettings: (settings: SecuritySettings) => void;
-}
-
-const SecurityContext = createContext<SecurityContextType | undefined>(undefined);
-
-export function SecurityProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettingsState] = useState<SecuritySettings>({
+export function useSecurity() {
+  const [settings, setSettings] = useState<SecuritySettings>({
     isPasswordEnabled: false,
     password: '',
   });
@@ -26,29 +17,18 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
     try {
       const storedSettings = localStorage.getItem(SECURITY_SETTINGS_KEY);
       if (storedSettings) {
-        setSettingsState(JSON.parse(storedSettings));
+        setSettings(JSON.parse(storedSettings));
       }
     } catch (error) {
       console.error("Error reading security settings from localStorage", error);
     }
   }, []);
 
-  const setSettings = (newSettings: SecuritySettings) => {
-    setSettingsState(newSettings);
-    localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(newSettings));
+  const updateSettings = (newSettings: Partial<SecuritySettings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(updated));
   };
 
-  return (
-    <SecurityContext.Provider value={{ settings, setSettings }}>
-      {children}
-    </SecurityContext.Provider>
-  );
-}
-
-export function useSecurity() {
-  const context = useContext(SecurityContext);
-  if (context === undefined) {
-    throw new Error('useSecurity must be used within a SecurityProvider');
-  }
-  return context;
+  return { settings, updateSettings };
 }
