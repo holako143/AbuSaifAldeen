@@ -225,9 +225,9 @@ export function Base64EncoderDecoderContent() {
 
       const canvas = document.createElement('canvas');
       const padding = 20;
-      const { width, height } = svgElement.getBBox();
-      canvas.width = width + padding * 2;
-      canvas.height = height + padding * 2;
+      const size = 256; // Should match the size prop of QRCode component
+      canvas.width = size + padding * 2;
+      canvas.height = size + padding * 2;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         resolve(null);
@@ -239,7 +239,7 @@ export function Base64EncoderDecoderContent() {
       img.onload = () => {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, padding, padding);
+        ctx.drawImage(img, padding, padding, size, size);
         canvas.toBlob((blob) => {
           resolve(blob);
         }, 'image/png');

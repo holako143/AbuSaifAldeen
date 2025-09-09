@@ -95,21 +95,6 @@ const base64Decode = (text: string): string => {
   }
 }
 
-// ============== URL =================
-
-const urlEncode = (text: string): string => {
-  return encodeURIComponent(text);
-}
-
-const urlDecode = (text: string): string => {
-  try {
-    return decodeURIComponent(text);
-  } catch (error) {
-    console.error("URL decoding failed:", error);
-    return "Error: Invalid URL component.";
-  }
-}
-
 // ============== Encoders Object =================
 
 export const encoders = {
@@ -124,13 +109,6 @@ export const encoders = {
     name: "Base64",
     encode: base64Encode,
     decode: base64Decode,
-    requiresEmoji: false,
-    requiresPassword: false,
-  },
-  url: {
-    name: "URL",
-    encode: urlEncode,
-    decode: urlDecode,
     requiresEmoji: false,
     requiresPassword: false,
   },
