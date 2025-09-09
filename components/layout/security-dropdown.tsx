@@ -36,7 +36,7 @@ export function SecurityDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
-          <Shield className="h-5 w-5" />
+          <Shield className={`h-5 w-5 ${settings.isPasswordEnabled ? 'text-primary' : ''}`} />
           <span className="sr-only">Security Settings</span>
         </Button>
       </DropdownMenuTrigger>

@@ -86,9 +86,6 @@ export function Header() {
                             <Link href="/manage" className="block rounded-md p-2 hover:bg-muted">
                               إدارة الرموز
                             </Link>
-                            <Link href="/security" className="block rounded-md p-2 hover:bg-muted">
-                              الأمان
-                            </Link>
                           </nav>
                         </AccordionContent>
                       </AccordionItem>
