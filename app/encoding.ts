@@ -8,6 +8,15 @@ const VARIATION_SELECTOR_END = 0xfe0f;
 const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
 
+function xorCipher(text: string, key: string): string {
+  if (!key) return text;
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return result;
+}
+
 export function toVariationSelector(byte: number): string | null {
     if (byte >= 0 && byte < 16) {
         return String.fromCodePoint(VARIATION_SELECTOR_START + byte)
@@ -28,9 +37,10 @@ export function fromVariationSelector(codePoint: number): number | null {
     }
 }
 
-export function encode(emoji: string, text: string): string {
+export function encode(emoji: string, text: string, password?: string): string {
+    const textToEncode = xorCipher(text, password || '');
     // convert the string to utf-8 bytes
-    const bytes = new TextEncoder().encode(text)
+    const bytes = new TextEncoder().encode(textToEncode)
     let encoded = emoji
 
     for (const byte of bytes) {
@@ -40,22 +50,20 @@ export function encode(emoji: string, text: string): string {
     return encoded
 }
 
-export function decode(text: string): string {
-    let decoded = []
+export function decode(text: string, password?: string): string {
+    let decodedBytes = []
     const chars = Array.from(text)
 
     for (const char of chars) {
         const byte = fromVariationSelector(char.codePointAt(0)!)
 
-        if (byte === null && decoded.length > 0) {
-            break
-        } else if (byte === null) {
-            continue
+        if (byte !== null) {
+          decodedBytes.push(byte)
         }
-
-        decoded.push(byte)
     }
 
-    let decodedArray = new Uint8Array(decoded)
-    return new TextDecoder().decode(decodedArray)
+    let decodedArray = new Uint8Array(decodedBytes)
+    const decodedText = new TextDecoder().decode(decodedArray)
+    
+    return xorCipher(decodedText, password || '');
 }
