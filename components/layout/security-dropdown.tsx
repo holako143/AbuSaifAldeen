@@ -25,7 +25,7 @@ export function SecurityDropdown() {
 
   const handleSave = () => {
     setSettings({ ...settings, password: localPassword })
-    toast({ title: "Security settings saved!" })
+    toast({ title: "تم حفظ إعدادات الأمان!" })
   }
 
   const handleCheckedChange = (checked: boolean) => {
@@ -41,41 +41,45 @@ export function SecurityDropdown() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64 p-2" align="end">
-        <DropdownMenuLabel>Password Protection</DropdownMenuLabel>
+        <DropdownMenuLabel>الحماية بكلمة مرور</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <div className="flex items-center space-x-2 p-2">
-          <Checkbox
-            id="enable-password"
-            checked={settings.isPasswordEnabled}
-            onCheckedChange={handleCheckedChange}
-          />
-          <Label htmlFor="enable-password">Enable Password</Label>
-        </div>
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="enable-password"
+              checked={settings.isPasswordEnabled}
+              onCheckedChange={handleCheckedChange}
+            />
+            <Label htmlFor="enable-password">تفعيل كلمة المرور</Label>
+          </div>
+        </DropdownMenuItem>
         {settings.isPasswordEnabled && (
-          <div className="p-2 space-y-2">
-            <div className="relative">
-              <Input
-                id="password-input"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter password..."
-                value={localPassword}
-                onChange={(e) => setLocalPassword(e.target.value)}
-                className="pr-10"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <div className="w-full space-y-2">
+              <div className="relative">
+                <Input
+                  id="password-input"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="أدخل كلمة المرور..."
+                  value={localPassword}
+                  onChange={(e) => setLocalPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button onClick={handleSave} className="w-full">
+                حفظ كلمة المرور
               </Button>
             </div>
-            <Button onClick={handleSave} className="w-full">
-              Save Password
-            </Button>
-          </div>
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
