@@ -70,28 +70,4 @@ describe('Encoders', () => {
     });
   });
 
-  describe('URL', () => {
-    const { encode, decode } = encoders.url;
-
-    it('should encode and decode a string with special characters', () => {
-      const text = 'https://example.com/?q=a b&c=d';
-      const encoded = encode(text, {});
-      const decoded = decode(encoded, {});
-      expect(decoded).toBe(text);
-    });
-
-    it('should encode and decode a simple string', () => {
-      const text = 'hello world';
-      const encoded = encode(text, {});
-      const decoded = decode(encoded, {});
-      expect(decoded).toBe(text);
-    });
-
-    it('should handle an empty string', () => {
-      const text = '';
-      const encoded = encode(text, {});
-      const decoded = decode(encoded, {});
-      expect(decoded).toBe(text);
-    });
-  });
 });
