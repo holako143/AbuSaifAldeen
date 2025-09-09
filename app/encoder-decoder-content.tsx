@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { encoders, Algorithm } from "@/lib/encoders"
 import { EmojiSelector } from "@/components/emoji-selector"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAlgorithm } from "@/hooks/use-algorithm"
 import { useEmojiList } from "@/hooks/use-emoji-list"
 import { useHistory } from "@/hooks/use-history"
 import { useToast } from "@/hooks/use-toast"
@@ -51,7 +51,7 @@ export function Base64EncoderDecoderContent() {
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [algorithm, setAlgorithm] = useState<Algorithm>('emojiCipher')
+  const { algorithm } = useAlgorithm()
 
   const updateMode = (newMode: string) => {
     const params = new URLSearchParams(searchParams)
@@ -281,16 +281,6 @@ export function Base64EncoderDecoderContent() {
       {isEncoding && (
         <div className="flex justify-between items-center">
           <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
-          <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Algorithm" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.keys(encoders).map((key) => (
-                <SelectItem key={key} value={key}>{encoders[key as Algorithm].name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       )}
       <div className="flex items-center justify-center space-x-2">

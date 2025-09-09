@@ -1,14 +1,23 @@
-import { useState, useEffect } from 'react';
+"use client"
+
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 const SECURITY_SETTINGS_KEY = 'security-settings';
 
 export interface SecuritySettings {
   isPasswordEnabled: boolean;
-  password: string; // In a real app, this should be a hash or derived key.
+  password: string;
 }
 
-export function useSecurity() {
-  const [settings, setSettings] = useState<SecuritySettings>({
+interface SecurityContextType {
+  settings: SecuritySettings;
+  setSettings: (settings: SecuritySettings) => void;
+}
+
+const SecurityContext = createContext<SecurityContextType | undefined>(undefined);
+
+export function SecurityProvider({ children }: { children: ReactNode }) {
+  const [settings, setSettingsState] = useState<SecuritySettings>({
     isPasswordEnabled: false,
     password: '',
   });
@@ -17,18 +26,29 @@ export function useSecurity() {
     try {
       const storedSettings = localStorage.getItem(SECURITY_SETTINGS_KEY);
       if (storedSettings) {
-        setSettings(JSON.parse(storedSettings));
+        setSettingsState(JSON.parse(storedSettings));
       }
     } catch (error) {
       console.error("Error reading security settings from localStorage", error);
     }
   }, []);
 
-  const updateSettings = (newSettings: Partial<SecuritySettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(updated));
+  const setSettings = (newSettings: SecuritySettings) => {
+    setSettingsState(newSettings);
+    localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(newSettings));
   };
 
-  return { settings, updateSettings };
+  return (
+    <SecurityContext.Provider value={{ settings, setSettings }}>
+      {children}
+    </SecurityContext.Provider>
+  );
+}
+
+export function useSecurity() {
+  const context = useContext(SecurityContext);
+  if (context === undefined) {
+    throw new Error('useSecurity must be used within a SecurityProvider');
+  }
+  return context;
 }
