@@ -13,8 +13,13 @@ export function EmojiManager() {
   const { emojis, alphabet } = useEmojiList()
   const [newItem, setNewItem] = useState("")
 
-  const manager = mode === 'emoji' ? emojis : alphabet
-  const list = manager.list
+  const manager = mode === 'emoji' ? emojis : alphabet;
+  const list = manager.list;
+  const isLoading = manager.isLoading;
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   const handleAddItem = () => {
     if (newItem) {

@@ -1,9 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { AlgorithmProvider } from "@/hooks/use-algorithm"
-import { SecurityProvider } from "@/hooks/use-security"
-import { EncoderStateProvider } from "@/hooks/use-encoder-state"
 import { Header } from "@/components/layout/header"
 
 export const metadata: Metadata = {
@@ -29,19 +26,14 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="orange"
+          defaultTheme="system"
+          enableSystem
           disableTransitionOnChange
         >
-          <AlgorithmProvider>
-            <SecurityProvider>
-              <EncoderStateProvider>
-                <div className="relative flex min-h-screen flex-col">
-                  <Header />
-                  <main className="flex-1">{children}</main>
-                </div>
-              </EncoderStateProvider>
-            </SecurityProvider>
-          </AlgorithmProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+          </div>
         </ThemeProvider>
       </body>
     </html>
