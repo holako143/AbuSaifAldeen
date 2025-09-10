@@ -11,6 +11,7 @@ export interface AppState {
   isQrDialogOpen: boolean
   isScannerOpen: boolean
   showPassword: boolean
+  autoDecodeQr: boolean
 }
 
 export const initialState: AppState = {
@@ -24,6 +25,7 @@ export const initialState: AppState = {
   isQrDialogOpen: false,
   isScannerOpen: false,
   showPassword: false,
+  autoDecodeQr: false,
 }
 
 export type Action =
@@ -41,6 +43,7 @@ export type Action =
   | { type: 'SET_PASSWORD_DIALOG_OPEN'; payload: boolean }
   | { type: 'SET_SCANNER_OPEN'; payload: boolean }
   | { type: 'TOGGLE_SHOW_PASSWORD' }
+  | { type: 'TOGGLE_AUTO_DECODE_QR' }
 
 export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -72,6 +75,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, isScannerOpen: action.payload }
     case 'TOGGLE_SHOW_PASSWORD':
       return { ...state, showPassword: !state.showPassword }
+    case 'TOGGLE_AUTO_DECODE_QR':
+        return { ...state, autoDecodeQr: !state.autoDecodeQr }
     default:
       return state
   }

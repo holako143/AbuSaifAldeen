@@ -1,18 +1,19 @@
 "use client"
 
-import { useEffect, useReducer, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Download, Eye, EyeOff, Share2 } from "lucide-react"
+import { Download, Eye, EyeOff } from "lucide-react"
 import QRCode from "react-qr-code"
+import { saveAs } from 'file-saver';
+import { saveSvgAsPng } from 'save-svg-as-png';
 import { QrScanner } from "@/components/qr-scanner"
 import { CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { encoders, Algorithm } from "@/lib/encoders"
+import { encoders } from "@/lib/encoders"
 import { EmojiSelector } from "@/components/emoji-selector"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEmojiList } from "@/hooks/use-emoji-list"
 import { useHistory } from "@/hooks/use-history"
 import { useToast } from "@/hooks/use-toast"
@@ -29,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TextAreaWithControls } from "./components/text-area-with-controls"
-import { initialState, reducer } from "./reducer"
+import { useAppStore } from "@/hooks/use-app-store"
 
 export function Base64EncoderDecoderContent() {
   const router = useRouter()
@@ -42,19 +43,20 @@ export function Base64EncoderDecoderContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const qrCodeContainerRef = useRef<HTMLDivElement>(null)
 
-  const [state, dispatch] = useReducer(reducer, initialState)
   const {
-    inputText,
-    outputText,
-    errorText,
-    selectedEmoji,
+    inputText, setInputText,
+    outputText, setOutputText,
+    errorText, setErrorText,
+    selectedEmoji, setSelectedEmoji,
     algorithm,
-    copyButtonText,
-    isPasswordDialogOpen,
-    isQrDialogOpen,
-    isScannerOpen,
-    showPassword,
-  } = state
+    copyButtonText, setCopyButtonText,
+    isPasswordDialogOpen, setIsPasswordDialogOpen,
+    isQrDialogOpen, setIsQrDialogOpen,
+    isScannerOpen, setIsScannerOpen,
+    showPassword, setShowPassword,
+    autoDecodeQr,
+    clearOutput,
+  } = useAppStore();
 
   const mode = searchParams.get("mode") || "encode"
   const isEncoding = mode === "encode"
@@ -71,7 +73,7 @@ export function Base64EncoderDecoderContent() {
     }
     const textFromHistory = searchParams.get("text")
     if (textFromHistory) {
-      dispatch({ type: 'SET_INPUT_TEXT', payload: textFromHistory })
+      setInputText(textFromHistory)
     }
   }, [searchParams])
 
@@ -83,30 +85,31 @@ export function Base64EncoderDecoderContent() {
     if (isEncoding) {
       if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
         if (!securitySettings.password) {
-          dispatch({ type: 'SET_ERROR', payload: "Password is set in settings, but it is empty." })
+          setErrorText("Password is set in settings, but it is empty.")
           return
         }
         options.password = securitySettings.password
       }
       try {
         const result = encoder.encode(inputText, options)
-        dispatch({ type: 'ENCODE_SUCCESS', payload: result })
+        setOutputText(result)
       } catch (e: any) {
-        dispatch({ type: 'SET_ERROR', payload: e.message })
+        setErrorText(e.message)
       }
     } else { // Decoding
       if (!inputText) {
-        dispatch({ type: 'CLEAR_OUTPUT' })
+        clearOutput()
         return
       }
       try {
         const result = encoder.decode(inputText, options)
-        dispatch({ type: 'DECODE_SUCCESS', payload: result })
+        setOutputText(result)
       } catch (e: any) {
         if (encoder.requiresPassword) {
-          dispatch({ type: 'REQUEST_PASSWORD' })
+          setIsPasswordDialogOpen(true)
+          setErrorText("This might be password protected.")
         } else {
-          dispatch({ type: 'SET_ERROR', payload: e.message })
+          setErrorText(e.message)
         }
       }
     }
@@ -121,18 +124,18 @@ export function Base64EncoderDecoderContent() {
     try {
       const encoder = encoders[algorithm]
       const decoded = encoder.decode(inputText, { password })
-      dispatch({ type: 'DECODE_SUCCESS', payload: decoded })
+      setOutputText(decoded)
       toast({ title: "Decoded successfully with password!" })
     } catch (e) {
-      dispatch({ type: 'SET_ERROR', payload: "Failed to decode. The password may be incorrect." })
+      setErrorText("Failed to decode. The password may be incorrect.")
       toast({ title: "Decoding Failed", description: "Incorrect password or corrupted data.", variant: "destructive"})
     }
-    dispatch({ type: 'CLOSE_PASSWORD_DIALOG' })
+    setIsPasswordDialogOpen(false)
   }
 
   const handleModeToggle = (checked: boolean) => {
     updateMode(checked ? "encode" : "decode")
-    dispatch({ type: 'SET_INPUT_TEXT', payload: "" })
+    setInputText("")
   }
 
   const handleShare = () => {
@@ -144,8 +147,8 @@ export function Base64EncoderDecoderContent() {
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(
       () => {
-        dispatch({ type: 'SET_COPY_BUTTON_TEXT', payload: "Copied!" })
-        setTimeout(() => dispatch({ type: 'SET_COPY_BUTTON_TEXT', payload: "Copy" }), 2000)
+        setCopyButtonText("Copied!")
+        setTimeout(() => setCopyButtonText("Copy"), 2000)
       },
       (err) => console.error("Could not copy text: ", err)
     )
@@ -171,12 +174,7 @@ export function Base64EncoderDecoderContent() {
       return;
     }
     const blob = new Blob([outputText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = "shiffration-output.txt";
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
+    saveAs(blob, "shiffration-output.txt");
     toast({ title: "Output downloaded!" });
   }
 
@@ -188,7 +186,7 @@ export function Base64EncoderDecoderContent() {
     reader.onload = (e) => {
       const content = e.target?.result;
       if (typeof content === 'string') {
-        dispatch({ type: 'SET_INPUT_TEXT', payload: content })
+        setInputText(content)
         toast({ title: "File loaded successfully!" });
       } else {
         toast({ title: "Failed to read file.", description: "File content is not text.", variant: "destructive" });
@@ -200,80 +198,40 @@ export function Base64EncoderDecoderContent() {
     reader.readAsText(file);
   }
 
-  const getQrCodeAsPng = (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      const svgElement = qrCodeContainerRef.current?.querySelector('svg');
-      if (!svgElement) return resolve(null);
-
-      const canvas = document.createElement('canvas');
-      const padding = 20;
-      const { width, height } = svgElement.getBBox();
-      canvas.width = width + padding * 2;
-      canvas.height = height + padding * 2;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return resolve(null);
-
-      const xml = new XMLSerializer().serializeToString(svgElement);
-      const img = new Image();
-      img.onload = () => {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, padding, padding);
-        canvas.toBlob((blob) => resolve(blob), 'image/png');
-      };
-      img.src = 'data:image/svg+xml;base64,' + window.btoa(xml);
-    });
-  }
-
-  const handleSaveQrCode = async () => {
-    const blob = await getQrCodeAsPng();
-    if (!blob) {
+  const handleSaveQrCode = () => {
+    const svgElement = qrCodeContainerRef.current?.querySelector('svg');
+    if (svgElement) {
+      saveSvgAsPng(svgElement, 'shiffration-qr-code.png', { scale: 5 });
+      toast({ title: "QR Code saved!" });
+    } else {
       toast({ title: "Error generating QR code image.", variant: "destructive" });
-      return;
     }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'shiffration-qr-code.png';
-    link.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "QR Code saved!" });
-  }
+  };
 
-  const handleShareQrCode = async () => {
-    const blob = await getQrCodeAsPng();
-    if (!blob) {
-      toast({ title: "Error generating QR code image.", variant: "destructive" });
-      return;
+  const handleQrScanSuccess = (decodedText: string) => {
+    setIsScannerOpen(false);
+    if (autoDecodeQr) {
+      try {
+        const encoder = encoders[algorithm];
+        const options: { password?: string } = {};
+        if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
+          options.password = securitySettings.password;
+        }
+        const result = encoder.decode(decodedText, options);
+        setOutputText(result);
+        toast({ title: "QR Code Scanned & Decoded!", description: "Result has been placed in the output box." });
+      } catch(e: any) {
+        setErrorText(e.message);
+        toast({ title: "QR Decode Failed", description: "Could not decode the QR content.", variant: "destructive" });
+      }
+    } else {
+      setInputText(decodedText);
+      toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
     }
-    try {
-      const file = new File([blob], "shiffration-qr-code.png", { type: "image/png" });
-      await navigator.share({
-        title: "Shiffration QR Code",
-        text: "Check out this encrypted message!",
-        files: [file],
-      });
-    } catch (error) {
-      console.error("Share failed:", error);
-      toast({ title: "Share failed.", description: "Could not share the QR code.", variant: "destructive" });
-    }
-  }
+  };
 
   return (
     <CardContent className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
-        <Select value={algorithm} onValueChange={(value) => dispatch({ type: 'SET_ALGORITHM', payload: value as Algorithm })}>
-          <SelectTrigger className="w-[180px]" aria-label="Algorithm">
-            <SelectValue placeholder="Algorithm" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.keys(encoders).map((key) => (
-              <SelectItem key={key} value={key}>{encoders[key as Algorithm].name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
       <div className="flex items-center justify-center space-x-2">
         <Label htmlFor="mode-toggle">فك التشفير</Label>
         <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
@@ -288,11 +246,11 @@ export function Base64EncoderDecoderContent() {
         isEncoding={isEncoding}
         charCount={inputText.length}
         byteCount={new TextEncoder().encode(inputText).length}
-        onValueChange={(value) => dispatch({ type: 'SET_INPUT_TEXT', payload: value })}
-        onClear={() => dispatch({ type: 'SET_INPUT_TEXT', payload: '' })}
-        onPaste={async () => dispatch({ type: 'SET_INPUT_TEXT', payload: await navigator.clipboard.readText() })}
+        onValueChange={setInputText}
+        onClear={() => setInputText('')}
+        onPaste={async () => setInputText(await navigator.clipboard.readText())}
         onFileSelect={handleFileSelect}
-        onScan={() => dispatch({ type: 'SET_SCANNER_OPEN', payload: true })}
+        onScan={() => setIsScannerOpen(true)}
         fileInputRef={fileInputRef}
       />
 
@@ -303,10 +261,10 @@ export function Base64EncoderDecoderContent() {
             <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
           </TabsList>
           <TabsContent value="emoji">
-            <EmojiSelector onEmojiSelect={(emoji) => dispatch({ type: 'SET_EMOJI', payload: emoji })} selectedEmoji={selectedEmoji} emojiList={emojis.list} disabled={!isEncoding} />
+            <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojis.list} disabled={!isEncoding} />
           </TabsContent>
           <TabsContent value="alphabet">
-            <EmojiSelector onEmojiSelect={(emoji) => dispatch({ type: 'SET_EMOJI', payload: emoji })} selectedEmoji={selectedEmoji} emojiList={alphabet.list} disabled={!isEncoding} />
+            <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabet.list} disabled={!isEncoding} />
           </TabsContent>
         </Tabs>
       )}
@@ -323,14 +281,14 @@ export function Base64EncoderDecoderContent() {
         onSave={handleSave}
         onDownload={handleDownload}
         onShare={handleShare}
-        onGenerateQr={() => dispatch({ type: 'SET_QR_DIALOG_OPEN', payload: true })}
+        onGenerateQr={() => setIsQrDialogOpen(true)}
         copyButtonText={copyButtonText}
-        fileInputRef={fileInputRef} // Not used for output, but prop is required
+        fileInputRef={fileInputRef}
       />
 
       {errorText && <div className="text-red-500 text-center">{errorText}</div>}
 
-      <AlertDialog open={isQrDialogOpen} onOpenChange={(isOpen) => dispatch({ type: 'SET_QR_DIALOG_OPEN', payload: isOpen })}>
+      <AlertDialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>QR Code</AlertDialogTitle>
@@ -339,10 +297,6 @@ export function Base64EncoderDecoderContent() {
             {outputText && <QRCode value={outputText} size={256} />}
           </div>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={handleShareQrCode} disabled={!navigator.share}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Share
-            </Button>
             <Button onClick={handleSaveQrCode}>
               <Download className="mr-2 h-4 w-4" />
               Save
@@ -352,7 +306,7 @@ export function Base64EncoderDecoderContent() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isPasswordDialogOpen} onOpenChange={(isOpen) => dispatch({ type: 'SET_PASSWORD_DIALOG_OPEN', payload: isOpen })}>
+      <AlertDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Password Required</AlertDialogTitle>
@@ -372,7 +326,7 @@ export function Base64EncoderDecoderContent() {
               variant="ghost"
               size="icon"
               className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7"
-              onClick={() => dispatch({ type: 'TOGGLE_SHOW_PASSWORD' })}
+              onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -384,20 +338,17 @@ export function Base64EncoderDecoderContent() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isScannerOpen} onOpenChange={(isOpen) => dispatch({ type: 'SET_SCANNER_OPEN', payload: isOpen })}>
+      <AlertDialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Scan QR Code</AlertDialogTitle>
           </AlertDialogHeader>
           {isScannerOpen && (
             <QrScanner
-              onScanSuccess={(text) => {
-                dispatch({ type: 'SET_INPUT_TEXT', payload: text })
-                dispatch({ type: 'SET_SCANNER_OPEN', payload: false })
-                toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
-              }}
+              onScanSuccess={handleQrScanSuccess}
               onScanError={(error) => {
                 console.error("QR Scan Error: ", error);
+                toast({ title: "QR Scan Error", description: error, variant: "destructive" });
               }}
             />
           )}
