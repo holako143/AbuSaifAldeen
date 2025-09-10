@@ -12,7 +12,7 @@ describe('Encoders', () => {
       expect(decoded).toBe(text);
     });
 
-    it('should encode and decode a string with Unicode characters', () => {
+    it('should encode and decode a string with Unicode characters without a password', () => {
       const text = '你好，世界';
       const encoded = encode(text, { emoji: '🚀' });
       const decoded = decode(encoded, {});
@@ -27,7 +27,7 @@ describe('Encoders', () => {
       expect(decoded).toBe(text);
     });
 
-    it('should correctly handle non-BMP characters (emojis) in the input text', () => {
+    it('should correctly handle non-BMP characters (emojis) in the input text with a password', () => {
       const text = 'Here is an emoji: 😂';
       const password = 'password123';
       const encoded = encode(text, { emoji: '😀', password });
@@ -35,13 +35,21 @@ describe('Encoders', () => {
       expect(decoded).toBe(text);
     });
 
-    it('should produce a different result when decoding with the wrong password', () => {
+    it('should fail to decode with the wrong password', () => {
       const text = 'secret message';
       const password = 'correct_password';
       const wrongPassword = 'wrong_password';
       const encoded = encode(text, { emoji: '😀', password });
-      const decoded = decode(encoded, { password: wrongPassword });
-      expect(decoded).not.toBe(text);
+      expect(() => decode(encoded, { password: wrongPassword })).toThrow("Decoding failed. The data may be corrupted or the password incorrect.");
+    });
+
+    it('should return an empty string when decoding a password-protected string without a password', () => {
+        const text = 'another secret';
+        const password = 'a_password';
+        const encoded = encode(text, { emoji: '😀', password });
+        // Attempting to decode without the password will fail because the input is Base64,
+        // but the decoder will try to interpret it as a raw emoji string, find no valid selectors, and return empty.
+        expect(decode(encoded, {})).toBe("");
     });
 
     it('should handle an empty string', () => {
@@ -49,12 +57,6 @@ describe('Encoders', () => {
         const encoded = encode(text, { emoji: '😀' });
         const decoded = decode(encoded, {});
         expect(decoded).toBe(text);
-    });
-
-    it('should return an empty string for an invalid emoji cipher string', () => {
-        const invalidText = 'just a regular string';
-        const decoded = decode(invalidText, {});
-        expect(decoded).toBe('');
     });
   });
 

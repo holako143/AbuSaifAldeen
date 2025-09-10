@@ -149,3 +149,27 @@ body {
 html.theme-matrix {
   font-family: 'Courier New', Courier, monospace;
 }
+
+/* Cyberpunk Theme */
+.theme-cyberpunk {
+  --background: 270 95% 7%; --foreground: 300 100% 80%; --card: 270 95% 9%; --card-foreground: 300 100% 80%; --primary: 300 100% 50%; --primary-foreground: 270 95% 7%; --accent: 300 100% 50%; --accent-foreground: 270 95% 7%; --border: 300 100% 30%; --radius: 0.2rem;
+}
+.dark .theme-cyberpunk {
+  --background: 270 95% 7%; --foreground: 300 100% 80%; --card: 270 95% 9%; --card-foreground: 300 100% 80%; --primary: 300 100% 50%; --primary-foreground: 270 95% 7%; --accent: 300 100% 50%; --accent-foreground: 270 95% 7%; --border: 300 100% 30%;
+}
+
+/* Ocean Theme */
+.theme-ocean {
+  --background: 210 100% 98%; --foreground: 215 80% 40%; --card: 210 100% 96%; --card-foreground: 215 80% 40%; --primary: 215 80% 55%; --primary-foreground: 210 100% 98%; --accent: 215 80% 55%; --accent-foreground: 210 100% 98%; --border: 210 100% 90%; --radius: 0.6rem;
+}
+.dark .theme-ocean {
+  --background: 215 80% 10%; --foreground: 215 80% 90%; --card: 215 80% 12%; --card-foreground: 215 80% 90%; --primary: 215 80% 60%; --primary-foreground: 215 80% 10%; --accent: 215 80% 60%; --accent-foreground: 215 80% 10%; --border: 215 80% 20%;
+}
+
+/* Forest Theme */
+.theme-forest {
+  --background: 120 25% 98%; --foreground: 120 60% 25%; --card: 120 25% 96%; --card-foreground: 120 60% 25%; --primary: 120 60% 35%; --primary-foreground: 120 25% 98%; --accent: 120 60% 35%; --accent-foreground: 120 25% 98%; --border: 120 25% 90%; --radius: 0.9rem;
+}
+.dark .theme-forest {
+  --background: 120 60% 8%; --foreground: 120 25% 85%; --card: 120 60% 10%; --card-foreground: 120 25% 85%; --primary: 120 60% 50%; --primary-foreground: 120 60% 8%; --accent: 120 60% 50%; --accent-foreground: 120 60% 8%; --border: 120 60% 15%;
+}

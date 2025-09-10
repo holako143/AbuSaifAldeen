@@ -13,6 +13,9 @@ export default function ThemesPage() {
     "rose",
     "purple",
     "matrix",
+    "cyberpunk",
+    "ocean",
+    "forest",
   ];
 
   return (
