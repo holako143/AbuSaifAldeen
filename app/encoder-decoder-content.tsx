@@ -17,7 +17,6 @@ import { EmojiSelector } from "@/components/emoji-selector"
 import { useEmojiList } from "@/hooks/use-emoji-list"
 import { useHistory } from "@/hooks/use-history"
 import { useToast } from "@/hooks/use-toast"
-import { useSecurity } from "@/hooks/use-security"
 import { Input } from "@/components/ui/input"
 import {
   AlertDialog,
@@ -31,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { TextAreaWithControls } from "./components/text-area-with-controls"
 import { useAppStore } from "@/hooks/use-app-store"
+import { PasswordDialog } from "@/components/common/password-dialog"
 
 export function Base64EncoderDecoderContent() {
   const router = useRouter()
@@ -38,7 +38,6 @@ export function Base64EncoderDecoderContent() {
   const { addHistoryItem } = useHistory()
   const { toast } = useToast()
   const { emojis, alphabet } = useEmojiList()
-  const { settings: securitySettings } = useSecurity()
   const passwordInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const qrCodeContainerRef = useRef<HTMLDivElement>(null)
@@ -49,8 +48,10 @@ export function Base64EncoderDecoderContent() {
     errorText, setErrorText,
     selectedEmoji, setSelectedEmoji,
     algorithm,
+    password, setPassword,
     copyButtonText, setCopyButtonText,
     isPasswordDialogOpen, setIsPasswordDialogOpen,
+    isNewPasswordDialogOpen, setIsNewPasswordDialogOpen,
     isQrDialogOpen, setIsQrDialogOpen,
     isScannerOpen, setIsScannerOpen,
     showPassword, setShowPassword,
@@ -83,16 +84,13 @@ export function Base64EncoderDecoderContent() {
     if (encoder.requiresEmoji) options.emoji = selectedEmoji
 
     if (isEncoding) {
-      if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
-        if (!securitySettings.password) {
-          setErrorText("Password is set in settings, but it is empty.")
-          return
-        }
-        options.password = securitySettings.password
+      if (encoder.requiresPassword && password) {
+        options.password = password
       }
       try {
         const result = encoder.encode(inputText, options)
         setOutputText(result)
+        setErrorText("")
       } catch (e: any) {
         setErrorText(e.message)
       }
@@ -105,10 +103,11 @@ export function Base64EncoderDecoderContent() {
         // First, try decoding without a password.
         const result = encoder.decode(inputText, options)
         setOutputText(result)
+        setErrorText("")
       } catch (e: any) {
         // If it fails and the algorithm supports passwords, prompt for one.
         if (encoder.requiresPassword) {
-          setErrorText("This content appears to be password protected.")
+          setErrorText("This content may be password protected.")
           setIsPasswordDialogOpen(true)
         } else {
           // Otherwise, it's a genuine decoding error.
@@ -116,7 +115,7 @@ export function Base64EncoderDecoderContent() {
         }
       }
     }
-  }, [mode, selectedEmoji, inputText, securitySettings, algorithm])
+  }, [mode, selectedEmoji, inputText, password, algorithm])
 
   const handlePasswordSubmit = () => {
     const password = passwordInputRef.current?.value
@@ -262,6 +261,8 @@ export function Base64EncoderDecoderContent() {
         onFileSelect={handleFileSelect}
         onScan={() => setIsScannerOpen(true)}
         fileInputRef={fileInputRef}
+        onPasswordClick={algorithm === 'emojiCipher' ? () => setIsNewPasswordDialogOpen(true) : undefined}
+        isPasswordSet={!!password}
       />
 
       {algorithm === 'emojiCipher' && (
@@ -368,6 +369,13 @@ export function Base64EncoderDecoderContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PasswordDialog
+        open={isNewPasswordDialogOpen}
+        onOpenChange={setIsNewPasswordDialogOpen}
+        onSetPassword={setPassword}
+        initialPassword={password}
+      />
     </CardContent>
   )
 }

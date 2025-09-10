@@ -23,7 +23,6 @@ export function Sidebar({ className, closeSidebar }: SidebarProps) {
   const navItems = [
     { href: '/', label: 'Encoder/Decoder', icon: Code },
     { href: '/history', label: 'History', icon: History },
-    { href: '/themes', label: 'Themes', icon: Palette },
   ]
 
   return (

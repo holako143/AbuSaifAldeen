@@ -13,7 +13,7 @@ export function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "orange" : "dark")
+    setTheme(theme === "dark" ? "light" : "dark")
   }
 
   return (
