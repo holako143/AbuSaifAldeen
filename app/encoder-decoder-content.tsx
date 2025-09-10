@@ -48,6 +48,7 @@ export function Base64EncoderDecoderContent() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [isQrCodeTooLong, setIsQrCodeTooLong] = useState(false)
 
   const updateMode = (newMode: string) => {
     const params = new URLSearchParams(searchParams)
@@ -104,6 +105,12 @@ export function Base64EncoderDecoderContent() {
       }
     }
   }, [mode, selectedEmoji, inputText, securitySettings])
+
+  useEffect(() => {
+    const QR_CODE_MAX_BYTES = 2800;
+    const byteSize = new TextEncoder().encode(outputText).length;
+    setIsQrCodeTooLong(byteSize > QR_CODE_MAX_BYTES);
+  }, [outputText]);
 
   const handleModeToggle = (checked: boolean) => {
     updateMode(checked ? "encode" : "decode")
@@ -265,7 +272,7 @@ export function Base64EncoderDecoderContent() {
           className="min-h-[100px] pl-12"
         />
         <div className="absolute top-2 left-2 flex flex-col">
-          <Button variant="ghost" size="icon" onClick={() => setIsQrDialogOpen(true)} disabled={!outputText} title="Generate QR Code">
+          <Button variant="ghost" size="icon" onClick={() => setIsQrDialogOpen(true)} disabled={!outputText || isQrCodeTooLong} title="Generate QR Code">
             <QrCode className="h-5 w-5" />
           </Button>
           {showShare && (
@@ -278,6 +285,7 @@ export function Base64EncoderDecoderContent() {
           </Button>
         </div>
       </div>
+      {isQrCodeTooLong && <div className="text-orange-600 text-sm text-center">النص الناتج طويل جدًا ولا يمكن تمثيله في رمز QR واحد.</div>}
       {errorText && <div className="text-red-500 text-center">{errorText}</div>}
       <AlertDialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
         <AlertDialogContent>
