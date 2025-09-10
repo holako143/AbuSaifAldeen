@@ -1,6 +1,6 @@
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { FileUp, ClipboardPaste, Trash2, Camera, QrCode, Share, ArrowRightLeft, FileDown, Copy, Save } from "lucide-react"
+import { FileUp, ClipboardPaste, Trash2, Camera, QrCode, Share, ArrowRightLeft, FileDown, Copy, Save, Key } from "lucide-react"
 
 interface TextAreaWithControlsProps {
   id: string
@@ -21,6 +21,8 @@ interface TextAreaWithControlsProps {
   onDownload?: () => void
   onShare?: () => void
   onGenerateQr?: () => void
+  onPasswordClick?: () => void;
+  isPasswordSet?: boolean;
   copyButtonText?: string
   fileInputRef: React.RefObject<HTMLInputElement>
 }
@@ -44,6 +46,8 @@ export function TextAreaWithControls({
   onDownload,
   onShare,
   onGenerateQr,
+  onPasswordClick,
+  isPasswordSet,
   copyButtonText,
   fileInputRef,
 }: TextAreaWithControlsProps) {
@@ -75,6 +79,11 @@ export function TextAreaWithControls({
             <Button variant="ghost" size="icon" onClick={onClear} disabled={!value} title="Clear">
               <Trash2 className="h-5 w-5" />
             </Button>
+            {onPasswordClick && (
+              <Button variant="ghost" size="icon" onClick={onPasswordClick} title="Set Password">
+                <Key className={`h-5 w-5 ${isPasswordSet ? 'text-green-500' : ''}`} />
+              </Button>
+            )}
           </>
         ) : (
           <>
