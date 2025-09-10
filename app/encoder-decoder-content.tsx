@@ -102,13 +102,16 @@ export function Base64EncoderDecoderContent() {
         return
       }
       try {
+        // First, try decoding without a password.
         const result = encoder.decode(inputText, options)
         setOutputText(result)
       } catch (e: any) {
+        // If it fails and the algorithm supports passwords, prompt for one.
         if (encoder.requiresPassword) {
+          setErrorText("This content appears to be password protected.")
           setIsPasswordDialogOpen(true)
-          setErrorText("This might be password protected.")
         } else {
+          // Otherwise, it's a genuine decoding error.
           setErrorText(e.message)
         }
       }
