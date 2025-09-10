@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const SECURITY_SETTINGS_KEY = 'security-settings';
 
 export interface SecuritySettings {
   isPasswordEnabled: boolean;
-  password: string; // In a real app, this should be a hash or derived key.
+  password: string;
 }
 
 export function useSecurity() {
@@ -24,11 +24,13 @@ export function useSecurity() {
     }
   }, []);
 
-  const updateSettings = (newSettings: Partial<SecuritySettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(updated));
-  };
+  const updateSettings = useCallback((newSettings: Partial<SecuritySettings>) => {
+    setSettings(prevSettings => {
+      const updated = { ...prevSettings, ...newSettings };
+      localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   return { settings, updateSettings };
 }

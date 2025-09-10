@@ -217,16 +217,28 @@ export function Base64EncoderDecoderContent() {
     }
   };
 
-  const handleQrScanSuccess = (decodedText: string) => {
+  const handleQrScanSuccess = (scannedText: string) => {
     setIsScannerOpen(false);
-    setInputText(decodedText);
-    if (autoDecodeQr) {
-        updateMode('decode');
-        toast({ title: "QR Code Scanned!", description: "Attempting to decode..." });
-    } else {
-        toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
+    try {
+      // All QR codes are Base64 encoded for data integrity. Decode it first.
+      const decodedText = encoders.base64.decode(scannedText);
+      setInputText(decodedText);
+      if (autoDecodeQr) {
+          updateMode('decode');
+          toast({ title: "QR Code Scanned!", description: "Attempting to decode..." });
+      } else {
+          toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
+      }
+    } catch (e) {
+        // If Base64 decoding fails, it's not a QR code from this app.
+        // Treat it as plain text.
+        setInputText(scannedText);
+        toast({ title: "QR Code Scanned!", description: "Content does not appear to be from this app. Placed raw text in input box.", variant: "default" });
     }
   };
+
+  // Base64 encode the output text before passing it to the QR code generator
+  const qrCodeValue = outputText ? encoders.base64.encode(outputText) : "";
 
   return (
     <CardContent className="space-y-4">
@@ -293,7 +305,7 @@ export function Base64EncoderDecoderContent() {
             <AlertDialogTitle>QR Code</AlertDialogTitle>
           </AlertDialogHeader>
           <div ref={qrCodeContainerRef} className="p-4 bg-white rounded-lg flex items-center justify-center">
-            {outputText && <QRCode value={outputText} size={256} />}
+            {qrCodeValue && <QRCode value={qrCodeValue} size={256} />}
           </div>
           <AlertDialogFooter>
             <Button onClick={handleSaveQrCode}>
