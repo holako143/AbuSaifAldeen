@@ -1,18 +1,28 @@
-import { ThemeSwitcher } from "@/components/settings/theme-switcher";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client"
+
+import { ThemePreview } from "@/components/theme-preview";
 
 export default function ThemesPage() {
+
+  const themes = [
+    "light",
+    "dark",
+    "orange",
+    "blue",
+    "green",
+    "rose",
+    "purple",
+    "matrix",
+  ];
+
   return (
-    <div className="container max-w-2xl py-8">
-      <h1 className="text-3xl font-bold mb-6">الثيمات</h1>
-      <Card className="card-hover-effect">
-        <CardHeader>
-          <CardTitle>اختر الثيم المفضل لديك</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ThemeSwitcher />
-        </CardContent>
-      </Card>
+    <div className="container max-w-4xl py-8">
+      <h1 className="text-3xl font-bold mb-6">Select a Theme</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {themes.map((themeName) => (
+          <ThemePreview key={themeName} themeName={themeName} />
+        ))}
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Download, Eye, EyeOff } from "lucide-react"
+import { Download, Eye, EyeOff, ArrowRightLeft } from "lucide-react"
 import QRCode from "react-qr-code"
 import { saveAs } from 'file-saver';
 import { saveSvgAsPng } from 'save-svg-as-png';
@@ -62,7 +62,7 @@ export function Base64EncoderDecoderContent() {
   const updateMode = (newMode: string) => {
     const params = new URLSearchParams(searchParams)
     params.set("mode", newMode)
-    router.replace(`?${params.toString()}`)
+    router.replace(`?${params.toString()}`, { scroll: false })
   }
 
   useEffect(() => {
@@ -200,23 +200,12 @@ export function Base64EncoderDecoderContent() {
 
   const handleQrScanSuccess = (decodedText: string) => {
     setIsScannerOpen(false);
+    setInputText(decodedText);
     if (autoDecodeQr) {
-      try {
-        const encoder = encoders[algorithm];
-        const options: { password?: string } = {};
-        if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
-          options.password = securitySettings.password;
-        }
-        const result = encoder.decode(decodedText, options);
-        setOutputText(result);
-        toast({ title: "QR Code Scanned & Decoded!", description: "Result has been placed in the output box." });
-      } catch(e: any) {
-        setErrorText(e.message);
-        toast({ title: "QR Decode Failed", description: "Could not decode the QR content.", variant: "destructive" });
-      }
+        updateMode('decode');
+        toast({ title: "QR Code Scanned!", description: "Attempting to decode..." });
     } else {
-      setInputText(decodedText);
-      toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
+        toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
     }
   };
 
