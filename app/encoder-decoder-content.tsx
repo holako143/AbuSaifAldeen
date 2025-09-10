@@ -1,11 +1,10 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useReducer, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Copy, Share, ClipboardPaste, Trash2, QrCode, Camera, Download, Share2, Eye, EyeOff, Save, FileUp, FileDown } from "lucide-react"
+import { Download, Eye, EyeOff, Share2 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { QrScanner } from "@/components/qr-scanner"
-import { Textarea } from "@/components/ui/textarea"
 import { CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -29,6 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { TextAreaWithControls } from "./components/text-area-with-controls"
+import { initialState, reducer } from "./reducer"
 
 export function Base64EncoderDecoderContent() {
   const router = useRouter()
@@ -39,25 +40,77 @@ export function Base64EncoderDecoderContent() {
   const { settings: securitySettings } = useSecurity()
   const passwordInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const qrCodeContainerRef = useRef<HTMLDivElement>(null)
+
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const {
+    inputText,
+    outputText,
+    errorText,
+    selectedEmoji,
+    algorithm,
+    copyButtonText,
+    isPasswordDialogOpen,
+    isQrDialogOpen,
+    isScannerOpen,
+    showPassword,
+  } = state
 
   const mode = searchParams.get("mode") || "encode"
-  const [inputText, setInputText] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState("😀")
-  const [outputText, setOutputText] = useState("")
-  const [errorText, setErrorText] = useState("")
-  const [copyButtonText, setCopyButtonText] = useState("Copy")
-  const [showShare, setShowShare] = useState(false)
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
-  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
-  const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [algorithm, setAlgorithm] = useState<Algorithm>('emojiCipher')
+  const isEncoding = mode === "encode"
 
   const updateMode = (newMode: string) => {
     const params = new URLSearchParams(searchParams)
     params.set("mode", newMode)
     router.replace(`?${params.toString()}`)
   }
+
+  useEffect(() => {
+    if (!searchParams.has("mode")) {
+      updateMode("encode")
+    }
+    const textFromHistory = searchParams.get("text")
+    if (textFromHistory) {
+      dispatch({ type: 'SET_INPUT_TEXT', payload: textFromHistory })
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    const encoder = encoders[algorithm]
+    const options: { emoji?: string; password?: string } = {}
+    if (encoder.requiresEmoji) options.emoji = selectedEmoji
+
+    if (isEncoding) {
+      if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
+        if (!securitySettings.password) {
+          dispatch({ type: 'SET_ERROR', payload: "Password is set in settings, but it is empty." })
+          return
+        }
+        options.password = securitySettings.password
+      }
+      try {
+        const result = encoder.encode(inputText, options)
+        dispatch({ type: 'ENCODE_SUCCESS', payload: result })
+      } catch (e: any) {
+        dispatch({ type: 'SET_ERROR', payload: e.message })
+      }
+    } else { // Decoding
+      if (!inputText) {
+        dispatch({ type: 'CLEAR_OUTPUT' })
+        return
+      }
+      try {
+        const result = encoder.decode(inputText, options)
+        dispatch({ type: 'DECODE_SUCCESS', payload: result })
+      } catch (e: any) {
+        if (encoder.requiresPassword) {
+          dispatch({ type: 'REQUEST_PASSWORD' })
+        } else {
+          dispatch({ type: 'SET_ERROR', payload: e.message })
+        }
+      }
+    }
+  }, [mode, selectedEmoji, inputText, securitySettings, algorithm])
 
   const handlePasswordSubmit = () => {
     const password = passwordInputRef.current?.value
@@ -68,77 +121,19 @@ export function Base64EncoderDecoderContent() {
     try {
       const encoder = encoders[algorithm]
       const decoded = encoder.decode(inputText, { password })
-      setOutputText(decoded)
-      setErrorText("")
+      dispatch({ type: 'DECODE_SUCCESS', payload: decoded })
       toast({ title: "Decoded successfully with password!" })
     } catch (e) {
-      setOutputText("")
-      setErrorText("Failed to decode. The password may be incorrect.")
+      dispatch({ type: 'SET_ERROR', payload: "Failed to decode. The password may be incorrect." })
       toast({ title: "Decoding Failed", description: "Incorrect password or corrupted data.", variant: "destructive"})
     }
-    setIsPasswordDialogOpen(false)
+    dispatch({ type: 'CLOSE_PASSWORD_DIALOG' })
   }
-
-  useEffect(() => {
-    const isEncoding = mode === "encode"
-    const encoder = encoders[algorithm]
-
-    if (isEncoding) {
-      const options: { emoji?: string; password?: string } = {};
-      if (encoder.requiresEmoji) {
-        options.emoji = selectedEmoji;
-      }
-      if (encoder.requiresPassword && securitySettings.isPasswordEnabled) {
-        if (!securitySettings.password) {
-          setOutputText("")
-          setErrorText("Password is set in settings, but it is empty.")
-          return
-        }
-        options.password = securitySettings.password
-      }
-      const output = encoder.encode(inputText, options)
-      setOutputText(output)
-      setErrorText("")
-    } else { // Decoding
-      if (!inputText) {
-        setOutputText("")
-        setErrorText("")
-        return
-      }
-      try {
-        const output = encoder.decode(inputText, {})
-        setOutputText(output)
-        setErrorText("")
-      } catch (e) {
-        if (encoder.requiresPassword) {
-          setIsPasswordDialogOpen(true)
-          setOutputText("")
-          setErrorText("This might be password protected. Please enter the password.")
-        } else {
-          setOutputText("")
-          setErrorText("Decoding failed.")
-        }
-      }
-    }
-  }, [mode, selectedEmoji, inputText, securitySettings, algorithm])
 
   const handleModeToggle = (checked: boolean) => {
     updateMode(checked ? "encode" : "decode")
-    setInputText("")
+    dispatch({ type: 'SET_INPUT_TEXT', payload: "" })
   }
-
-  useEffect(() => {
-    if (!searchParams.has("mode")) {
-      updateMode("encode")
-    }
-    const textFromHistory = searchParams.get("text")
-    if (textFromHistory) {
-      setInputText(textFromHistory)
-    }
-    if (navigator.share) {
-      setShowShare(true)
-    }
-  }, [searchParams, updateMode])
 
   const handleShare = () => {
     if (navigator.share) {
@@ -149,8 +144,8 @@ export function Base64EncoderDecoderContent() {
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(
       () => {
-        setCopyButtonText("Copied!")
-        setTimeout(() => setCopyButtonText("Copy"), 2000)
+        dispatch({ type: 'SET_COPY_BUTTON_TEXT', payload: "Copied!" })
+        setTimeout(() => dispatch({ type: 'SET_COPY_BUTTON_TEXT', payload: "Copy" }), 2000)
       },
       (err) => console.error("Could not copy text: ", err)
     )
@@ -185,15 +180,6 @@ export function Base64EncoderDecoderContent() {
     toast({ title: "Output downloaded!" });
   }
 
-  const handleClear = () => setInputText("")
-
-  const handlePaste = () => {
-    navigator.clipboard.readText().then(
-      (text) => setInputText(text),
-      (err) => console.error("Failed to read clipboard contents: ", err)
-    )
-  }
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -202,7 +188,7 @@ export function Base64EncoderDecoderContent() {
     reader.onload = (e) => {
       const content = e.target?.result;
       if (typeof content === 'string') {
-        setInputText(content);
+        dispatch({ type: 'SET_INPUT_TEXT', payload: content })
         toast({ title: "File loaded successfully!" });
       } else {
         toast({ title: "Failed to read file.", description: "File content is not text.", variant: "destructive" });
@@ -216,12 +202,8 @@ export function Base64EncoderDecoderContent() {
 
   const getQrCodeAsPng = (): Promise<Blob | null> => {
     return new Promise((resolve) => {
-      const svgContainer = document.getElementById('qr-code-container');
-      const svgElement = svgContainer?.querySelector('svg');
-      if (!svgElement) {
-        resolve(null);
-        return;
-      }
+      const svgElement = qrCodeContainerRef.current?.querySelector('svg');
+      if (!svgElement) return resolve(null);
 
       const canvas = document.createElement('canvas');
       const padding = 20;
@@ -229,10 +211,7 @@ export function Base64EncoderDecoderContent() {
       canvas.width = width + padding * 2;
       canvas.height = height + padding * 2;
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(null);
-        return;
-      }
+      if (!ctx) return resolve(null);
 
       const xml = new XMLSerializer().serializeToString(svgElement);
       const img = new Image();
@@ -240,9 +219,7 @@ export function Base64EncoderDecoderContent() {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, padding, padding);
-        canvas.toBlob((blob) => {
-          resolve(blob);
-        }, 'image/png');
+        canvas.toBlob((blob) => resolve(blob), 'image/png');
       };
       img.src = 'data:image/svg+xml;base64,' + window.btoa(xml);
     });
@@ -282,14 +259,12 @@ export function Base64EncoderDecoderContent() {
     }
   }
 
-  const isEncoding = mode === "encode"
-
   return (
     <CardContent className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm sm:text-base">شفر الي تشتيه وانبسط 😋 </p>
-        <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
-          <SelectTrigger className="w-[180px]">
+        <Select value={algorithm} onValueChange={(value) => dispatch({ type: 'SET_ALGORITHM', payload: value as Algorithm })}>
+          <SelectTrigger className="w-[180px]" aria-label="Algorithm">
             <SelectValue placeholder="Algorithm" />
           </SelectTrigger>
           <SelectContent>
@@ -304,32 +279,23 @@ export function Base64EncoderDecoderContent() {
         <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
         <Label htmlFor="mode-toggle">تشفير النص</Label>
       </div>
-      <div>
-        <Textarea
-          placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="min-h-[100px]"
-        />
-        <div className="flex justify-center items-center space-x-2 mt-2">
-          <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} title="Upload File">
-            <FileUp className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsScannerOpen(true)} title="Scan QR Code">
-            <Camera className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handlePaste} title="Paste">
-            <ClipboardPaste className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} title="Clear">
-            <Trash2 className="h-5 w-5" />
-          </Button>
-        </div>
-        <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-      </div>
-      <div className="text-sm text-muted-foreground text-right -mt-2">
-        {inputText.length} characters, {new TextEncoder().encode(inputText).length} bytes
-      </div>
+
+      <TextAreaWithControls
+        id="input"
+        value={inputText}
+        placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
+        isReadOnly={false}
+        isEncoding={isEncoding}
+        charCount={inputText.length}
+        byteCount={new TextEncoder().encode(inputText).length}
+        onValueChange={(value) => dispatch({ type: 'SET_INPUT_TEXT', payload: value })}
+        onClear={() => dispatch({ type: 'SET_INPUT_TEXT', payload: '' })}
+        onPaste={async () => dispatch({ type: 'SET_INPUT_TEXT', payload: await navigator.clipboard.readText() })}
+        onFileSelect={handleFileSelect}
+        onScan={() => dispatch({ type: 'SET_SCANNER_OPEN', payload: true })}
+        fileInputRef={fileInputRef}
+      />
+
       {algorithm === 'emojiCipher' && (
         <Tabs defaultValue="emoji" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -337,47 +303,39 @@ export function Base64EncoderDecoderContent() {
             <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
           </TabsList>
           <TabsContent value="emoji">
-            <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojis.list} disabled={!isEncoding} />
+            <EmojiSelector onEmojiSelect={(emoji) => dispatch({ type: 'SET_EMOJI', payload: emoji })} selectedEmoji={selectedEmoji} emojiList={emojis.list} disabled={!isEncoding} />
           </TabsContent>
           <TabsContent value="alphabet">
-            <EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabet.list} disabled={!isEncoding} />
+            <EmojiSelector onEmojiSelect={(emoji) => dispatch({ type: 'SET_EMOJI', payload: emoji })} selectedEmoji={selectedEmoji} emojiList={alphabet.list} disabled={!isEncoding} />
           </TabsContent>
         </Tabs>
       )}
-      <div>
-        <Textarea
-          placeholder={`${isEncoding ? "نتيجة" : "نتيجة"} التشفير`}
-          value={outputText}
-          readOnly
-          className="min-h-[100px]"
-        />
-        <div className="flex justify-center items-center space-x-2 mt-2">
-          <Button variant="ghost" size="icon" onClick={() => setIsQrDialogOpen(true)} disabled={!outputText} title="Generate QR Code">
-            <QrCode className="h-5 w-5" />
-          </Button>
-          {showShare && (
-            <Button variant="ghost" size="icon" onClick={handleShare} disabled={!outputText} title="Share">
-              <Share className="h-5 w-5" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={handleSave} disabled={!outputText} title="Save to History">
-            <Save className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleDownload} disabled={!outputText} title="Download Output">
-            <FileDown className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} title={copyButtonText}>
-            <Copy className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
+
+      <TextAreaWithControls
+        id="output"
+        value={outputText}
+        placeholder={`${isEncoding ? "نتيجة" : "نتيجة"} التشفير`}
+        isReadOnly={true}
+        isEncoding={isEncoding}
+        charCount={outputText.length}
+        byteCount={new TextEncoder().encode(outputText).length}
+        onCopy={handleCopy}
+        onSave={handleSave}
+        onDownload={handleDownload}
+        onShare={handleShare}
+        onGenerateQr={() => dispatch({ type: 'SET_QR_DIALOG_OPEN', payload: true })}
+        copyButtonText={copyButtonText}
+        fileInputRef={fileInputRef} // Not used for output, but prop is required
+      />
+
       {errorText && <div className="text-red-500 text-center">{errorText}</div>}
-      <AlertDialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+
+      <AlertDialog open={isQrDialogOpen} onOpenChange={(isOpen) => dispatch({ type: 'SET_QR_DIALOG_OPEN', payload: isOpen })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>QR Code</AlertDialogTitle>
           </AlertDialogHeader>
-          <div id="qr-code-container" className="p-4 bg-white rounded-lg flex items-center justify-center">
+          <div ref={qrCodeContainerRef} className="p-4 bg-white rounded-lg flex items-center justify-center">
             {outputText && <QRCode value={outputText} size={256} />}
           </div>
           <AlertDialogFooter>
@@ -393,7 +351,8 @@ export function Base64EncoderDecoderContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+
+      <AlertDialog open={isPasswordDialogOpen} onOpenChange={(isOpen) => dispatch({ type: 'SET_PASSWORD_DIALOG_OPEN', payload: isOpen })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Password Required</AlertDialogTitle>
@@ -413,7 +372,7 @@ export function Base64EncoderDecoderContent() {
               variant="ghost"
               size="icon"
               className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => dispatch({ type: 'TOGGLE_SHOW_PASSWORD' })}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -424,7 +383,8 @@ export function Base64EncoderDecoderContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+
+      <AlertDialog open={isScannerOpen} onOpenChange={(isOpen) => dispatch({ type: 'SET_SCANNER_OPEN', payload: isOpen })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Scan QR Code</AlertDialogTitle>
@@ -432,8 +392,8 @@ export function Base64EncoderDecoderContent() {
           {isScannerOpen && (
             <QrScanner
               onScanSuccess={(text) => {
-                setInputText(text);
-                setIsScannerOpen(false);
+                dispatch({ type: 'SET_INPUT_TEXT', payload: text })
+                dispatch({ type: 'SET_SCANNER_OPEN', payload: false })
                 toast({ title: "QR Code Scanned!", description: "Content has been placed in the input box." });
               }}
               onScanError={(error) => {
