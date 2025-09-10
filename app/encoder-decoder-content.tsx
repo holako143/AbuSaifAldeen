@@ -15,7 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { encoders } from "@/lib/encoders"
 import { EmojiSelector } from "@/components/emoji-selector"
 import { useEmojiList } from "@/hooks/use-emoji-list"
-import { useHistory } from "@/hooks/use-history"
 import { useToast } from "@/hooks/use-toast"
 import { useSecurity } from "@/hooks/use-security"
 import { Input } from "@/components/ui/input"
@@ -35,7 +34,6 @@ import { useAppStore } from "@/hooks/use-app-store"
 export function Base64EncoderDecoderContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { addHistoryItem } = useHistory()
   const { toast } = useToast()
   const { emojis, alphabet } = useEmojiList()
   const { settings: securitySettings } = useSecurity()
@@ -154,18 +152,10 @@ export function Base64EncoderDecoderContent() {
     )
   }
 
-  const handleSave = () => {
-    if (!outputText) {
-      toast({ title: "Nothing to save.", variant: "destructive" });
-      return;
-    }
-    addHistoryItem({
-      text: inputText,
-      result: outputText,
-      mode: mode as 'encode' | 'decode',
-      emoji: selectedEmoji
-    });
-    toast({ title: "Saved to history!" });
+  const handleSwap = () => {
+    if (!outputText) return;
+    setInputText(outputText);
+    updateMode('decode');
   }
 
   const handleDownload = () => {
@@ -278,7 +268,7 @@ export function Base64EncoderDecoderContent() {
         charCount={outputText.length}
         byteCount={new TextEncoder().encode(outputText).length}
         onCopy={handleCopy}
-        onSave={handleSave}
+        onSwap={handleSwap}
         onDownload={handleDownload}
         onShare={handleShare}
         onGenerateQr={() => setIsQrDialogOpen(true)}
