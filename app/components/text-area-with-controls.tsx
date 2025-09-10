@@ -1,6 +1,6 @@
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { FileUp, ClipboardPaste, Trash2, Camera, QrCode, Share, ArrowRightLeft, FileDown, Copy } from "lucide-react"
+import { FileUp, ClipboardPaste, Trash2, Camera, QrCode, Share, ArrowRightLeft, FileDown, Copy, Save } from "lucide-react"
 
 interface TextAreaWithControlsProps {
   id: string
@@ -17,6 +17,7 @@ interface TextAreaWithControlsProps {
   onScan: () => void
   onCopy?: () => void
   onSwap?: () => void
+  onSave?: () => void
   onDownload?: () => void
   onShare?: () => void
   onGenerateQr?: () => void
@@ -39,6 +40,7 @@ export function TextAreaWithControls({
   onScan,
   onCopy,
   onSwap,
+  onSave,
   onDownload,
   onShare,
   onGenerateQr,
@@ -86,6 +88,9 @@ export function TextAreaWithControls({
             )}
             <Button variant="ghost" size="icon" onClick={onSwap} disabled={!value} title="Swap Input/Output">
               <ArrowRightLeft className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onSave} disabled={!value} title="Save to History">
+              <Save className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={onDownload} disabled={!value} title="Download Output">
               <FileDown className="h-5 w-5" />

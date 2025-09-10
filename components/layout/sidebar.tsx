@@ -1,11 +1,9 @@
 "use client"
 
-import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { useSidebar } from '@/hooks/use-sidebar'
 import {
   Accordion,
   AccordionContent,
@@ -15,15 +13,12 @@ import {
 import { Settings, Code, History, Palette } from 'lucide-react'
 import { SettingsSidebar } from './settings-sidebar'
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+    closeSidebar: () => void;
+}
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, closeSidebar }: SidebarProps) {
   const pathname = usePathname()
-  const { setOpen } = useSidebar()
-
-  useEffect(() => {
-    setOpen(false)
-  }, [pathname, setOpen])
 
   const navItems = [
     { href: '/', label: 'Encoder/Decoder', icon: Code },
@@ -35,7 +30,7 @@ export function Sidebar({ className }: SidebarProps) {
     <div className={cn('flex flex-col h-full bg-card p-4', className)}>
         <nav className="space-y-1">
             {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
+                <Link key={item.href} href={item.href} onClick={closeSidebar}>
                     <Button
                         variant={pathname === item.href ? 'secondary' : 'ghost'}
                         className="w-full justify-start"

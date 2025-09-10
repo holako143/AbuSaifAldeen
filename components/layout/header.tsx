@@ -1,16 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { Menu, Moon, Sun, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useSidebar } from "@/hooks/use-sidebar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Sidebar } from "./sidebar"
 
 export function Header() {
   const { setTheme, theme } = useTheme()
-  const { isOpen, setOpen } = useSidebar()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "orange" : "dark")
@@ -21,7 +21,7 @@ export function Header() {
       <div className="container flex h-14 items-center justify-between">
         {/* This div will be on the right in RTL */}
         <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2" onClick={() => setOpen(false)}>
+            <Link href="/" className="flex items-center space-x-2" onClick={() => setIsSidebarOpen(false)}>
                 <ShieldCheck className="h-6 w-6" />
                 <span className="font-bold">
                 شفريشن
@@ -41,7 +41,7 @@ export function Header() {
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
-          <Sheet open={isOpen} onOpenChange={setOpen}>
+          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="ml-2">
                     <Menu className="h-5 w-5" />
@@ -49,7 +49,7 @@ export function Header() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="right" className="p-0">
-                <Sidebar />
+                <Sidebar closeSidebar={() => setIsSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
         </nav>
