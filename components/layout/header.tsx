@@ -1,43 +1,35 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import { Menu, Moon, Sun, RefreshCw } from "lucide-react"
-
+import { Menu, Moon, Sun, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+import { useSidebar } from "@/hooks/use-sidebar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { ShieldCheck } from "lucide-react"
+import { Sidebar } from "./sidebar"
 
 export function Header() {
   const { setTheme, theme } = useTheme()
+  const { isOpen, setOpen } = useSidebar()
 
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light")
-  }
-
-  const handleReset = () => {
-    window.location.reload()
+    setTheme(theme === "dark" ? "orange" : "dark")
   }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
+        {/* This div will be on the right in RTL */}
         <div className="flex items-center">
-          <Link href="/" className="flex items-center space-x-2">
-            <ShieldCheck className="h-6 w-6" />
-            <span className="font-bold">
-              شفريشن
-            </span>
-          </Link>
+            <Link href="/" className="flex items-center space-x-2" onClick={() => setOpen(false)}>
+                <ShieldCheck className="h-6 w-6" />
+                <span className="font-bold">
+                شفريشن
+                </span>
+            </Link>
         </div>
 
+        {/* This nav will be on the left in RTL */}
         <nav className="flex items-center space-x-2">
           <Button
             variant="ghost"
@@ -49,51 +41,15 @@ export function Header() {
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleReset}
-            title="Reset"
-          >
-            <RefreshCw className="h-5 w-5" />
-            <span className="sr-only">Reset</span>
-          </Button>
-          <Sheet>
+          <Sheet open={isOpen} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" title="Open menu">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Open menu</span>
-              </Button>
+                <Button variant="ghost" size="icon" className="ml-2">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle Sidebar</span>
+                </Button>
             </SheetTrigger>
-            <SheetContent>
-              <div className="px-4 py-6">
-                <nav className="grid gap-4">
-                  <Link href="/" className="flex items-center space-x-2 rounded-md p-2 hover:bg-muted">
-                    <span>التشفير</span>
-                  </Link>
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="settings">
-                        <AccordionTrigger className="p-2 hover:bg-muted rounded-md">الإعدادات</AccordionTrigger>
-                        <AccordionContent className="pr-4">
-                          <nav className="grid gap-2">
-                            <Link href="/themes" className="block rounded-md p-2 hover:bg-muted">
-                              الثيمات
-                            </Link>
-                            <Link href="/history" className="block rounded-md p-2 hover:bg-muted">
-                              سجل التشفير
-                            </Link>
-                            <Link href="/manage" className="block rounded-md p-2 hover:bg-muted">
-                              إدارة الرموز
-                            </Link>
-                            <Link href="/security" className="block rounded-md p-2 hover:bg-muted">
-                              الأمان
-                            </Link>
-                          </nav>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                </nav>
-              </div>
+            <SheetContent side="right" className="p-0">
+                <Sidebar />
             </SheetContent>
           </Sheet>
         </nav>
