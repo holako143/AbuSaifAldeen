@@ -283,6 +283,9 @@ export function Base64EncoderDecoderContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>QR Code</AlertDialogTitle>
+            <AlertDialogDescription>
+              This QR code contains the encoded output. You can save or share it.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <div id="qr-code-container" className="p-4 bg-white rounded-lg flex items-center justify-center">
             {outputText && <QRCode value={outputText} size={256} />}
@@ -324,6 +327,9 @@ export function Base64EncoderDecoderContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Scan QR Code</AlertDialogTitle>
+            <AlertDialogDescription>
+              Point your camera at a QR code to scan its content into the input box.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           {isScannerOpen && (
             <QrScanner

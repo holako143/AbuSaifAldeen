@@ -27,7 +27,8 @@ export function QrScanner({ onScanSuccess, onScanError }: QrScannerProps) {
       onScanSuccess(decodedText);
     };
 
-    const handleError: QrcodeErrorCallback = (errorMessage) => {
+    const handleError: QrcodeErrorCallback = (error) => {
+      let errorMessage = typeof error === 'string' ? error : error.message;
       const isNotFound = errorMessage.includes("No MultiFormat Readers");
       if (!isNotFound && onScanError) {
         onScanError(errorMessage);
