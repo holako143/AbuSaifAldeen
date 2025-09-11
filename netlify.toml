@@ -1,0 +1,15 @@
+# Netlify configuration file for a Next.js project.
+
+[build]
+  # Command to build the project.
+  command = "npm run build"
+
+  # The directory to publish, which is the output of the build command.
+  # For Next.js, this is the .next directory.
+  publish = ".next"
+
+# This plugin is essential for deploying Next.js sites on Netlify.
+# It automatically configures redirects, serverless functions, and other
+# necessary settings for Next.js features to work correctly.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
