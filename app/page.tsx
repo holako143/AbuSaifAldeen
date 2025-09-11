@@ -9,6 +9,7 @@ import { EmojiManagementView } from "./emoji-management-view";
 import { SettingsView } from "./settings-view";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Loading fallback component for Suspense
 function LoadingFallback() {
   return (
     <Card className="w-full max-w-2xl mx-auto">
