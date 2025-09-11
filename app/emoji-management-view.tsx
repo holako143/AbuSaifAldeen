@@ -157,7 +157,7 @@ export function EmojiManagementView() {
 
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
+    <Card className="w-full max-w-3xl mx-auto animate-in">
       <CardHeader>
         <CardTitle>إدارة القوائم</CardTitle>
         <CardDescription>

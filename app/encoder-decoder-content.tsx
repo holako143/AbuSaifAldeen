@@ -16,6 +16,14 @@ import { addToHistory } from "@/lib/history";
 import { getCustomAlphabetList, getCustomEmojiList } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
 
+// Simple inline SVG for WhatsApp icon
+const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M16.75 13.96c.25.13.43.2.5.28.08.08.16.18.23.28.08.1.15.22.2.35.05.13.08.26.08.4s-.03.28-.08.4-.13.23-.24.32c-.1.1-.23.18-.36.25-.13.08-.28.13-.43.16-.15.03-.3.05-.46.05-.15 0-.3-.02-.46-.05-.15-.03-.3-.08-.46-.13-.15-.05-.3-.12-.46-.2-.15-.08-.3-.16-.46-.25-.15-.1-.3-.2-.46-.3l-.03-.02c-.5-.3-1-1-1.4-1.5-.4-.5-.7-1-1-1.5s-.5-1-.6-1.5c-.1-.5-.1-1-.1-1.5s0-1 .1-1.5.1-.9.3-1.4.3-.9.6-1.3.6-.8 1-1.1.8-.5 1.3-.6c.5-.1 1-.1 1.5-.1s1 0 1.5.1.9.3 1.4.6c.5.3.8.6 1.1 1 .3.4.5.8.6 1.3.1.5.1 1 .1 1.5s0 1-.1 1.5-.1.9-.3 1.4c-.1.5-.3.9-.6 1.3zm-5.2-3.4c-.12 0-.24.02-.36.05-.12.03-.23.08-.34.13-.1.05-.2.1-.3.18-.1.08-.18.15-.25.23-.08.08-.15.15-.2.23-.05.08-.1.15-.13.23-.03.08-.05.15-.05.23s0 .15.02.23c.02.08.05.15.08.22.03.07.08.13.13.2.05.05.1.1.18.15.07.05.15.08.22.1.08.03.15.05.23.05.1 0 .18-.02.28-.05.1-.03.2-.08.28-.13.08-.05.16-.1.25-.16.08-.06.16-.13.23-.2.07-.07.13-.15.2-.22.05-.07.1-.15.13-.23.03-.08.05-.16.05-.25s-.02-.18-.05-.26c-.03-.08-.08-.16-.13-.23-.05-.08-.1-.15-.18-.22-.07-.07-.15-.13-.22-.18-.08-.05-.16-.1-.25-.13-.1-.03-.2-.05-.28-.05z"/>
+    </svg>
+);
+
+
 export function Base64EncoderDecoderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,7 +70,6 @@ export function Base64EncoderDecoderContent() {
         return;
       }
 
-      // For AES, a password is not optional
       if (encryptionType === 'aes256' && isPasswordEnabled && !password) {
         setErrorText("كلمة السر مطلوبة لتشفير AES-256.");
         setOutputText("");
@@ -109,7 +116,7 @@ export function Base64EncoderDecoderContent() {
 
     const debounceTimeout = setTimeout(() => {
         processText();
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(debounceTimeout);
 
@@ -120,7 +127,18 @@ export function Base64EncoderDecoderContent() {
     setInputText("");
   };
 
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      setShowShare(true);
+    }
+  }, []);
+
   const handleShare = () => navigator.share?.({ text: outputText }).catch(console.error);
+
+  const handleWhatsAppShare = () => {
+    const encodedText = encodeURIComponent(outputText);
+    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
@@ -152,7 +170,7 @@ export function Base64EncoderDecoderContent() {
   const isEncoding = mode === "encode";
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto animate-in">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
       </CardHeader>
@@ -223,6 +241,7 @@ export function Base64EncoderDecoderContent() {
           <div className="flex justify-end items-center gap-2 mt-2">
             <Button variant="outline" size="sm" onClick={handleCopy} disabled={!outputText}><Copy className="ml-2 h-4 w-4" />{copyButtonText}</Button>
             {showShare && (<Button variant="outline" size="sm" onClick={handleShare} disabled={!outputText}><Share className="ml-2 h-4 w-4" />مشاركة</Button>)}
+            <Button variant="outline" size="sm" onClick={handleWhatsAppShare} disabled={!outputText} className="bg-green-500 hover:bg-green-600 text-white"><WhatsAppIcon className="ml-2 h-4 w-4" />واتساب</Button>
             <Button variant="secondary" size="sm" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="ml-2 h-4 w-4" />تبديل</Button>
           </div>
         </div>
