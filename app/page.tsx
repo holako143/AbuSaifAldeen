@@ -24,6 +24,7 @@ function LoadingFallback() {
 
 export default function HomePage() {
   const [activeView, setActiveView] = useState<View>("encoder-decoder");
+  const [isPasswordEnabled, setIsPasswordEnabled] = useState(false);
 
   const renderContent = () => {
     switch (activeView) {
@@ -37,7 +38,7 @@ export default function HomePage() {
       default:
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <Base64EncoderDecoderContent />
+            <Base64EncoderDecoderContent isPasswordGloballyEnabled={isPasswordEnabled} />
           </Suspense>
         );
     }
@@ -45,7 +46,11 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <TopBar setActiveView={setActiveView} />
+      <TopBar
+        setActiveView={setActiveView}
+        isPasswordEnabled={isPasswordEnabled}
+        setIsPasswordEnabled={setIsPasswordEnabled}
+      />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         {renderContent()}
       </main>

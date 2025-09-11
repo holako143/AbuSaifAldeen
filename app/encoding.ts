@@ -31,13 +31,23 @@ function encodeToEmoji(emoji: string, text: string): string {
 }
 
 function decodeFromEmoji(text: string): string {
+    if (!text) return "";
     const decoded = [];
     const chars = Array.from(text);
+    let decodingStarted = false;
+
     for (const char of chars) {
         const byte = fromVariationSelector(char.codePointAt(0)!);
-        if (byte === null && decoded.length > 0) break;
-        if (byte === null) continue;
-        decoded.push(byte);
+
+        if (byte !== null) {
+            decodingStarted = true;
+            decoded.push(byte);
+        } else {
+            // If we have started decoding and hit a non-data character, stop.
+            if (decodingStarted) {
+                break;
+            }
+        }
     }
     const decodedArray = new Uint8Array(decoded);
     return new TextDecoder().decode(decodedArray);
