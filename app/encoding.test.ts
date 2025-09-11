@@ -3,7 +3,7 @@ import { encode, decode } from './encoding'
 import { EMOJI_LIST } from './emoji'
 
 describe('emoji encoder/decoder (simple mode)', () => {
-    test.skip('should correctly encode and decode strings in simple mode', async () => {
+    test('should correctly encode and decode strings in simple mode', async () => {
         const testStrings = [
             'Hello, World!',
             'Testing 123',

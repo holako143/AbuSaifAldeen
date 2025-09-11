@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-// A generic component to manage a list of strings with drag-and-drop
 function ListManager({ list, setList, onSave, onReset }: { list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, onSave: () => void, onReset: () => void }) {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -69,7 +68,7 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
             onDragStart={(e) => handleDragStart(e, index)}
             onDragEnter={(e) => handleDragEnter(e, index)}
             onDragEnd={handleDragEnd}
-            onDragOver={(e) => e.preventDefault()} // Necessary for onDrop to fire
+            onDragOver={(e) => e.preventDefault()}
           >
             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
             <Input
@@ -84,7 +83,7 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
           </div>
         ))}
       </div>
-      <div className="flex justify-between items-center pt-4 border-t">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
           <Button variant="outline" size="sm" onClick={handleAddItem}>
             <Plus className="ml-2 h-4 w-4" />
             إضافة عنصر
@@ -164,13 +163,13 @@ export function EmojiManagementView() {
           هنا يمكنك تخصيص قوائم الرموز المستخدمة في التشفير. اسحب وأفلت لترتيب العناصر.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="flex items-center space-x-2 mb-6 p-4 border rounded-lg">
           <Label htmlFor="default-mode-switch">استخدام الايقونات كوضع افتراضي</Label>
           <Switch id="default-mode-switch" checked={useEmojiDefault} onCheckedChange={handleToggleDefaultMode} />
         </div>
         <Tabs defaultValue="emojis" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full sm:grid-cols-2">
             <TabsTrigger value="emojis">إدارة الإيموجي</TabsTrigger>
             <TabsTrigger value="alphabets">إدارة الحروف</TabsTrigger>
           </TabsList>

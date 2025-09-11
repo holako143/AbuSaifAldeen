@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Menu, Moon, Sun, KeyRound } from "lucide-react";
+import { Menu, Moon, Sun, ShieldCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sidebar, View } from "./sidebar";
-import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { EncryptionType } from "@/app/encoding";
 
 interface TopBarProps {
+  activeView: View;
   setActiveView: (view: View) => void;
   isPasswordEnabled: boolean;
-  setIsPasswordEnabled: (enabled: boolean) => void;
+  setIsPasswordEnabled: (enabled: boolean | ((prevState: boolean) => boolean)) => void;
+  setEncryptionType: (type: EncryptionType) => void;
 }
 
-export function TopBar({ setActiveView, isPasswordEnabled, setIsPasswordEnabled }: TopBarProps) {
+export function TopBar({ activeView, setActiveView, isPasswordEnabled, setIsPasswordEnabled, setEncryptionType }: TopBarProps) {
   const { setTheme, theme } = useTheme();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
@@ -27,31 +29,16 @@ export function TopBar({ setActiveView, isPasswordEnabled, setIsPasswordEnabled 
     setActiveView("encoder-decoder");
   };
 
-  const togglePassword = () => {
-    setIsPasswordEnabled(!isPasswordEnabled);
-  }
-
   return (
     <TooltipProvider>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
           <button onClick={handleLogoClick} className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6">
-            <Lock className="h-6 w-6" />
+            <ShieldCheck className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">شفريشن</h1>
           </button>
 
           <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={togglePassword}>
-                  <KeyRound className={cn("h-[1.2rem] w-[1.2rem] transition-colors", isPasswordEnabled && "text-green-500")} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>تفعيل/تعطيل كلمة السر</p>
-              </TooltipContent>
-            </Tooltip>
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={toggleTheme}>
@@ -67,13 +54,18 @@ export function TopBar({ setActiveView, isPasswordEnabled, setIsPasswordEnabled 
 
             <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon">
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
-                <Sidebar setActiveView={setActiveView} closeSidebar={() => setSidebarOpen(false)} />
+                <Sidebar
+                  setActiveView={setActiveView}
+                  closeSidebar={() => setSidebarOpen(false)}
+                  setIsPasswordEnabled={setIsPasswordEnabled}
+                  setEncryptionType={setEncryptionType}
+                />
               </SheetContent>
             </Sheet>
           </div>

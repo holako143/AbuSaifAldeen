@@ -22,37 +22,38 @@ export function EmojiSelector({
   emojiList,
 }: EmojiSelectorProps) {
   return (
-    <Carousel
-      opts={{
-        align: "start",
-        direction: "rtl",
-        dragFree: true, // Allows for a more fluid, free-scrolling feel
-      }}
-      className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto"
-    >
-      <CarouselContent className="-ml-1">
-        {emojiList.map((emoji, index) => (
-          <CarouselItem key={index} className="pl-1 basis-auto">
-            <div className="p-1">
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-12 h-12 p-0 text-xl rounded-full",
-                  "transition-all duration-200 ease-in-out",
-                  "hover:scale-110",
-                  disabled && "opacity-50 hover:scale-100",
-                  emoji === selectedEmoji &&
-                    "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background scale-125 shadow-lg"
-                )}
-                onClick={() => onEmojiSelect(emoji)}
-                disabled={disabled}
-              >
-                {emoji}
-              </Button>
-            </div>
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-    </Carousel>
+    <div className="w-full flex justify-center">
+        <Carousel
+          opts={{
+            align: "start",
+            axis: "y",
+          }}
+          className="w-20"
+        >
+          <CarouselContent className="h-48">
+            {emojiList.map((emoji, index) => (
+              <CarouselItem key={index} className="pt-1 basis-1/3">
+                <div className="p-1">
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-14 h-14 p-0 text-2xl rounded-full",
+                      "transition-all duration-200 ease-in-out",
+                      "hover:scale-110",
+                      disabled && "opacity-50 hover:scale-100",
+                      emoji === selectedEmoji &&
+                        "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                    )}
+                    onClick={() => onEmojiSelect(emoji)}
+                    disabled={disabled}
+                  >
+                    {emoji}
+                  </Button>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+    </div>
   );
 }
