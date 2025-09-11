@@ -1,61 +1,85 @@
-// Variation selectors block https://unicode.org/charts/nameslist/n_FE00.html
-// VS1..=VS16
+import { encryptAES, decryptAES } from "../lib/crypto";
+
+export type EncryptionType = 'simple' | 'aes256';
+
+// --- Variation Selector (Emoji Hiding) Logic ---
+
 const VARIATION_SELECTOR_START = 0xfe00;
 const VARIATION_SELECTOR_END = 0xfe0f;
-
-// Variation selectors supplement https://unicode.org/charts/nameslist/n_E0100.html
-// VS17..=VS256
 const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
 
-export function toVariationSelector(byte: number): string | null {
-    if (byte >= 0 && byte < 16) {
-        return String.fromCodePoint(VARIATION_SELECTOR_START + byte)
-    } else if (byte >= 16 && byte < 256) {
-        return String.fromCodePoint(VARIATION_SELECTOR_SUPPLEMENT_START + byte - 16)
-    } else {
-        return null
-    }
+function toVariationSelector(byte: number): string | null {
+    if (byte >= 0 && byte < 16) return String.fromCodePoint(VARIATION_SELECTOR_START + byte);
+    if (byte >= 16 && byte < 256) return String.fromCodePoint(VARIATION_SELECTOR_SUPPLEMENT_START + byte - 16);
+    return null;
 }
 
-export function fromVariationSelector(codePoint: number): number | null {
-    if (codePoint >= VARIATION_SELECTOR_START && codePoint <= VARIATION_SELECTOR_END) {
-        return codePoint - VARIATION_SELECTOR_START
-    } else if (codePoint >= VARIATION_SELECTOR_SUPPLEMENT_START && codePoint <= VARIATION_SELECTOR_SUPPLEMENT_END) {
-        return codePoint - VARIATION_SELECTOR_SUPPLEMENT_START + 16
-    } else {
-        return null
-    }
+function fromVariationSelector(codePoint: number): number | null {
+    if (codePoint >= VARIATION_SELECTOR_START && codePoint <= VARIATION_SELECTOR_END) return codePoint - VARIATION_SELECTOR_START;
+    if (codePoint >= VARIATION_SELECTOR_SUPPLEMENT_START && codePoint <= VARIATION_SELECTOR_SUPPLEMENT_END) return codePoint - VARIATION_SELECTOR_SUPPLEMENT_START + 16;
+    return null;
 }
 
-export function encode(emoji: string, text: string): string {
-    // convert the string to utf-8 bytes
-    const bytes = new TextEncoder().encode(text)
-    let encoded = emoji
-
+function encodeToEmoji(emoji: string, text: string): string {
+    const bytes = new TextEncoder().encode(text);
+    let encoded = emoji;
     for (const byte of bytes) {
-        encoded += toVariationSelector(byte)
+        encoded += toVariationSelector(byte);
     }
-
-    return encoded
+    return encoded;
 }
 
-export function decode(text: string): string {
-    let decoded = []
-    const chars = Array.from(text)
-
+function decodeFromEmoji(text: string): string {
+    const decoded = [];
+    const chars = Array.from(text);
     for (const char of chars) {
-        const byte = fromVariationSelector(char.codePointAt(0)!)
+        const byte = fromVariationSelector(char.codePointAt(0)!);
+        if (byte === null && decoded.length > 0) break;
+        if (byte === null) continue;
+        decoded.push(byte);
+    }
+    const decodedArray = new Uint8Array(decoded);
+    return new TextDecoder().decode(decodedArray);
+}
 
-        if (byte === null && decoded.length > 0) {
-            break
-        } else if (byte === null) {
-            continue
-        }
 
-        decoded.push(byte)
+// --- Main Controller Functions ---
+
+interface EncodeParams {
+    emoji: string;
+    text: string;
+    type: EncryptionType;
+    password?: string;
+}
+
+export async function encode({ emoji, text, type, password }: EncodeParams): Promise<string> {
+    if (type === 'aes256') {
+        if (!password) throw new Error("Password is required for AES-256 encryption.");
+        const encryptedText = await encryptAES(text, password);
+        return encodeToEmoji(emoji, encryptedText);
     }
 
-    let decodedArray = new Uint8Array(decoded)
-    return new TextDecoder().decode(decodedArray)
+    // Simple mode (with optional, insecure salt)
+    const textToEncode = password ? `${password}::${text}` : text;
+    return encodeToEmoji(emoji, textToEncode);
+}
+
+
+interface DecodeParams {
+    text: string;
+    type: EncryptionType;
+    password?: string;
+}
+
+export async function decode({ text, type, password }: DecodeParams): Promise<string> {
+    const hiddenText = decodeFromEmoji(text);
+
+    if (type === 'aes256') {
+        if (!password) throw new Error("Password is required for AES-256 decryption.");
+        return await decryptAES(hiddenText, password);
+    }
+
+    // Simple mode: just return the hidden text
+    return hiddenText;
 }

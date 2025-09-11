@@ -1,21 +1,54 @@
-import { Suspense } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Base64EncoderDecoderContent } from "./encoder-decoder-content"
+"use client";
 
-export default function EncoderDecoder() {
+import { useState, Suspense } from "react";
+import { TopBar } from "@/components/top-bar";
+import { View } from "@/components/sidebar";
+import { Base64EncoderDecoderContent } from "./encoder-decoder-content";
+import { HistoryView } from "./history-view";
+import { EmojiManagementView } from "./emoji-management-view";
+import { SettingsView } from "./settings-view";
+import { Card, CardContent } from "@/components/ui/card";
+
+// Loading fallback component for Suspense
+function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">تصدق ان أبو  سيف دلعك !؟</CardTitle>
-        </CardHeader>
-        <Suspense fallback={<CardContent>Loading...</CardContent>}>
-          <Base64EncoderDecoderContent />
-        </Suspense>
-        <div className="text-center my-2">
-          <a href="https://holako143.github.io/AbuSaif143/AbuSaifAldeen.html" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-800 hover:text-blue-900">الموقع الاخر</a>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardContent className="pt-6">
+        <div className="text-center p-12">
+          <p>جارٍ التحميل...</p>
         </div>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   )
+}
+
+export default function HomePage() {
+  const [activeView, setActiveView] = useState<View>("encoder-decoder");
+
+  const renderContent = () => {
+    switch (activeView) {
+      case "history":
+        return <HistoryView />;
+      case "emoji-management":
+        return <EmojiManagementView />;
+      case "settings":
+        return <SettingsView />;
+      case "encoder-decoder":
+      default:
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <Base64EncoderDecoderContent />
+          </Suspense>
+        );
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <TopBar setActiveView={setActiveView} />
+      <main className="flex-1 p-4 sm:p-6 md:p-8">
+        {renderContent()}
+      </main>
+    </div>
+  );
 }
