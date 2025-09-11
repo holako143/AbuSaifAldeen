@@ -1,13 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
@@ -28,21 +25,24 @@ export function EmojiSelector({
     <Carousel
       opts={{
         align: "start",
-        direction: "rtl", // For correct right-to-left sliding
+        direction: "rtl",
+        dragFree: true, // Allows for a more fluid, free-scrolling feel
       }}
-      className="w-full max-w-sm mx-auto"
+      className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto"
     >
-      <CarouselContent>
+      <CarouselContent className="-ml-1">
         {emojiList.map((emoji, index) => (
-          <CarouselItem key={index} className="basis-1/8">
+          <CarouselItem key={index} className="pl-1 basis-auto">
             <div className="p-1">
               <Button
                 variant="outline"
                 className={cn(
-                    "w-10 h-10 p-0 text-lg",
-                    "transition-all duration-200 ease-in-out",
-                    disabled && "opacity-50",
-                    emoji === selectedEmoji && "bg-primary text-primary-foreground border-ring scale-110"
+                  "w-12 h-12 p-0 text-xl rounded-full",
+                  "transition-all duration-200 ease-in-out",
+                  "hover:scale-110",
+                  disabled && "opacity-50 hover:scale-100",
+                  emoji === selectedEmoji &&
+                    "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background scale-125 shadow-lg"
                 )}
                 onClick={() => onEmojiSelect(emoji)}
                 disabled={disabled}
@@ -53,8 +53,6 @@ export function EmojiSelector({
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
     </Carousel>
   );
 }

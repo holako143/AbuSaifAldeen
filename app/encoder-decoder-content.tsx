@@ -10,34 +10,30 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { decode, encode, EncryptionType } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
 import { getCustomAlphabetList, getCustomEmojiList } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
 
-// Simple inline SVG for WhatsApp icon
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
         <path d="M16.75 13.96c.25.13.43.2.5.28.08.08.16.18.23.28.08.1.15.22.2.35.05.13.08.26.08.4s-.03.28-.08.4-.13.23-.24.32c-.1.1-.23.18-.36.25-.13.08-.28.13-.43.16-.15.03-.3.05-.46.05-.15 0-.3-.02-.46-.05-.15-.03-.3-.08-.46-.13-.15-.05-.3-.12-.46-.2-.15-.08-.3-.16-.46-.25-.15-.1-.3-.2-.46-.3l-.03-.02c-.5-.3-1-1-1.4-1.5-.4-.5-.7-1-1-1.5s-.5-1-.6-1.5c-.1-.5-.1-1-.1-1.5s0-1 .1-1.5.1-.9.3-1.4.3-.9.6-1.3.6-.8 1-1.1.8-.5 1.3-.6c.5-.1 1-.1 1.5-.1s1 0 1.5.1.9.3 1.4.6c.5.3.8.6 1.1 1 .3.4.5.8.6 1.3.1.5.1 1 .1 1.5s0 1-.1 1.5-.1.9-.3 1.4c-.1.5-.3.9-.6 1.3zm-5.2-3.4c-.12 0-.24.02-.36.05-.12.03-.23.08-.34.13-.1.05-.2.1-.3.18-.1.08-.18.15-.25.23-.08.08-.15.15-.2.23-.05.08-.1.15-.13.23-.03.08-.05.15-.05.23s0 .15.02.23c.02.08.05.15.08.22.03.07.08.13.13.2.05.05.1.1.18.15.07.05.15.08.22.1.08.03.15.05.23.05.1 0 .18-.02.28-.05.1-.03.2-.08.28-.13.08-.05.16-.1.25-.16.08-.06.16-.13.23-.2.07-.07.13-.15.2-.22.05-.07.1-.15.13-.23.03-.08.05-.16.05-.25s-.02-.18-.05-.26c-.03-.08-.08-.16-.13-.23-.05-.08-.1-.15-.18-.22-.07-.07-.15-.13-.22-.18-.08-.05-.16-.1-.25-.13-.1-.03-.2-.05-.28-.05z"/>
     </svg>
 );
 
-
 export function Base64EncoderDecoderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-
-  const mode = searchParams.get("mode") || "encode";
+  const [mode, setModeState] = useState("encode");
   const [inputText, setInputText] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("😀");
   const [outputText, setOutputText] = useState("");
   const [errorText, setErrorText] = useState("");
-  const [copyButtonText, setCopyButtonText] = useState("نسخ");
   const [showShare, setShowShare] = useState(false);
   const [defaultTab, setDefaultTab] = useState("emoji");
-
   const [encryptionType, setEncryptionType] = useState<EncryptionType>("simple");
   const [isPasswordEnabled, setIsPasswordEnabled] = useState(false);
   const [password, setPassword] = useState("");
@@ -49,18 +45,10 @@ export function Base64EncoderDecoderContent() {
   useEffect(() => {
     const storedPref = localStorage.getItem("shifrishan-default-mode");
     if (storedPref) setDefaultTab(storedPref);
-
     const storedEncType = localStorage.getItem("shifrishan-encryption-type") as EncryptionType;
     if (storedEncType) setEncryptionType(storedEncType);
-
     setSelectedEmoji(emojiList[1] || "😀");
   }, [emojiList]);
-
-  const updateMode = (newMode: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("mode", newMode);
-    router.replace(`?${params.toString()}`);
-  };
 
   useEffect(() => {
     const processText = async () => {
@@ -69,42 +57,24 @@ export function Base64EncoderDecoderContent() {
         setErrorText("");
         return;
       }
-
       if (encryptionType === 'aes256' && isPasswordEnabled && !password) {
         setErrorText("كلمة السر مطلوبة لتشفير AES-256.");
         setOutputText("");
         return;
       }
-
       setIsProcessing(true);
       setErrorText("");
-
       try {
         const isEncoding = mode === "encode";
         let result = "";
-
         if (isEncoding) {
-          result = await encode({
-            emoji: selectedEmoji,
-            text: inputText,
-            type: encryptionType,
-            password: isPasswordEnabled ? password : undefined,
-          });
+          result = await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordEnabled ? password : undefined });
         } else {
-          result = await decode({
-            text: inputText,
-            type: encryptionType,
-            password: isPasswordEnabled ? password : undefined,
-          });
+          result = await decode({ text: inputText, type: encryptionType, password: isPasswordEnabled ? password : undefined });
         }
-
         setOutputText(result);
         if (result) {
-          addToHistory({
-            inputText,
-            outputText: result,
-            mode: isEncoding ? "encode" : "decode",
-          });
+          addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
         }
       } catch (e: any) {
         setOutputText("");
@@ -113,41 +83,19 @@ export function Base64EncoderDecoderContent() {
         setIsProcessing(false);
       }
     };
-
-    const debounceTimeout = setTimeout(() => {
-        processText();
-    }, 500);
-
+    const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-
   }, [mode, selectedEmoji, inputText, isPasswordEnabled, password, encryptionType]);
 
-  const handleModeToggle = (checked: boolean) => {
-    updateMode(checked ? "encode" : "decode");
-    setInputText("");
-  };
-
-  useEffect(() => {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      setShowShare(true);
-    }
-  }, []);
-
+  const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
+  useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
   const handleShare = () => navigator.share?.({ text: outputText }).catch(console.error);
-
-  const handleWhatsAppShare = () => {
-    const encodedText = encodeURIComponent(outputText);
-    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-  };
-
+  const handleWhatsAppShare = () => window.open(`https://wa.me/?text=${encodeURIComponent(outputText)}`, '_blank');
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
-      setCopyButtonText("تم النسخ!");
       toast({ title: "تم نسخ الناتج بنجاح!" });
-      setTimeout(() => setCopyButtonText("نسخ"), 2000);
     }, console.error);
   };
-
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -157,97 +105,70 @@ export function Base64EncoderDecoderContent() {
       toast({ variant: "destructive", title: "فشل اللصق" });
     }
   };
-
   const handleClear = () => setInputText("");
-
   const handleSwap = () => {
     if (!outputText) return;
     setInputText(outputText);
     handleModeToggle(mode !== 'encode');
     toast({ title: "تم التبديل!" });
   }
-
   const isEncoding = mode === "encode";
 
   return (
-    <Card className="w-full max-w-2xl mx-auto animate-in">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
-          <Label htmlFor="mode-toggle">فك التشفير</Label>
-          <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-          <Label htmlFor="mode-toggle">تشفير النص</Label>
-        </div>
-
-        <div className="space-y-2 p-3 border rounded-lg">
+    <TooltipProvider>
+      <Card className="w-full max-w-2xl mx-auto animate-in">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
+            <Label htmlFor="mode-toggle">فك التشفير</Label>
+            <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
+            <Label htmlFor="mode-toggle">تشفير النص</Label>
+          </div>
+          <div className="space-y-2 p-3 border rounded-lg">
             <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <Switch id="password-toggle" checked={isPasswordEnabled} onCheckedChange={setIsPasswordEnabled} />
-                    <Label htmlFor="password-toggle">استخدام كلمة سر</Label>
-                </div>
-                {encryptionType === 'aes256' && (
-                    <div className="flex items-center gap-1 text-xs text-blue-500">
-                        <ShieldCheck className="h-4 w-4"/>
-                        <span>AES-256</span>
-                    </div>
-                )}
-                 {encryptionType === 'simple' && isPasswordEnabled && (
-                    <div className="flex items-center gap-1 text-xs text-amber-500">
-                        <ShieldAlert className="h-4 w-4"/>
-                        <span>Salt</span>
-                    </div>
-                )}
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <Switch id="password-toggle" checked={isPasswordEnabled} onCheckedChange={setIsPasswordEnabled} />
+                <Label htmlFor="password-toggle">استخدام كلمة سر</Label>
+              </div>
+              {encryptionType === 'aes256' && <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>}
+              {encryptionType === 'simple' && isPasswordEnabled && <div className="flex items-center gap-1 text-xs text-amber-500"><ShieldAlert className="h-4 w-4"/><span>Salt</span></div>}
             </div>
             {isPasswordEnabled && (
-                <div className="relative pt-2">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="password"
-                        placeholder="أدخل كلمة السر هنا..."
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                    />
-                </div>
+              <div className="relative pt-2">
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="password" placeholder="أدخل كلمة السر هنا..." value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
+              </div>
             )}
-        </div>
-
-        <div>
-          <Textarea
-            placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            className="min-h-[120px]"
-          />
-          <div className="flex justify-end items-center gap-2 mt-2">
-            <Button variant="outline" size="sm" onClick={handlePaste}><ClipboardPaste className="ml-2 h-4 w-4" />لصق</Button>
-            <Button variant="destructive" size="sm" onClick={handleClear} disabled={!inputText}><X className="ml-2 h-4 w-4" />مسح</Button>
           </div>
-        </div>
-
-        <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
-            <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
-          </TabsList>
-          <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
-          <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
-        </Tabs>
-
-        <div>
-          <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
-          <div className="flex justify-end items-center gap-2 mt-2">
-            <Button variant="outline" size="sm" onClick={handleCopy} disabled={!outputText}><Copy className="ml-2 h-4 w-4" />{copyButtonText}</Button>
-            {showShare && (<Button variant="outline" size="sm" onClick={handleShare} disabled={!outputText}><Share className="ml-2 h-4 w-4" />مشاركة</Button>)}
-            <Button variant="outline" size="sm" onClick={handleWhatsAppShare} disabled={!outputText} className="bg-green-500 hover:bg-green-600 text-white"><WhatsAppIcon className="ml-2 h-4 w-4" />واتساب</Button>
-            <Button variant="secondary" size="sm" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="ml-2 h-4 w-4" />تبديل</Button>
+          <div>
+            <Textarea placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
+            <div className="flex justify-end items-center gap-2 mt-2">
+              <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handlePaste}><ClipboardPaste className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>لصق</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button variant="destructive" size="icon" onClick={handleClear} disabled={!inputText}><X className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>مسح</p></TooltipContent></Tooltip>
+            </div>
           </div>
-        </div>
-
-        {errorText && <div className="text-red-500 text-center py-2">{errorText}</div>}
-      </CardContent>
-    </Card>
+          <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
+              <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
+            </TabsList>
+            <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
+            <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
+          </Tabs>
+          <div>
+            <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
+            <div className="flex justify-end items-center gap-2 mt-2">
+              <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>نسخ</p></TooltipContent></Tooltip>
+              {showShare && <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleShare} disabled={!outputText}><Share className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>مشاركة</p></TooltipContent></Tooltip>}
+              <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleWhatsAppShare} disabled={!outputText} className="text-green-500 hover:text-green-600"><WhatsAppIcon className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مشاركة عبر واتساب</p></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild><Button variant="secondary" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>تبديل</p></TooltipContent></Tooltip>
+            </div>
+          </div>
+          {errorText && <div className="text-red-500 text-center py-2">{errorText}</div>}
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }
