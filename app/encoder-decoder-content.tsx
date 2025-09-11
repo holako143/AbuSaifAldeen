@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, Share } from "lucide-react";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -13,17 +13,20 @@ import { decode, encode } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
 import { getCustomAlphabetList, getCustomEmojiList } from "@/lib/emoji-storage";
+import { useToast } from "@/components/ui/use-toast";
+
 
 export function Base64EncoderDecoderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   const mode = searchParams.get("mode") || "encode";
   const [inputText, setInputText] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("😀");
   const [outputText, setOutputText] = useState("");
   const [errorText, setErrorText] = useState("");
-  const [copyButtonText, setCopyButtonText] = useState("Copy");
+  const [copyButtonText, setCopyButtonText] = useState("نسخ");
   const [showShare, setShowShare] = useState(false);
   const [defaultTab, setDefaultTab] = useState("emoji");
 
@@ -35,7 +38,6 @@ export function Base64EncoderDecoderContent() {
     if (storedPreference) {
       setDefaultTab(storedPreference);
     }
-    // Set initial selected emoji from the current list
     setSelectedEmoji(emojiList[1] || "😀");
   }, [emojiList]);
 
@@ -51,13 +53,11 @@ export function Base64EncoderDecoderContent() {
       setErrorText("");
       return;
     }
-
     try {
       const isEncoding = mode === "encode";
       const output = isEncoding ? encode(selectedEmoji, inputText) : decode(inputText);
       setOutputText(output);
       setErrorText("");
-
       if (output) {
         addToHistory({
           inputText,
@@ -65,10 +65,9 @@ export function Base64EncoderDecoderContent() {
           mode: isEncoding ? "encode" : "decode",
         });
       }
-
     } catch (e) {
       setOutputText("");
-      setErrorText(`Error ${mode === "encode" ? "encoding" : "decoding"}: Invalid input`);
+      setErrorText(`خطأ في ${mode === "encode" ? "التشفير" : "فك التشفير"}: مدخلات غير صالحة`);
     }
   }, [mode, selectedEmoji, inputText]);
 
@@ -94,10 +93,32 @@ export function Base64EncoderDecoderContent() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
-      setCopyButtonText("Copied!");
-      setTimeout(() => setCopyButtonText("Copy"), 2000);
+      setCopyButtonText("تم النسخ!");
+      toast({ title: "تم نسخ الناتج بنجاح!" });
+      setTimeout(() => setCopyButtonText("نسخ"), 2000);
     }, console.error);
   };
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setInputText(text);
+      toast({ title: "تم اللصق بنجاح!" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "فشل اللصق", description: "لم نتمكن من قراءة الحافظة. يرجى التحقق من أذونات المتصفح." });
+    }
+  };
+
+  const handleClear = () => {
+    setInputText("");
+  };
+
+  const handleSwap = () => {
+    if (!outputText) return;
+    setInputText(outputText);
+    handleModeToggle(mode !== 'encode');
+    toast({ title: "تم التبديل!" });
+  }
 
   const isEncoding = mode === "encode";
 
@@ -107,20 +128,30 @@ export function Base64EncoderDecoderContent() {
         <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm sm:text-base text-center">شفر الي تشتيه وانبسط 😋</p>
-
-        <div className="flex items-center justify-center space-x-2">
+        <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
           <Label htmlFor="mode-toggle">فك التشفير</Label>
           <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
           <Label htmlFor="mode-toggle">تشفير النص</Label>
         </div>
 
-        <Textarea
-          placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="min-h-[100px]"
-        />
+        <div>
+          <Textarea
+            placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            className="min-h-[120px]"
+          />
+          <div className="flex justify-end items-center gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={handlePaste}>
+              <ClipboardPaste className="ml-2 h-4 w-4" />
+              لصق
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleClear} disabled={!inputText}>
+              <X className="ml-2 h-4 w-4" />
+              مسح
+            </Button>
+          </div>
+        </div>
 
         <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -149,26 +180,32 @@ export function Base64EncoderDecoderContent() {
           </TabsContent>
         </Tabs>
 
-        <div className="relative">
+        <div>
           <Textarea
             placeholder="الناتج..."
             value={outputText}
             readOnly
-            className="min-h-[100px] pr-24"
+            className="min-h-[120px]"
           />
-          <div className="absolute top-2 left-2 flex flex-col space-y-2">
-            {showShare && (
-              <Button variant="ghost" size="icon" onClick={handleShare} disabled={!outputText} title="Share">
-                <Share className="h-5 w-5" />
+          <div className="flex justify-end items-center gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={handleCopy} disabled={!outputText}>
+              <Copy className="ml-2 h-4 w-4" />
+              {copyButtonText}
+            </Button>
+             {showShare && (
+              <Button variant="outline" size="sm" onClick={handleShare} disabled={!outputText}>
+                <Share className="ml-2 h-4 w-4" />
+                مشاركة
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} title={copyButtonText}>
-              <Copy className="h-5 w-5" />
+            <Button variant="secondary" size="sm" onClick={handleSwap} disabled={!outputText}>
+              <ArrowRightLeft className="ml-2 h-4 w-4" />
+              تبديل
             </Button>
           </div>
         </div>
 
-        {errorText && <div className="text-red-500 text-center">{errorText}</div>}
+        {errorText && <div className="text-red-500 text-center py-2">{errorText}</div>}
       </CardContent>
     </Card>
   );
