@@ -45,14 +45,14 @@ export function SettingsView() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto animate-in">
       <CardHeader>
         <CardTitle>الإعدادات</CardTitle>
         <CardDescription>
           قم بتخصيص مظهر وأمان التطبيق ليتناسب مع تفضيلاتك.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className="space-y-6 pt-6">
         <div className="space-y-2">
           <Label htmlFor="theme-select">مظهر التطبيق (الثيم)</Label>
           <Select value={theme} onValueChange={setTheme}>

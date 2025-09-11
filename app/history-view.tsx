@@ -103,7 +103,7 @@ export function HistoryView() {
   };
 
   return (
-    <Card>
+    <Card className="animate-in">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>سجل التشفير</CardTitle>
         <div className="flex items-center gap-2">
