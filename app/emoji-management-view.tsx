@@ -1,18 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Plus, Save, RotateCcw } from "lucide-react";
+import { Trash2, Plus, Save, RotateCcw, GripVertical } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCustomEmojiList, saveCustomEmojiList, resetEmojiList, getCustomAlphabetList, saveCustomAlphabetList, resetAlphabetList } from "@/lib/emoji-storage";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
-// A generic component to manage a list of strings
+// A generic component to manage a list of strings with drag-and-drop
 function ListManager({ list, setList, onSave, onReset }: { list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, onSave: () => void, onReset: () => void }) {
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [dragIndicator, setDragIndicator] = useState(false);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    dragItem.current = position;
+    setDragIndicator(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    dragOverItem.current = position;
+  };
+
+  const handleDragEnd = () => {
+    if (dragItem.current !== null && dragOverItem.current !== null) {
+      const newList = [...list];
+      const draggedItemContent = newList.splice(dragItem.current, 1)[0];
+      newList.splice(dragOverItem.current, 0, draggedItemContent);
+      dragItem.current = null;
+      dragOverItem.current = null;
+      setList(newList);
+    }
+    setDragIndicator(false);
+  };
+
   const handleItemChange = (index: number, value: string) => {
     const newList = [...list];
     newList[index] = value;
@@ -32,12 +58,25 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
     <div className="space-y-4">
       <div className="space-y-2 max-h-96 overflow-y-auto pr-4">
         {list.map((item, index) => (
-          <div key={index} className="flex items-center gap-2">
+          <div
+            key={index}
+            className={cn(
+              "flex items-center gap-2 p-1 rounded-lg transition-colors",
+              dragIndicator && dragItem.current === index && "bg-primary/20",
+              dragIndicator && dragOverItem.current === index && "border-b-2 border-primary"
+            )}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragEnter={(e) => handleDragEnter(e, index)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => e.preventDefault()} // Necessary for onDrop to fire
+          >
+            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
             <Input
               value={item}
               onChange={(e) => handleItemChange(index, e.target.value)}
               className="flex-1"
-              maxLength={2} // Emojis can sometimes be 2 chars
+              maxLength={2}
             />
             <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(index)}>
               <Trash2 className="h-4 w-4 text-red-500" />
@@ -91,7 +130,6 @@ export function EmojiManagementView() {
   }
 
   const handleSaveEmojis = () => {
-    // Filter out empty strings and duplicates
     const cleanedList = [...new Set(emojiList.filter(item => item.trim() !== ''))];
     saveCustomEmojiList(cleanedList);
     setEmojiList(cleanedList);
@@ -100,7 +138,7 @@ export function EmojiManagementView() {
 
   const handleResetEmojis = () => {
     resetEmojiList();
-    setEmojiList(getCustomEmojiList()); // It will now fetch the default
+    setEmojiList(getCustomEmojiList());
     toast({ title: "تمت إعادة التعيين!", description: "تمت استعادة قائمة الإيموجي الافتراضية." });
   };
 
@@ -113,7 +151,7 @@ export function EmojiManagementView() {
 
   const handleResetAlphabets = () => {
     resetAlphabetList();
-    setAlphabetList(getCustomAlphabetList()); // It will now fetch the default
+    setAlphabetList(getCustomAlphabetList());
     toast({ title: "تمت إعادة التعيين!", description: "تمت استعادة قائمة الحروف الافتراضية." });
   };
 
@@ -123,7 +161,7 @@ export function EmojiManagementView() {
       <CardHeader>
         <CardTitle>إدارة القوائم</CardTitle>
         <CardDescription>
-          هنا يمكنك تخصيص قوائم الرموز المستخدمة في التشفير. يمكنك إضافة، حذف، أو إعادة ترتيب العناصر.
+          هنا يمكنك تخصيص قوائم الرموز المستخدمة في التشفير. اسحب وأفلت لترتيب العناصر.
         </CardDescription>
       </CardHeader>
       <CardContent>

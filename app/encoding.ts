@@ -28,16 +28,19 @@ export function fromVariationSelector(codePoint: number): number | null {
     }
 }
 
-export function encode(emoji: string, text: string): string {
+export function encode(emoji: string, text: string, salt?: string): string {
+    // Prepend salt if it exists
+    const textToEncode = salt ? `${salt}::${text}` : text;
+
     // convert the string to utf-8 bytes
-    const bytes = new TextEncoder().encode(text)
-    let encoded = emoji
+    const bytes = new TextEncoder().encode(textToEncode);
+    let encoded = emoji;
 
     for (const byte of bytes) {
-        encoded += toVariationSelector(byte)
+        encoded += toVariationSelector(byte);
     }
 
-    return encoded
+    return encoded;
 }
 
 export function decode(text: string): string {
@@ -57,5 +60,9 @@ export function decode(text: string): string {
     }
 
     let decodedArray = new Uint8Array(decoded)
-    return new TextDecoder().decode(decodedArray)
+    const decodedText = new TextDecoder().decode(decodedArray);
+
+    // The salt is not explicitly handled on decode, it's just part of the decoded string.
+    // The user would see salt::text. This is the simplest implementation.
+    return decodedText;
 }

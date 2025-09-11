@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, Share, ClipboardPaste, X, ArrowRightLeft } from "lucide-react";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { decode, encode } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
@@ -29,6 +30,9 @@ export function Base64EncoderDecoderContent() {
   const [copyButtonText, setCopyButtonText] = useState("نسخ");
   const [showShare, setShowShare] = useState(false);
   const [defaultTab, setDefaultTab] = useState("emoji");
+
+  const [isSaltEnabled, setIsSaltEnabled] = useState(false);
+  const [salt, setSalt] = useState("");
 
   const emojiList = useMemo(() => getCustomEmojiList(), []);
   const alphabetList = useMemo(() => getCustomAlphabetList(), []);
@@ -55,7 +59,9 @@ export function Base64EncoderDecoderContent() {
     }
     try {
       const isEncoding = mode === "encode";
-      const output = isEncoding ? encode(selectedEmoji, inputText) : decode(inputText);
+      const saltToUse = isEncoding && isSaltEnabled ? salt : undefined;
+      const output = isEncoding ? encode(selectedEmoji, inputText, saltToUse) : decode(inputText);
+
       setOutputText(output);
       setErrorText("");
       if (output) {
@@ -69,7 +75,7 @@ export function Base64EncoderDecoderContent() {
       setOutputText("");
       setErrorText(`خطأ في ${mode === "encode" ? "التشفير" : "فك التشفير"}: مدخلات غير صالحة`);
     }
-  }, [mode, selectedEmoji, inputText]);
+  }, [mode, selectedEmoji, inputText, isSaltEnabled, salt]);
 
   const handleModeToggle = (checked: boolean) => {
     updateMode(checked ? "encode" : "decode");
@@ -132,6 +138,24 @@ export function Base64EncoderDecoderContent() {
           <Label htmlFor="mode-toggle">فك التشفير</Label>
           <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
           <Label htmlFor="mode-toggle">تشفير النص</Label>
+        </div>
+
+        <div className="space-y-2">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <Switch id="salt-toggle" checked={isSaltEnabled} onCheckedChange={setIsSaltEnabled} disabled={!isEncoding} />
+                <Label htmlFor="salt-toggle">تفعيل كلمة السر (Salt)</Label>
+            </div>
+            {isSaltEnabled && isEncoding && (
+                <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="أدخل كلمة السر هنا..."
+                        value={salt}
+                        onChange={(e) => setSalt(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+            )}
         </div>
 
         <div>
