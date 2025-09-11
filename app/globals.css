@@ -1,23 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: 'Tajawal', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-
-  .card-hover-effect {
-    @apply transition-all duration-300 ease-in-out;
-  }
-  .card-hover-effect:hover {
-    @apply shadow-xl transform -translate-y-1;
   }
 }
 
@@ -58,11 +49,11 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 222 47% 11%;
+    --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 222 47% 14%;
+    --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
-    --popover: 222 47% 11%;
+    --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 0 0% 9%;
@@ -74,8 +65,8 @@ body {
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -100,76 +91,4 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* Rose Theme */
-.theme-rose {
-  --background: 350 100% 98%; --foreground: 346.8 77.2% 49.8%; --card: 350 100% 96%; --card-foreground: 346.8 77.2% 49.8%; --primary: 346.8 77.2% 49.8%; --primary-foreground: 355.7 100% 97.3%; --accent: 346.8 77.2% 49.8%; --accent-foreground: 355.7 100% 97.3%; --border: 350 100% 90%; --radius: 0.8rem;
-}
-.dark .theme-rose {
-  --background: 347 89% 6%; --foreground: 346.8 77.2% 90%; --card: 347 89% 8%; --card-foreground: 346.8 77.2% 90%; --primary: 346.8 77.2% 70%; --primary-foreground: 355.7 100% 97.3%; --accent: 346.8 77.2% 70%; --accent-foreground: 355.7 100% 97.3%; --border: 347 89% 15%;
-}
-
-/* Blue Theme */
-.theme-blue {
-  --background: 210 100% 98%; --foreground: 221.2 83.2% 53.3%; --card: 210 100% 96%; --card-foreground: 221.2 83.2% 53.3%; --primary: 221.2 83.2% 53.3%; --primary-foreground: 210 40% 98%; --accent: 221.2 83.2% 53.3%; --accent-foreground: 210 40% 98%; --border: 210 100% 90%; --radius: 0.3rem;
-}
-.dark .theme-blue {
-  --background: 221 83% 7%; --foreground: 221.2 83.2% 90%; --card: 221 83% 9%; --card-foreground: 221.2 83.2% 90%; --primary: 221.2 83.2% 70%; --primary-foreground: 210 40% 98%; --accent: 221.2 83.2% 70%; --accent-foreground: 210 40% 98%; --border: 221 83% 15%;
-}
-
-/* Green Theme */
-.theme-green {
-  --background: 140 80% 98%; --foreground: 142.1 76.2% 36.3%; --card: 140 80% 96%; --card-foreground: 142.1 76.2% 36.3%; --primary: 142.1 76.2% 36.3%; --primary-foreground: 144.9 80.4% 97.3%; --accent: 142.1 76.2% 36.3%; --accent-foreground: 144.9 80.4% 97.3%; --border: 140 80% 90%; --radius: 1rem;
-}
-.dark .theme-green {
-  --background: 142 76% 8%; --foreground: 142.1 76.2% 85%; --card: 142 76% 10%; --card-foreground: 142.1 76.2% 85%; --primary: 142.1 76.2% 60%; --primary-foreground: 144.9 80.4% 97.3%; --accent: 142.1 76.2% 60%; --accent-foreground: 144.9 80.4% 97.3%; --border: 142 76% 15%;
-}
-
-/* Orange Theme */
-.theme-orange {
-  --background: 25 100% 98%; --foreground: 25 95% 53%; --card: 25 100% 96%; --card-foreground: 25 95% 53%; --primary: 25 95% 53%; --primary-foreground: 25 85% 98%; --accent: 25 95% 53%; --accent-foreground: 25 85% 98%; --border: 25 100% 90%; --radius: 0.5rem;
-}
-.dark .theme-orange {
-  --background: 25 95% 7%; --foreground: 25 95% 85%; --card: 25 95% 9%; --card-foreground: 25 95% 85%; --primary: 25 95% 65%; --primary-foreground: 25 85% 98%; --accent: 25 95% 65%; --accent-foreground: 25 85% 98%; --border: 25 95% 15%;
-}
-
-/* Purple Theme */
-.theme-purple {
-  --background: 270 100% 98%; --foreground: 270 95% 53%; --card: 270 100% 96%; --card-foreground: 270 95% 53%; --primary: 270 95% 53%; --primary-foreground: 270 85% 98%; --accent: 270 95% 53%; --accent-foreground: 270 85% 98%; --border: 270 100% 90%; --radius: 0.7rem;
-}
-.dark .theme-purple {
-  --background: 270 95% 7%; --foreground: 270 95% 85%; --card: 270 95% 9%; --card-foreground: 270 95% 85%; --primary: 270 95% 65%; --primary-foreground: 270 85% 98%; --accent: 270 95% 65%; --accent-foreground: 270 85% 98%; --border: 270 95% 15%;
-}
-
-/* Matrix Theme */
-.theme-matrix {
-  --background: 240 10% 3.9%; --foreground: 130 100% 80%; --card: 240 10% 8%; --card-foreground: 130 100% 80%; --primary: 130 100% 50%; --primary-foreground: 240 10% 3.9%; --accent: 130 100% 50%; --accent-foreground: 240 10% 3.9%; --border: 130 100% 30%; --radius: 0.1rem;
-}
-html.theme-matrix {
-  font-family: 'Courier New', Courier, monospace;
-}
-
-/* Cyberpunk Theme */
-.theme-cyberpunk {
-  --background: 270 95% 7%; --foreground: 300 100% 80%; --card: 270 95% 9%; --card-foreground: 300 100% 80%; --primary: 300 100% 50%; --primary-foreground: 270 95% 7%; --accent: 300 100% 50%; --accent-foreground: 270 95% 7%; --border: 300 100% 30%; --radius: 0.2rem;
-}
-.dark .theme-cyberpunk {
-  --background: 270 95% 7%; --foreground: 300 100% 80%; --card: 270 95% 9%; --card-foreground: 300 100% 80%; --primary: 300 100% 50%; --primary-foreground: 270 95% 7%; --accent: 300 100% 50%; --accent-foreground: 270 95% 7%; --border: 300 100% 30%;
-}
-
-/* Ocean Theme */
-.theme-ocean {
-  --background: 210 100% 98%; --foreground: 215 80% 40%; --card: 210 100% 96%; --card-foreground: 215 80% 40%; --primary: 215 80% 55%; --primary-foreground: 210 100% 98%; --accent: 215 80% 55%; --accent-foreground: 210 100% 98%; --border: 210 100% 90%; --radius: 0.6rem;
-}
-.dark .theme-ocean {
-  --background: 215 80% 10%; --foreground: 215 80% 90%; --card: 215 80% 12%; --card-foreground: 215 80% 90%; --primary: 215 80% 60%; --primary-foreground: 215 80% 10%; --accent: 215 80% 60%; --accent-foreground: 215 80% 10%; --border: 215 80% 20%;
-}
-
-/* Forest Theme */
-.theme-forest {
-  --background: 120 25% 98%; --foreground: 120 60% 25%; --card: 120 25% 96%; --card-foreground: 120 60% 25%; --primary: 120 60% 35%; --primary-foreground: 120 25% 98%; --accent: 120 60% 35%; --accent-foreground: 120 25% 98%; --border: 120 25% 90%; --radius: 0.9rem;
-}
-.dark .theme-forest {
-  --background: 120 60% 8%; --foreground: 120 25% 85%; --card: 120 60% 10%; --card-foreground: 120 25% 85%; --primary: 120 60% 50%; --primary-foreground: 120 60% 8%; --accent: 120 60% 50%; --accent-foreground: 120 60% 8%; --border: 120 60% 15%;
 }
