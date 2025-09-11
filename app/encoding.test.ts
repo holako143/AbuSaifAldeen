@@ -2,8 +2,8 @@ import { expect, test, describe } from 'vitest'
 import { encode, decode } from './encoding'
 import { EMOJI_LIST } from './emoji'
 
-describe('emoji encoder/decoder', () => {
-    test('should correctly encode and decode strings', () => {
+describe('emoji encoder/decoder (simple mode)', () => {
+    test('should correctly encode and decode strings in simple mode', async () => {
         const testStrings = [
             'Hello, World!',
             'Testing 123',
@@ -15,15 +15,41 @@ describe('emoji encoder/decoder', () => {
 
         for (const emoji of EMOJI_LIST) {
             for (const str of testStrings) {
-                const encoded = encode(emoji, str)
-                const decoded = decode(encoded)
+                const encoded = await encode({
+                    emoji: emoji,
+                    text: str,
+                    type: 'simple'
+                });
+
+                const decoded = await decode({
+                    text: encoded,
+                    type: 'simple'
+                });
 
                 // Ensure decoding returns the original string
                 expect(decoded).toBe(str)
-
-                // Ensure encoded string only contains emojis (optional test)
-                // expect(encoded).toMatch(/^[\p{Emoji}]+$/u)
             }
         }
+    })
+
+    test('should correctly encode and decode strings in simple mode with salt', async () => {
+        const text = "My secret message";
+        const salt = "my-password";
+        const expectedDecoded = `${salt}::${text}`;
+
+        const encoded = await encode({
+            emoji: '🤫',
+            text: text,
+            type: 'simple',
+            password: salt
+        });
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'simple',
+            password: salt
+        });
+
+        expect(decoded).toBe(expectedDecoded);
     })
 })
