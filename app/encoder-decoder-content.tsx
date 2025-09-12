@@ -42,6 +42,8 @@ export function Base64EncoderDecoderContent() {
   const [emojiList, setEmojiList] = useState(getCustomEmojiList());
   const [alphabetList, setAlphabetList] = useState(getCustomAlphabetList());
 
+  const isEncoding = mode === "encode";
+
   useEffect(() => {
     const storedPref = localStorage.getItem("shifrishan-default-mode");
     if (storedPref) setDefaultTab(storedPref);
@@ -64,7 +66,6 @@ export function Base64EncoderDecoderContent() {
       setIsProcessing(true);
       setErrorText("");
       try {
-        const isEncoding = mode === "encode";
         const result = isEncoding
           ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined })
           : await decode({ text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
@@ -122,6 +123,9 @@ export function Base64EncoderDecoderContent() {
 
   const handleSaveToVault = () => {
       if (!outputText) return;
+      // Do not save if the user is trying to open the vault
+      if (inputText.trim() === 'خزنة' && mode === 'decode') return;
+
       const result = addToVault(outputText);
       if (result) {
           toast({ title: "تم الحفظ في الخزنة!" });
@@ -134,22 +138,22 @@ export function Base64EncoderDecoderContent() {
       if (clickTimeout.current) {
           clearTimeout(clickTimeout.current);
           clickTimeout.current = null;
-          if (inputText.trim() === 'خزنة') {
+          // Double click logic
+          if (inputText.trim() === 'خزنة' && mode === 'decode') {
               setIsVaultVisible(true);
               setActiveView('vault');
               toast({ title: "تم إظهار الخزنة السرية في القائمة."});
-          } else {
-              toast({ variant: "default", title: "لإظهار الخزنة", description: "اكتب كلمة 'خزنة' في مربع الإدخال ثم اضغط مرتين على النجمة." });
+          } else if (mode !== 'decode') {
+              toast({ variant: "default", title: "لإظهار الخزنة", description: "يجب أن تكون في وضع 'فك التشفير' أولاً." });
           }
       } else {
+          // Single click logic
           clickTimeout.current = setTimeout(() => {
               handleSaveToVault();
               clickTimeout.current = null;
           }, 300);
       }
   }
-
-  const isEncoding = mode === "encode";
 
   return (
     <Card className="w-full max-w-2xl mx-auto animate-in">
@@ -184,14 +188,18 @@ export function Base64EncoderDecoderContent() {
                 <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500"><X className="h-5 w-5" /></Button>
             </div>
         </div>
-        <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
-            <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
-            </TabsList>
-            <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
-            <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
-        </Tabs>
+
+        {isEncoding && (
+            <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full animate-in">
+                <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
+                <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
+                </TabsList>
+                <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
+                <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
+            </Tabs>
+        )}
+
         <div>
             <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
             <div className="flex justify-center items-center gap-2 mt-2">
