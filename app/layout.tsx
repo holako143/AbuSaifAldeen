@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
-import PwaDiagnostics from "@/components/pwa-diagnostics";
+import { PwaDiagnostics } from "@/components/pwa-diagnostics";
 import "./globals.css";
 
 export const metadata: Metadata = {
