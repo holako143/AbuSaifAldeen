@@ -24,7 +24,8 @@ export function Base64EncoderDecoderContent() {
     textToDecode,
     setTextToDecode,
     setActiveView,
-    setIsVaultVisible
+    setIsVaultVisible,
+    autoCopy
   } = useAppContext();
 
   const { toast } = useToast();
@@ -75,6 +76,11 @@ export function Base64EncoderDecoderContent() {
         if (result && isEncoding) {
           addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
 
+          if (autoCopy) {
+              navigator.clipboard.writeText(result);
+              toast({ title: "تم نسخ الناتج تلقائيًا!"});
+          }
+
           const listKey = defaultTab === 'emoji' ? EMOJI_STORAGE_KEY : ALPHABET_STORAGE_KEY;
           promoteListItem(listKey, selectedEmoji);
           if (defaultTab === 'emoji') {
@@ -94,7 +100,7 @@ export function Base64EncoderDecoderContent() {
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, password, encryptionType, defaultTab]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, password, encryptionType, defaultTab, autoCopy, toast]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
@@ -123,9 +129,7 @@ export function Base64EncoderDecoderContent() {
 
   const handleSaveToVault = () => {
       if (!outputText) return;
-      // Do not save if the user is trying to open the vault
       if (inputText.trim() === 'خزنة' && mode === 'decode') return;
-
       const result = addToVault(outputText);
       if (result) {
           toast({ title: "تم الحفظ في الخزنة!" });
@@ -138,7 +142,6 @@ export function Base64EncoderDecoderContent() {
       if (clickTimeout.current) {
           clearTimeout(clickTimeout.current);
           clickTimeout.current = null;
-          // Double click logic
           if (inputText.trim() === 'خزنة' && mode === 'decode') {
               setIsVaultVisible(true);
               setActiveView('vault');
@@ -147,7 +150,6 @@ export function Base64EncoderDecoderContent() {
               toast({ variant: "default", title: "لإظهار الخزنة", description: "يجب أن تكون في وضع 'فك التشفير' أولاً." });
           }
       } else {
-          // Single click logic
           clickTimeout.current = setTimeout(() => {
               handleSaveToVault();
               clickTimeout.current = null;
