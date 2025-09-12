@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { decode, encode, EncryptionType } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
@@ -36,6 +36,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
+  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const emojiList = useMemo(() => getCustomEmojiList(), []);
   const alphabetList = useMemo(() => getCustomAlphabetList(), []);
@@ -48,26 +49,16 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
 
   useEffect(() => {
     const processText = async () => {
-      if (inputText.trim() === "") {
-        setOutputText("");
-        setErrorText("");
-        return;
-      }
-      if (isPasswordGloballyEnabled && !password) {
-        setErrorText("كلمة السر مطلوبة عند تفعيل خيار كلمة السر.");
-        setOutputText("");
-        return;
-      }
+      if (inputText.trim() === "") { setOutputText(""); setErrorText(""); return; }
+      if (isPasswordGloballyEnabled && !password) { setErrorText("كلمة السر مطلوبة عند تفعيل خيار كلمة السر."); setOutputText(""); return; }
+
       setIsProcessing(true);
       setErrorText("");
       try {
         const isEncoding = mode === "encode";
-        let result = "";
-        if (isEncoding) {
-          result = await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
-        } else {
-          result = await decode({ text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
-        }
+        const result = isEncoding
+          ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined })
+          : await decode({ text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
         setOutputText(result);
         if (result) {
           addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
@@ -85,7 +76,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
-  const handleShare = () => navigator.share?.({ text: outputText }).catch(console.error);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
       toast({ title: "تم نسخ الناتج بنجاح!" });
@@ -106,7 +97,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
     setInputText(outputText);
     handleModeToggle(mode !== 'encode');
     toast({ title: "تم التبديل!" });
-  }
+  };
 
   const handleSaveToVault = () => {
       if (!outputText) return;
@@ -115,6 +106,25 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
           toast({ title: "تم الحفظ في الخزنة!" });
       } else {
           toast({ variant: "destructive", title: "العنصر موجود بالفعل في الخزنة." });
+      }
+  };
+
+  const handleStarClick = () => {
+      if (clickTimeout.current) {
+          // Double click
+          clearTimeout(clickTimeout.current);
+          clickTimeout.current = null;
+          if (inputText.trim() === 'خزنة') {
+              setIsVaultOpen(prev => !prev);
+          } else {
+              toast({ variant: "default", title: "لفتح الخزنة", description: "اكتب كلمة 'خزنة' في مربع الإدخال ثم اضغط مرتين على النجمة." });
+          }
+      } else {
+          // Single click
+          clickTimeout.current = setTimeout(() => {
+              handleSaveToVault();
+              clickTimeout.current = null;
+          }, 300);
       }
   }
 
@@ -125,11 +135,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
         <Dialog open={isVaultOpen} onOpenChange={setIsVaultOpen}>
             <Card className="w-full max-w-2xl mx-auto animate-in">
                 <CardHeader>
-                    <DialogTrigger asChild>
-                        <button onDoubleClick={() => setIsVaultOpen(true)}>
-                            <CardTitle className="text-2xl font-bold text-center cursor-pointer">التشفير وفك التشفير</CardTitle>
-                        </button>
-                    </DialogTrigger>
+                    <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                 <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
@@ -171,8 +177,8 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
                     <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
                     <div className="flex justify-center items-center gap-2 mt-2">
                     <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>نسخ</p></TooltipContent></Tooltip>
-                    {showShare && <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleShare} disabled={!outputText}><Share className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مشاركة</p></TooltipContent></Tooltip>}
-                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleSaveToVault} disabled={!outputText} className="text-amber-500"><Star className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>حفظ في الخزنة</p></TooltipContent></Tooltip>
+                    {showShare && <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مشاركة</p></TooltipContent></Tooltip>}
+                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleStarClick} disabled={!outputText} className="text-amber-500"><Star className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>اضغط للحفظ، أو مرتين للفتح (بشرط)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>تبديل</p></TooltipContent></Tooltip>
                     </div>
                 </div>
