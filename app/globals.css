@@ -94,3 +94,86 @@
         }
     }
 }
+
+@layer base {
+  body {
+    /* Add transition for smooth theme changes */
+    transition: background-color 0.5s ease, color 0.3s ease;
+  }
+}
+
+/* Keyframes for animated backgrounds */
+@keyframes gradient-dusk {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradient-oceanic {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+
+/* New Animated Themes */
+@layer base {
+  .theme-dusk {
+    /* Color Palette: Dark, purple, pink, orange tones */
+    --background: 260 60% 10%; /* Fallback */
+    --foreground: 30 60% 95%;
+    --card: 260 50% 15%;
+    --card-foreground: 30 60% 95%;
+    --popover: 260 60% 10%;
+    --popover-foreground: 30 60% 95%;
+    --primary: 330 80% 60%;
+    --primary-foreground: 260 60% 10%;
+    --secondary: 260 50% 20%;
+    --secondary-foreground: 30 60% 95%;
+    --muted: 260 50% 20%;
+    --muted-foreground: 260 20% 65%;
+    --accent: 330 80% 60%;
+    --accent-foreground: 260 60% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 260 50% 25%;
+    --input: 260 50% 25%;
+    --ring: 330 80% 60%;
+  }
+
+  .theme-oceanic {
+    /* Color Palette: Deep blue, teal, green tones */
+    --background: 210 70% 12%; /* Fallback */
+    --foreground: 180 50% 95%;
+    --card: 210 60% 18%;
+    --card-foreground: 180 50% 95%;
+    --popover: 210 70% 12%;
+    --popover-foreground: 180 50% 95%;
+    --primary: 170 80% 45%;
+    --primary-foreground: 210 70% 12%;
+    --secondary: 210 60% 22%;
+    --secondary-foreground: 180 50% 95%;
+    --muted: 210 60% 22%;
+    --muted-foreground: 210 20% 65%;
+    --accent: 170 80% 45%;
+    --accent-foreground: 210 70% 12%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 60% 28%;
+    --input: 210 60% 28%;
+    --ring: 170 80% 45%;
+  }
+
+  /* Apply animated backgrounds */
+  .theme-dusk body {
+    background: linear-gradient(-45deg, #230a44, #4a1a6c, #82268a, #b8329d);
+    background-size: 400% 400%;
+    animation: gradient-dusk 15s ease infinite;
+  }
+
+  .theme-oceanic body {
+    background: linear-gradient(-45deg, #022c43, #053f5e, #115173, #247ba0);
+    background-size: 400% 400%;
+    animation: gradient-oceanic 18s ease infinite;
+  }
+}
