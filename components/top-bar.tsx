@@ -5,21 +5,20 @@ import { Menu, Moon, Sun, ShieldCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Sidebar, View } from "./sidebar";
+import { Sidebar } from "./sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { EncryptionType } from "@/app/encoding";
 import { cn } from "@/lib/utils";
 import { useToast } from "./ui/use-toast";
+import { useAppContext } from "@/context/app-context";
 
-interface TopBarProps {
-  activeView: View;
-  setActiveView: (view: View) => void;
-  isPasswordEnabled: boolean;
-  setIsPasswordEnabled: (enabled: boolean | ((prevState: boolean) => boolean)) => void;
-  setEncryptionType: (type: EncryptionType) => void;
-}
+export function TopBar() {
+  const {
+    setActiveView,
+    isPasswordEnabled,
+    setIsPasswordEnabled,
+    setEncryptionType
+  } = useAppContext();
 
-export function TopBar({ activeView, setActiveView, isPasswordEnabled, setIsPasswordEnabled, setEncryptionType }: TopBarProps) {
   const { setTheme, theme } = useTheme();
   const { toast } = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -88,10 +87,7 @@ export function TopBar({ activeView, setActiveView, isPasswordEnabled, setIsPass
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
-                <Sidebar
-                  setActiveView={setActiveView}
-                  closeSidebar={() => setSidebarOpen(false)}
-                />
+                <Sidebar closeSidebar={() => setSidebarOpen(false)} />
               </SheetContent>
             </Sheet>
           </div>

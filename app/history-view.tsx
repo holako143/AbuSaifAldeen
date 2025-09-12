@@ -1,24 +1,40 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { HistoryEntry, getHistory, deleteFromHistory, clearHistory, importHistory } from "@/lib/history";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Copy, Trash2, Upload, Download, CircleX } from "lucide-react";
+import { Copy, Trash2, Upload, Download, CircleX, Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useAppContext } from "@/context/app-context";
+
+type FilterType = "all" | "encode" | "decode";
 
 export function HistoryView() {
+  const { setActiveView, setTextToDecode } = useAppContext();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [filter, setFilter] = useState<FilterType>("all");
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setHistory(getHistory());
   }, []);
+
+  const filteredHistory = useMemo(() => {
+    if (filter === "all") return history;
+    return history.filter((item) => item.mode === filter);
+  }, [history, filter]);
+
+  const handleSendToDecoder = (text: string) => {
+    setTextToDecode(text);
+    setActiveView('encoder-decoder');
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -64,9 +80,7 @@ export function HistoryView() {
         if (importHistory(importedData)) {
           setHistory(getHistory());
           toast({ title: "تم الاستيراد بنجاح" });
-        } else {
-           throw new Error("Invalid history file format");
-        }
+        } else { throw new Error("Invalid history file format"); }
       } catch (error) {
         toast({ variant: "destructive", title: "خطأ في الاستيراد", description: "الملف غير صالح أو تالف." });
       }
@@ -82,7 +96,7 @@ export function HistoryView() {
       <CardHeader className="flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
             <CardTitle>سجل التشفير</CardTitle>
-            <CardDescription>هنا يمكنك مراجعة عملياتك السابقة.</CardDescription>
+            <CardDescription>هنا يمكنك مراجعة وتصفية عملياتك السابقة.</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={history.length === 0}><Download className="ml-2 h-4 w-4" />تصدير</Button>
@@ -98,9 +112,15 @@ export function HistoryView() {
         </div>
       </CardHeader>
       <CardContent>
-        {history.length > 0 ? (
+        <div className="flex justify-center my-4">
+            <ToggleGroup type="single" value={filter} onValueChange={(value: FilterType) => value && setFilter(value)} defaultValue="all">
+              <ToggleGroupItem value="all" aria-label="Toggle all">الكل</ToggleGroupItem>
+              <ToggleGroupItem value="encode" aria-label="Toggle encode">تشفير</ToggleGroupItem>
+              <ToggleGroupItem value="decode" aria-label="Toggle decode">فك تشفير</ToggleGroupItem>
+            </ToggleGroup>
+        </div>
+        {filteredHistory.length > 0 ? (
           <TooltipProvider>
-            {/* Desktop View: Table */}
             <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
@@ -108,13 +128,14 @@ export function HistoryView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {history.map((item) => (
+                {filteredHistory.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell><Badge variant={item.mode === 'encode' ? 'default' : 'secondary'}>{item.mode === 'encode' ? 'تشفير' : 'فك تشفير'}</Badge></TableCell>
                     <TableCell><Tooltip><TooltipTrigger>{truncateText(item.inputText)}</TooltipTrigger><TooltipContent><p className="max-w-xs break-words">{item.inputText}</p></TooltipContent></Tooltip></TableCell>
                     <TableCell><Tooltip><TooltipTrigger>{truncateText(item.outputText)}</TooltipTrigger><TooltipContent><p className="max-w-xs break-words">{item.outputText}</p></TooltipContent></Tooltip></TableCell>
                     <TableCell>{new Date(item.timestamp).toLocaleString('ar-EG')}</TableCell>
                     <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.outputText)}><Send className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleCopy(item.outputText)}><Copy className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                     </TableCell>
@@ -122,9 +143,8 @@ export function HistoryView() {
                 ))}
               </TableBody>
             </Table>
-            {/* Mobile View: Cards */}
             <div className="md:hidden space-y-4">
-                {history.map((item) => (
+                {filteredHistory.map((item) => (
                     <Card key={item.id} className="p-4">
                         <div className="flex justify-between items-start">
                             <div>
@@ -132,19 +152,14 @@ export function HistoryView() {
                                 <p className="text-xs text-muted-foreground mt-1">{new Date(item.timestamp).toLocaleString('ar-EG')}</p>
                             </div>
                             <div className="flex">
+                                <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.outputText)}><Send className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleCopy(item.outputText)}><Copy className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                             </div>
                         </div>
                         <div className="mt-4 space-y-2">
-                            <div>
-                                <p className="text-xs font-bold">الأصلي:</p>
-                                <p className="text-sm break-words">{item.inputText}</p>
-                            </div>
-                             <div>
-                                <p className="text-xs font-bold">الناتج:</p>
-                                <p className="text-sm break-words">{item.outputText}</p>
-                            </div>
+                            <div><p className="text-xs font-bold">الأصلي:</p><p className="text-sm break-words">{item.inputText}</p></div>
+                             <div><p className="text-xs font-bold">الناتج:</p><p className="text-sm break-words">{item.outputText}</p></div>
                         </div>
                     </Card>
                 ))}
@@ -153,7 +168,7 @@ export function HistoryView() {
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             <p>لا توجد سجلات لعرضها.</p>
-            <p className="text-sm">ابدأ بالتشفير أو فك التشفير وستظهر عملياتك هنا!</p>
+            <p className="text-sm">{filter === 'all' ? 'ابدأ بالتشفير أو فك التشفير وستظهر عملياتك هنا!' : 'لا توجد سجلات تطابق هذا الفلتر.'}</p>
           </div>
         )}
       </CardContent>
