@@ -1,41 +1,22 @@
 import { EMOJI_LIST, ALPHABET_LIST } from "@/app/emoji";
 
-const EMOJI_STORAGE_KEY = "shifrishan-emoji-list";
-const ALPHABET_STORAGE_KEY = "shifrishan-alphabet-list";
+export const EMOJI_STORAGE_KEY = "shifrishan-emoji-list";
+export const ALPHABET_STORAGE_KEY = "shifrishan-alphabet-list";
 
-/**
- * Retrieves the custom emoji list from localStorage, falling back to the default.
- */
-export const getCustomEmojiList = (): string[] => {
-  if (typeof window === "undefined") return EMOJI_LIST;
-  try {
-    const storedList = localStorage.getItem(EMOJI_STORAGE_KEY);
-    return storedList ? JSON.parse(storedList) : EMOJI_LIST;
-  } catch (error) {
-    console.error("Failed to parse custom emoji list", error);
-    return EMOJI_LIST;
-  }
-};
+const getList = (key: string, defaultList: string[]): string[] => {
+    if (typeof window === "undefined") return defaultList;
+    try {
+        const storedList = localStorage.getItem(key);
+        return storedList ? JSON.parse(storedList) : defaultList;
+    } catch (error) {
+        console.error(`Failed to parse list for key ${key}`, error);
+        return defaultList;
+    }
+}
 
-/**
- * Retrieves the custom alphabet list from localStorage, falling back to the default.
- */
-export const getCustomAlphabetList = (): string[] => {
-  if (typeof window === "undefined") return ALPHABET_LIST;
-  try {
-    const storedList = localStorage.getItem(ALPHABET_STORAGE_KEY);
-    return storedList ? JSON.parse(storedList) : ALPHABET_LIST;
-  } catch (error) {
-    console.error("Failed to parse custom alphabet list", error);
-    return ALPHABET_LIST;
-  }
-};
+export const getCustomEmojiList = (): string[] => getList(EMOJI_STORAGE_KEY, EMOJI_LIST);
+export const getCustomAlphabetList = (): string[] => getList(ALPHABET_STORAGE_KEY, ALPHABET_LIST);
 
-/**
- * Saves a custom list to localStorage.
- * @param key - The storage key.
- * @param list - The list of strings to save.
- */
 const saveList = (key: string, list: string[]): void => {
   if (typeof window === "undefined") return;
   try {
@@ -45,32 +26,40 @@ const saveList = (key: string, list: string[]): void => {
   }
 };
 
-/**
- * Saves the custom emoji list.
- */
-export const saveCustomEmojiList = (list: string[]): void => {
-  saveList(EMOJI_STORAGE_KEY, list);
-};
+export const saveCustomEmojiList = (list: string[]): void => saveList(EMOJI_STORAGE_KEY, list);
+export const saveCustomAlphabetList = (list: string[]): void => saveList(ALPHABET_STORAGE_KEY, list);
 
-/**
- * Saves the custom alphabet list.
- */
-export const saveCustomAlphabetList = (list: string[]): void => {
-  saveList(ALPHABET_STORAGE_KEY, list);
-};
-
-/**
- * Resets the custom emoji list to default by removing it from localStorage.
- */
 export const resetEmojiList = (): void => {
   if (typeof window === "undefined") return;
   localStorage.removeItem(EMOJI_STORAGE_KEY);
 };
 
-/**
- * Resets the custom alphabet list to default by removing it from localStorage.
- */
 export const resetAlphabetList = (): void => {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ALPHABET_STORAGE_KEY);
 };
+
+/**
+ * Moves a given item to the front of its list to mark it as recently used.
+ * @param listKey The localStorage key for the list.
+ * @param item The item to promote.
+ */
+export const promoteListItem = (listKey: string, item: string): void => {
+    const defaultList = listKey === EMOJI_STORAGE_KEY ? EMOJI_LIST : ALPHABET_LIST;
+    const currentList = getList(listKey, defaultList);
+
+    const itemIndex = currentList.indexOf(item);
+
+    // If item is not in the list or already at the front, do nothing.
+    if (itemIndex <= 0) {
+        return;
+    }
+
+    const newList = [...currentList];
+    // Remove the item from its current position
+    newList.splice(itemIndex, 1);
+    // Add it to the beginning
+    newList.unshift(item);
+
+    saveList(listKey, newList);
+}
