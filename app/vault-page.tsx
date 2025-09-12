@@ -5,11 +5,13 @@ import { VaultEntry, getVaultItems, removeFromVault, updateVaultItems, addToVaul
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, GripVertical, Download, Upload } from "lucide-react";
+import { Copy, Trash2, GripVertical, Download, Upload, Send } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useAppContext } from "@/context/app-context";
 
 export function VaultPage() {
+    const { setActiveView, setTextToDecode } = useAppContext();
     const { toast } = useToast();
     const [items, setItems] = useState<VaultEntry[]>([]);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -44,6 +46,11 @@ export function VaultPage() {
             setItems(newItems);
             updateVaultItems(newItems);
         }
+    };
+
+    const handleSendToDecoder = (text: string) => {
+        setTextToDecode(text);
+        setActiveView('encoder-decoder');
     };
 
     const handleCopy = (text: string) => {
@@ -141,6 +148,7 @@ export function VaultPage() {
                                     onCheckedChange={(checked) => handleSelectionChange(item.id, !!checked)}
                                 />
                                 <p className="flex-1 text-sm truncate font-mono">{item.text}</p>
+                                <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.text)}><Send className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleCopy(item.text)}><Copy className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                             </div>

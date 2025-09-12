@@ -10,19 +10,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { decode, encode, EncryptionType } from "./encoding";
+import { decode, encode } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
 import { addToVault } from "@/lib/vault";
 import { getCustomAlphabetList, getCustomEmojiList } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
+import { useAppContext } from "@/context/app-context";
 
-interface EncoderDecoderProps {
-  isPasswordGloballyEnabled: boolean;
-  encryptionType: EncryptionType;
-}
+export function Base64EncoderDecoderContent() {
+  const {
+    isPasswordEnabled: isPasswordGloballyEnabled,
+    encryptionType,
+    textToDecode,
+    setTextToDecode,
+    setActiveView,
+    setIsVaultVisible
+  } = useAppContext();
 
-export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encryptionType }: EncoderDecoderProps) {
   const { toast } = useToast();
   const [mode, setModeState] = useState("encode");
   const [inputText, setInputText] = useState("");
@@ -33,6 +38,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
   const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const emojiList = useMemo(() => getCustomEmojiList(), []);
   const alphabetList = useMemo(() => getCustomAlphabetList(), []);
@@ -42,6 +48,15 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
     if (storedPref) setDefaultTab(storedPref);
     setSelectedEmoji(emojiList[1] || "😀");
   }, [emojiList]);
+
+  // Effect to handle text sent from other views
+  useEffect(() => {
+    if (textToDecode) {
+      setInputText(textToDecode);
+      setModeState("decode");
+      setTextToDecode(null);
+    }
+  }, [textToDecode, setTextToDecode]);
 
   useEffect(() => {
     const processText = async () => {
@@ -105,6 +120,25 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
       }
   };
 
+  const handleStarClick = () => {
+      if (clickTimeout.current) {
+          clearTimeout(clickTimeout.current);
+          clickTimeout.current = null;
+          if (inputText.trim() === 'خزنة') {
+              setIsVaultVisible(true);
+              setActiveView('vault');
+              toast({ title: "تم إظهار الخزنة السرية في القائمة."});
+          } else {
+              toast({ variant: "default", title: "لإظهار الخزنة", description: "اكتب كلمة 'خزنة' في مربع الإدخال ثم اضغط مرتين على النجمة." });
+          }
+      } else {
+          clickTimeout.current = setTimeout(() => {
+              handleSaveToVault();
+              clickTimeout.current = null;
+          }, 300);
+      }
+  }
+
   const isEncoding = mode === "encode";
 
   return (
@@ -135,7 +169,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
             )}
 
             <div>
-                <Textarea placeholder={isEncoding ? "أكتب النص الذي تريد تشفيرة" : "الصق الرمز المشفر"} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
+                <Textarea placeholder={isEncoding ? "اكتب 'خزنة' هنا واضغط مرتين على النجمة لإظهارها" : "الصق الرمز المشفر"} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
                 <div className="flex justify-center items-center gap-2 mt-2">
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handlePaste}><ClipboardPaste className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>لصق</p></TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500"><X className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مسح</p></TooltipContent></Tooltip>
@@ -154,7 +188,7 @@ export function Base64EncoderDecoderContent({ isPasswordGloballyEnabled, encrypt
                 <div className="flex justify-center items-center gap-2 mt-2">
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>نسخ</p></TooltipContent></Tooltip>
                 {showShare && <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مشاركة</p></TooltipContent></Tooltip>}
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleSaveToVault} disabled={!outputText} className="text-amber-500"><Star className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>حفظ في الخزنة</p></TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleStarClick} className="text-amber-500"><Star className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>اضغط للحفظ، أو مرتين لإظهار الخزنة</p></TooltipContent></Tooltip>
                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>تبديل</p></TooltipContent></Tooltip>
                 </div>
             </div>

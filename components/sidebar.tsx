@@ -2,18 +2,23 @@
 
 import { Button } from "@/components/ui/button";
 import { History, Settings, Smile, Home, Archive } from "lucide-react";
+import { useAppContext } from "@/context/app-context";
 
 export type View = "encoder-decoder" | "history" | "emoji-management" | "settings" | "vault";
 
 interface SidebarProps {
-  setActiveView: (view: View) => void;
   closeSidebar: () => void;
 }
 
-export function Sidebar({ setActiveView, closeSidebar }: SidebarProps) {
+export function Sidebar({ closeSidebar }: SidebarProps) {
+  const { setActiveView, isVaultVisible, setIsVaultVisible } = useAppContext();
 
   const handleNavigation = (view: View) => {
     setActiveView(view);
+    // Hide vault link when navigating away from it or to another page
+    if (view !== 'vault') {
+        setIsVaultVisible(false);
+    }
     closeSidebar();
   };
 
@@ -37,14 +42,16 @@ export function Sidebar({ setActiveView, closeSidebar }: SidebarProps) {
           <History className="ml-2 h-4 w-4" />
           <span>سجل التشفير</span>
         </Button>
-        <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => handleNavigation("vault")}
-        >
-            <Archive className="ml-2 h-4 w-4" />
-            <span>الخزنة السرية</span>
-        </Button>
+        {isVaultVisible && (
+            <Button
+                variant="ghost"
+                className="w-full justify-start animate-in"
+                onClick={() => handleNavigation("vault")}
+            >
+                <Archive className="ml-2 h-4 w-4" />
+                <span>الخزنة السرية</span>
+            </Button>
+        )}
         <Button
           variant="ghost"
           className="w-full justify-start"

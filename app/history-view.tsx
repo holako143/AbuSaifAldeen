@@ -7,14 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Copy, Trash2, Upload, Download, CircleX } from "lucide-react";
+import { Copy, Trash2, Upload, Download, CircleX, Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useAppContext } from "@/context/app-context";
 
 type FilterType = "all" | "encode" | "decode";
 
 export function HistoryView() {
+  const { setActiveView, setTextToDecode } = useAppContext();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const { toast } = useToast();
@@ -25,11 +27,14 @@ export function HistoryView() {
   }, []);
 
   const filteredHistory = useMemo(() => {
-    if (filter === "all") {
-      return history;
-    }
+    if (filter === "all") return history;
     return history.filter((item) => item.mode === filter);
   }, [history, filter]);
+
+  const handleSendToDecoder = (text: string) => {
+    setTextToDecode(text);
+    setActiveView('encoder-decoder');
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -75,9 +80,7 @@ export function HistoryView() {
         if (importHistory(importedData)) {
           setHistory(getHistory());
           toast({ title: "تم الاستيراد بنجاح" });
-        } else {
-           throw new Error("Invalid history file format");
-        }
+        } else { throw new Error("Invalid history file format"); }
       } catch (error) {
         toast({ variant: "destructive", title: "خطأ في الاستيراد", description: "الملف غير صالح أو تالف." });
       }
@@ -132,6 +135,7 @@ export function HistoryView() {
                     <TableCell><Tooltip><TooltipTrigger>{truncateText(item.outputText)}</TooltipTrigger><TooltipContent><p className="max-w-xs break-words">{item.outputText}</p></TooltipContent></Tooltip></TableCell>
                     <TableCell>{new Date(item.timestamp).toLocaleString('ar-EG')}</TableCell>
                     <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.outputText)}><Send className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleCopy(item.outputText)}><Copy className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                     </TableCell>
@@ -148,6 +152,7 @@ export function HistoryView() {
                                 <p className="text-xs text-muted-foreground mt-1">{new Date(item.timestamp).toLocaleString('ar-EG')}</p>
                             </div>
                             <div className="flex">
+                                <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.outputText)}><Send className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleCopy(item.outputText)}><Copy className="h-4 w-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                             </div>
