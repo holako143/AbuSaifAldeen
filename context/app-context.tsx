@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useState, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
+import { createContext, useState, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { View } from '@/components/sidebar';
 import { EncryptionType } from '@/app/encoding';
 
@@ -22,6 +22,10 @@ interface AppContextType {
     // Data passing
     textToDecode: string | null;
     setTextToDecode: Dispatch<SetStateAction<string | null>>;
+
+    // Settings
+    autoCopy: boolean;
+    setAutoCopy: Dispatch<SetStateAction<boolean>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -32,6 +36,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [encryptionType, setEncryptionType] = useState<EncryptionType>('simple');
     const [isVaultVisible, setIsVaultVisible] = useState(false);
     const [textToDecode, setTextToDecode] = useState<string | null>(null);
+    const [autoCopy, setAutoCopy] = useState(false);
+
+    // Load settings from localStorage on initial mount
+    useEffect(() => {
+        const storedEncType = localStorage.getItem("shifrishan-encryption-type") as EncryptionType;
+        if (storedEncType) setEncryptionType(storedEncType);
+
+        const storedAutoCopy = localStorage.getItem("shifrishan-auto-copy");
+        if (storedAutoCopy) setAutoCopy(JSON.parse(storedAutoCopy));
+    }, []);
+
+    // Persist auto-copy setting to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem("shifrishan-auto-copy", JSON.stringify(autoCopy));
+    }, [autoCopy]);
 
     const value = {
         activeView,
@@ -44,6 +63,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setIsVaultVisible,
         textToDecode,
         setTextToDecode,
+        autoCopy,
+        setAutoCopy,
     };
 
     return (

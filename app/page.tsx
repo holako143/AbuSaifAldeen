@@ -9,6 +9,7 @@ import { SettingsView } from "./settings-view";
 import { VaultPage } from "./vault-page";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppProvider, useAppContext } from "@/context/app-context";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 
 function LoadingFallback() {
   return (
@@ -51,6 +52,7 @@ function AppContent() {
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         {renderContent()}
       </main>
+      <PwaInstallPrompt />
     </div>
   );
 }
