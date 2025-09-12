@@ -52,9 +52,4 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  workboxOptions: {
-    // This ensures that all assets (JS, CSS, fonts, etc.) are precached.
-    // The globPatterns are matched against the build output directory.
-    globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-  },
 })(nextConfig)
