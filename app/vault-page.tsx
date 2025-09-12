@@ -7,9 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { Copy, Trash2, GripVertical, Download, Upload } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export function VaultView() {
+export function VaultPage() {
     const { toast } = useToast();
     const [items, setItems] = useState<VaultEntry[]>([]);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -109,50 +109,50 @@ export function VaultView() {
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <DialogHeader className="p-4 border-b">
-                <DialogTitle className="text-2xl">خزنة التشفير</DialogTitle>
-                <DialogDescription>هنا يمكنك حفظ وإدارة المخرجات المهمة. اسحب وأفلت لإعادة الترتيب.</DialogDescription>
-            </DialogHeader>
-
-            <div className="p-2 flex justify-end gap-2 border-b">
-                <Button variant="outline" size="sm" onClick={handleImportClick}><Upload className="ml-2 h-4 w-4" />استيراد</Button>
-                <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
-                <Button variant="outline" size="sm" onClick={handleExport} disabled={items.length === 0}>
-                    <Download className="ml-2 h-4 w-4" />
-                    تصدير {selectedItems.size > 0 ? `(${selectedItems.size})` : '(الكل)'}
-                </Button>
-            </div>
-
-            <ScrollArea className="flex-1">
-                <div className="p-4 space-y-2">
-                    {items.length > 0 ? items.map((item, index) => (
-                        <div
-                            key={item.id}
-                            className="flex items-center gap-2 p-2 border rounded-lg hover:bg-accent"
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, index)}
-                            onDragEnter={(e) => handleDragEnter(e, index)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => e.preventDefault()}
-                        >
-                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                            <Checkbox
-                                checked={selectedItems.has(item.id)}
-                                onCheckedChange={(checked) => handleSelectionChange(item.id, !!checked)}
-                            />
-                            <p className="flex-1 text-sm truncate font-mono">{item.text}</p>
-                            <Button variant="ghost" size="icon" onClick={() => handleCopy(item.text)}><Copy className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                        </div>
-                    )) : (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <p>الخزنة فارغة.</p>
-                            <p className="text-sm">احفظ العناصر من الواجهة الرئيسية لتظهر هنا.</p>
-                        </div>
-                    )}
+        <Card className="w-full animate-in">
+            <CardHeader>
+                <CardTitle className="text-2xl">خزنة التشفير</CardTitle>
+                <CardDescription>هنا يمكنك حفظ وإدارة المخرجات المهمة. اسحب وأفلت لإعادة الترتيب.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="p-2 flex justify-end gap-2 border-b mb-4">
+                    <Button variant="outline" size="sm" onClick={handleImportClick}><Upload className="ml-2 h-4 w-4" />استيراد</Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={items.length === 0}>
+                        <Download className="ml-2 h-4 w-4" />
+                        تصدير {selectedItems.size > 0 ? `(${selectedItems.size})` : '(الكل)'}
+                    </Button>
                 </div>
-            </ScrollArea>
-        </div>
+                <ScrollArea className="h-96">
+                    <div className="p-4 space-y-2">
+                        {items.length > 0 ? items.map((item, index) => (
+                            <div
+                                key={item.id}
+                                className="flex items-center gap-2 p-2 border rounded-lg hover:bg-accent"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
+                            >
+                                <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                                <Checkbox
+                                    checked={selectedItems.has(item.id)}
+                                    onCheckedChange={(checked) => handleSelectionChange(item.id, !!checked)}
+                                />
+                                <p className="flex-1 text-sm truncate font-mono">{item.text}</p>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopy(item.text)}><Copy className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                            </div>
+                        )) : (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <p>الخزنة فارغة.</p>
+                                <p className="text-sm">احفظ العناصر من الواجهة الرئيسية لتظهر هنا.</p>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
     );
 }

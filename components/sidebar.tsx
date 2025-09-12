@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { History, Settings, Smile, Home } from "lucide-react";
+import { History, Settings, Smile, Home, Archive } from "lucide-react";
 
-export type View = "encoder-decoder" | "history" | "emoji-management" | "settings";
+export type View = "encoder-decoder" | "history" | "emoji-management" | "settings" | "vault";
 
 interface SidebarProps {
   setActiveView: (view: View) => void;
@@ -36,6 +36,14 @@ export function Sidebar({ setActiveView, closeSidebar }: SidebarProps) {
         >
           <History className="ml-2 h-4 w-4" />
           <span>سجل التشفير</span>
+        </Button>
+        <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => handleNavigation("vault")}
+        >
+            <Archive className="ml-2 h-4 w-4" />
+            <span>الخزنة السرية</span>
         </Button>
         <Button
           variant="ghost"

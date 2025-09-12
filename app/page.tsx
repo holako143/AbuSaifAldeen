@@ -7,6 +7,7 @@ import { Base64EncoderDecoderContent } from "./encoder-decoder-content";
 import { HistoryView } from "./history-view";
 import { EmojiManagementView } from "./emoji-management-view";
 import { SettingsView } from "./settings-view";
+import { VaultPage } from "./vault-page";
 import { Card, CardContent } from "@/components/ui/card";
 import { EncryptionType } from "./encoding";
 
@@ -27,7 +28,6 @@ export default function HomePage() {
   const [isPasswordEnabled, setIsPasswordEnabled] = useState(false);
   const [encryptionType, setEncryptionType] = useState<EncryptionType>("simple");
 
-  // Load encryption type from localStorage on mount
   useEffect(() => {
     const storedEncType = localStorage.getItem("shifrishan-encryption-type") as EncryptionType;
     if (storedEncType) {
@@ -44,6 +44,8 @@ export default function HomePage() {
         return <EmojiManagementView />;
       case "settings":
         return <SettingsView />;
+      case "vault":
+        return <VaultPage />;
       case "encoder-decoder":
       default:
         return (
