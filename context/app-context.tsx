@@ -36,7 +36,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [encryptionType, setEncryptionType] = useState<EncryptionType>('simple');
     const [isVaultVisible, setIsVaultVisible] = useState(false);
     const [textToDecode, setTextToDecode] = useState<string | null>(null);
-    const [autoCopy, setAutoCopy] = useState(false);
+    const [autoCopy, setAutoCopy] = useState(true); // Default to true
 
     // Load settings from localStorage on initial mount
     useEffect(() => {
@@ -44,7 +44,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (storedEncType) setEncryptionType(storedEncType);
 
         const storedAutoCopy = localStorage.getItem("shifrishan-auto-copy");
-        if (storedAutoCopy) setAutoCopy(JSON.parse(storedAutoCopy));
+        // Only set from storage if a value actually exists, otherwise keep the default
+        if (storedAutoCopy !== null) {
+            setAutoCopy(JSON.parse(storedAutoCopy));
+        }
     }, []);
 
     // Persist auto-copy setting to localStorage whenever it changes
