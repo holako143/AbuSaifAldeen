@@ -18,19 +18,19 @@ export function EmojiSelector({
   emojiList,
 }: EmojiSelectorProps) {
   return (
-    <ScrollArea className="h-48 w-full rounded-md border p-4">
-      <div className="grid grid-cols-5 gap-2">
+    <ScrollArea className="h-48 w-full">
+      <div className="grid grid-cols-5 gap-1 p-2">
         {emojiList.map((emoji, index) => (
           <Button
             key={index}
-            variant="outline"
+            variant="ghost" // Use ghost variant for no border/background
             className={cn(
-              "w-12 h-12 p-0 text-xl rounded-lg",
+              "w-12 h-12 p-0 text-2xl rounded-lg",
               "transition-all duration-200 ease-in-out",
-              "hover:scale-110",
-              disabled && "opacity-50 hover:scale-100",
+              "hover:bg-accent",
+              disabled && "opacity-50 hover:bg-transparent",
               emoji === selectedEmoji &&
-                "ring-2 ring-primary ring-offset-2 ring-offset-background scale-110"
+                "scale-150 bg-accent shadow-lg"
             )}
             onClick={() => onEmojiSelect(emoji)}
             disabled={disabled}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, Moon, Sun, ShieldCheck } from "lucide-react";
+import { Menu, Moon, Sun, ShieldCheck, WifiOff } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -66,6 +66,17 @@ export function TopBar() {
           </Tooltip>
 
           <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled>
+                        <WifiOff className="h-[1.2rem] w-[1.2rem]" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>قيد التطوير</p>
+                </TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={toggleTheme}>

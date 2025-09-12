@@ -9,12 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { decode, encode } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
 import { addToVault } from "@/lib/vault";
-import { getCustomAlphabetList, getCustomEmojiList } from "@/lib/emoji-storage";
+import { getCustomAlphabetList, getCustomEmojiList, promoteListItem, EMOJI_STORAGE_KEY, ALPHABET_STORAGE_KEY } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
 import { useAppContext } from "@/context/app-context";
 
@@ -40,16 +39,17 @@ export function Base64EncoderDecoderContent() {
   const [showShare, setShowShare] = useState(false);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const emojiList = useMemo(() => getCustomEmojiList(), []);
-  const alphabetList = useMemo(() => getCustomAlphabetList(), []);
+  const [emojiList, setEmojiList] = useState(getCustomEmojiList());
+  const [alphabetList, setAlphabetList] = useState(getCustomAlphabetList());
+
+  const isEncoding = mode === "encode";
 
   useEffect(() => {
     const storedPref = localStorage.getItem("shifrishan-default-mode");
     if (storedPref) setDefaultTab(storedPref);
-    setSelectedEmoji(emojiList[1] || "😀");
+    setSelectedEmoji(emojiList[0] || "😀");
   }, [emojiList]);
 
-  // Effect to handle text sent from other views
   useEffect(() => {
     if (textToDecode) {
       setInputText(textToDecode);
@@ -66,13 +66,24 @@ export function Base64EncoderDecoderContent() {
       setIsProcessing(true);
       setErrorText("");
       try {
-        const isEncoding = mode === "encode";
         const result = isEncoding
           ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined })
           : await decode({ text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
+
         setOutputText(result);
-        if (result) {
+
+        if (result && isEncoding) {
           addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
+
+          const listKey = defaultTab === 'emoji' ? EMOJI_STORAGE_KEY : ALPHABET_STORAGE_KEY;
+          promoteListItem(listKey, selectedEmoji);
+          if (defaultTab === 'emoji') {
+            setEmojiList(getCustomEmojiList());
+          } else {
+            setAlphabetList(getCustomAlphabetList());
+          }
+        } else if (result) {
+            addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
         }
       } catch (e: any) {
         setOutputText("");
@@ -83,7 +94,7 @@ export function Base64EncoderDecoderContent() {
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, password, encryptionType]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, password, encryptionType, defaultTab]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
@@ -112,6 +123,9 @@ export function Base64EncoderDecoderContent() {
 
   const handleSaveToVault = () => {
       if (!outputText) return;
+      // Do not save if the user is trying to open the vault
+      if (inputText.trim() === 'خزنة' && mode === 'decode') return;
+
       const result = addToVault(outputText);
       if (result) {
           toast({ title: "تم الحفظ في الخزنة!" });
@@ -124,14 +138,16 @@ export function Base64EncoderDecoderContent() {
       if (clickTimeout.current) {
           clearTimeout(clickTimeout.current);
           clickTimeout.current = null;
-          if (inputText.trim() === 'خزنة') {
+          // Double click logic
+          if (inputText.trim() === 'خزنة' && mode === 'decode') {
               setIsVaultVisible(true);
               setActiveView('vault');
               toast({ title: "تم إظهار الخزنة السرية في القائمة."});
-          } else {
-              toast({ variant: "default", title: "لإظهار الخزنة", description: "اكتب كلمة 'خزنة' في مربع الإدخال ثم اضغط مرتين على النجمة." });
+          } else if (mode !== 'decode') {
+              toast({ variant: "default", title: "لإظهار الخزنة", description: "يجب أن تكون في وضع 'فك التشفير' أولاً." });
           }
       } else {
+          // Single click logic
           clickTimeout.current = setTimeout(() => {
               handleSaveToVault();
               clickTimeout.current = null;
@@ -139,43 +155,42 @@ export function Base64EncoderDecoderContent() {
       }
   }
 
-  const isEncoding = mode === "encode";
-
   return (
-    <TooltipProvider>
-        <Card className="w-full max-w-2xl mx-auto animate-in">
-            <CardHeader>
-                <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-            <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
-                <Label htmlFor="mode-toggle">فك التشفير</Label>
-                <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-                <Label htmlFor="mode-toggle">تشفير النص</Label>
-            </div>
+    <Card className="w-full max-w-2xl mx-auto animate-in">
+        <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+        <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
+            <Label htmlFor="mode-toggle">فك التشفير</Label>
+            <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
+            <Label htmlFor="mode-toggle">تشفير النص</Label>
+        </div>
 
-            {isPasswordGloballyEnabled && (
-                <div className="space-y-2 p-3 border rounded-lg animate-in">
-                <div className="flex items-center justify-between">
-                    <Label>كلمة السر مفعلة</Label>
-                    {encryptionType === 'aes256' && <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>}
-                    {encryptionType === 'simple' && <div className="flex items-center gap-1 text-xs text-amber-500"><ShieldAlert className="h-4 w-4"/><span>Salt</span></div>}
-                </div>
-                <div className="relative pt-2">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="password" placeholder="أدخل كلمة السر هنا..." value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
-                </div>
-                </div>
-            )}
-
-            <div>
-                <Textarea placeholder={isEncoding ? "اكتب 'خزنة' هنا واضغط مرتين على النجمة لإظهارها" : "الصق الرمز المشفر"} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
-                <div className="flex justify-center items-center gap-2 mt-2">
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handlePaste}><ClipboardPaste className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>لصق</p></TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500"><X className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مسح</p></TooltipContent></Tooltip>
-                </div>
+        {isPasswordGloballyEnabled && (
+            <div className="space-y-2 p-3 border rounded-lg animate-in">
+            <div className="flex items-center justify-between">
+                <Label>كلمة السر مفعلة</Label>
+                {encryptionType === 'aes256' && <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>}
+                {encryptionType === 'simple' && <div className="flex items-center gap-1 text-xs text-amber-500"><ShieldAlert className="h-4 w-4"/><span>Salt</span></div>}
             </div>
-            <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
+            <div className="relative pt-2">
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="password" placeholder="أدخل كلمة السر هنا..." value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
+            </div>
+            </div>
+        )}
+
+        <div>
+            <Textarea placeholder="اكتب النص المراد تشفيره" value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
+            <div className="flex justify-center items-center gap-2 mt-2">
+                <Button variant="ghost" size="icon" onClick={handlePaste}><ClipboardPaste className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500"><X className="h-5 w-5" /></Button>
+            </div>
+        </div>
+
+        {isEncoding && (
+            <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full animate-in">
                 <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
                 <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
@@ -183,18 +198,19 @@ export function Base64EncoderDecoderContent() {
                 <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
                 <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
             </Tabs>
-            <div>
-                <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
-                <div className="flex justify-center items-center gap-2 mt-2">
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>نسخ</p></TooltipContent></Tooltip>
-                {showShare && <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>مشاركة</p></TooltipContent></Tooltip>}
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleStarClick} className="text-amber-500"><Star className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>اضغط للحفظ، أو مرتين لإظهار الخزنة</p></TooltipContent></Tooltip>
-                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>تبديل</p></TooltipContent></Tooltip>
-                </div>
+        )}
+
+        <div>
+            <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
+            <div className="flex justify-center items-center gap-2 mt-2">
+                <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button>
+                {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button>}
+                <Button variant="ghost" size="icon" onClick={handleStarClick} className="text-amber-500"><Star className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-5 w-5" /></Button>
             </div>
-            {errorText && <div className="text-red-500 text-center py-2">{errorText}</div>}
-            </CardContent>
-        </Card>
-    </TooltipProvider>
+        </div>
+        {errorText && <div className="text-red-500 text-center py-2">{errorText}</div>}
+        </CardContent>
+    </Card>
   );
 }
