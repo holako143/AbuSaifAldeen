@@ -8,6 +8,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sidebar, View } from "./sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EncryptionType } from "@/app/encoding";
+import { cn } from "@/lib/utils";
+import { useToast } from "./ui/use-toast";
 
 interface TopBarProps {
   activeView: View;
@@ -19,6 +21,7 @@ interface TopBarProps {
 
 export function TopBar({ activeView, setActiveView, isPasswordEnabled, setIsPasswordEnabled, setEncryptionType }: TopBarProps) {
   const { setTheme, theme } = useTheme();
+  const { toast } = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleTheme = () => {
@@ -29,14 +32,39 @@ export function TopBar({ activeView, setActiveView, isPasswordEnabled, setIsPass
     setActiveView("encoder-decoder");
   };
 
+  const handleLogoDoubleClick = () => {
+    setIsPasswordEnabled(prev => {
+        const newState = !prev;
+        if (newState) {
+            setEncryptionType("aes256");
+            toast({ title: "تم تفعيل الوضع الآمن", description: "نوع التشفير الآن هو AES-256." });
+        } else {
+            setEncryptionType("simple");
+            toast({ title: "تم تعطيل الوضع الآمن", description: "نوع التشفير الآن هو إخفاء بسيط." });
+        }
+        return newState;
+    });
+  };
+
   return (
     <TooltipProvider>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
-          <button onClick={handleLogoClick} className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6">
-            <ShieldCheck className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">شفريشن</h1>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleLogoClick}
+                onDoubleClick={handleLogoDoubleClick}
+                className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6"
+              >
+                <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
+                <h1 className="text-xl font-bold">شفريشن</h1>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>اضغط مرة للرئيسية، ومرتين للوضع الآمن</p>
+            </TooltipContent>
+          </Tooltip>
 
           <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
             <Tooltip>
@@ -63,8 +91,6 @@ export function TopBar({ activeView, setActiveView, isPasswordEnabled, setIsPass
                 <Sidebar
                   setActiveView={setActiveView}
                   closeSidebar={() => setSidebarOpen(false)}
-                  setIsPasswordEnabled={setIsPasswordEnabled}
-                  setEncryptionType={setEncryptionType}
                 />
               </SheetContent>
             </Sheet>
