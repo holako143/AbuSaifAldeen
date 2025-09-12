@@ -44,13 +44,18 @@ export function PwaStatusIcon() {
         try {
             const registration = await navigator.serviceWorker.ready;
             await registration.update();
-            // The 'controllerchange' event listener will handle setting the status to 'ready'
-            // if an update is found and activated.
-            toast({ title: "اكتمل التحضير.", description: "التطبيق الآن يجب أن يعمل بدون إنترنت." });
-            // We might already be ready, the event listener handles the final state.
+            toast({ title: "اكتمل التحقق.", description: "إذا كان هناك تحديث، سيتم تطبيقه في الخلفية." });
         } catch (error) {
-            toast({ variant: "destructive", title: "فشل تجهيز التطبيق." });
-            setStatus('idle'); // Revert status on failure
+            toast({ variant: "destructive", title: "فشل التحقق من التحديثات." });
+        } finally {
+            // Reset the checking state after a delay to avoid a stuck spinner
+            setTimeout(() => {
+                if (navigator.serviceWorker.controller) {
+                    setStatus('ready');
+                } else {
+                    setStatus('idle');
+                }
+            }, 3000);
         }
     };
 

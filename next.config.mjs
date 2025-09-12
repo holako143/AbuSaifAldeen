@@ -1,5 +1,4 @@
 import withPWA from "next-pwa";
-import runtimeCaching from "next-pwa/cache.js";
 
 let userConfig = undefined
 try {
@@ -53,5 +52,4 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  runtimeCaching, // Add the recommended runtime caching strategies
 })(nextConfig)
