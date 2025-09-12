@@ -51,22 +51,6 @@
   }
 }
 
-/* Custom Themes */
-@layer base {
-  .theme-stone {
-    --radius: 0.3rem; /* Sharper corners */
-  }
-  .theme-orange {
-    --radius: 0.2rem; /* Even sharper */
-  }
-  .theme-rose {
-    --radius: 1rem; /* Softer, more rounded */
-  }
-  .theme-green {
-    --radius: 0.75rem; /* A bit rounded */
-  }
-}
-
 @layer base {
   html {
     font-family: 'Tajawal', sans-serif;

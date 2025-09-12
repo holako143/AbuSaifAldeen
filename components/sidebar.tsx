@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Code, History, Settings, Smile } from "lucide-react";
+import { History, Settings, Smile, Home } from "lucide-react";
 
 export type View = "encoder-decoder" | "history" | "emoji-management" | "settings";
 
@@ -11,6 +11,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ setActiveView, closeSidebar }: SidebarProps) {
+
   const handleNavigation = (view: View) => {
     setActiveView(view);
     closeSidebar();
@@ -25,8 +26,8 @@ export function Sidebar({ setActiveView, closeSidebar }: SidebarProps) {
           className="w-full justify-start"
           onClick={() => handleNavigation("encoder-decoder")}
         >
-          <Code className="ml-2 h-4 w-4" />
-          <span>التشفير وفك التشفير</span>
+          <Home className="ml-2 h-4 w-4" />
+          <span>الرئيسية</span>
         </Button>
         <Button
           variant="ghost"

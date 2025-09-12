@@ -26,7 +26,6 @@ describe('emoji encoder/decoder (simple mode)', () => {
                     type: 'simple'
                 });
 
-                // Ensure decoding returns the original string
                 expect(decoded).toBe(str)
             }
         }

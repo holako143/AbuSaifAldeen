@@ -31,14 +31,24 @@ function encodeToEmoji(emoji: string, text: string): string {
 }
 
 function decodeFromEmoji(text: string): string {
+    if (!text) return "";
     const decoded = [];
-    const chars = Array.from(text);
-    for (const char of chars) {
+
+    // Using an iterator to correctly handle multi-byte grapheme clusters
+    const iterator = text[Symbol.iterator]();
+
+    // The first item is the base emoji. We discard it.
+    iterator.next();
+
+    for (const char of iterator) {
         const byte = fromVariationSelector(char.codePointAt(0)!);
-        if (byte === null && decoded.length > 0) break;
-        if (byte === null) continue;
+        // If we hit a non-data character, we can assume it's the end of our data.
+        if (byte === null) {
+            break;
+        }
         decoded.push(byte);
     }
+
     const decodedArray = new Uint8Array(decoded);
     return new TextDecoder().decode(decodedArray);
 }

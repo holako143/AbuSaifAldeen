@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { TopBar } from "@/components/top-bar";
 import { View } from "@/components/sidebar";
 import { Base64EncoderDecoderContent } from "./encoder-decoder-content";
@@ -8,8 +8,8 @@ import { HistoryView } from "./history-view";
 import { EmojiManagementView } from "./emoji-management-view";
 import { SettingsView } from "./settings-view";
 import { Card, CardContent } from "@/components/ui/card";
+import { EncryptionType } from "./encoding";
 
-// Loading fallback component for Suspense
 function LoadingFallback() {
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -19,11 +19,22 @@ function LoadingFallback() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export default function HomePage() {
   const [activeView, setActiveView] = useState<View>("encoder-decoder");
+  const [isPasswordEnabled, setIsPasswordEnabled] = useState(false);
+  const [encryptionType, setEncryptionType] = useState<EncryptionType>("simple");
+
+  // Load encryption type from localStorage on mount
+  useEffect(() => {
+    const storedEncType = localStorage.getItem("shifrishan-encryption-type") as EncryptionType;
+    if (storedEncType) {
+        setEncryptionType(storedEncType);
+    }
+  }, []);
+
 
   const renderContent = () => {
     switch (activeView) {
@@ -37,7 +48,10 @@ export default function HomePage() {
       default:
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <Base64EncoderDecoderContent />
+            <Base64EncoderDecoderContent
+              isPasswordGloballyEnabled={isPasswordEnabled}
+              encryptionType={encryptionType}
+            />
           </Suspense>
         );
     }
@@ -45,7 +59,13 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <TopBar setActiveView={setActiveView} />
+      <TopBar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        isPasswordEnabled={isPasswordEnabled}
+        setIsPasswordEnabled={setIsPasswordEnabled}
+        setEncryptionType={setEncryptionType}
+      />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         {renderContent()}
       </main>
