@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
-import { PwaDiagnostics } from "@/components/pwa-diagnostics";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,12 +27,10 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
           themes={['light', 'dark', 'system', 'theme-dusk', 'theme-oceanic', 'theme-mirage', 'theme-sakura', 'theme-matrix']}
         >
           {children}
           <SonnerToaster richColors />
-          <PwaDiagnostics />
         </ThemeProvider>
       </body>
     </html>

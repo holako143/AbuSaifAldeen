@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { useToast } from "./ui/use-toast";
 import { useAppContext } from "@/context/app-context";
-import { PwaStatusIcon } from "./pwa-status-icon";
 
 export function TopBar() {
   const {
@@ -69,10 +68,6 @@ export function TopBar() {
           </div>
 
           <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
-            <div className="animate-in" style={{ animationDelay: "0.2s" }}>
-              <PwaStatusIcon />
-            </div>
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={toggleTheme} className="animate-in" style={{ animationDelay: "0.3s" }}>

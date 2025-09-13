@@ -47,13 +47,8 @@ function mergeConfig(nextConfig, userConfig) {
   }
 }
 
-import runtimeCaching from "next-pwa/cache.js";
-
+// Reverting to a minimal PWA config to disable broken features
 export default withPWA({
   dest: "public",
-  register: true,
-  skipWaiting: true,
-  runtimeCaching,
-  importScripts: ["/sw-progress.js"],
-  disable: process.env.NODE_ENV === "development",
+  disable: true, // Disabling PWA features for now
 })(nextConfig)
