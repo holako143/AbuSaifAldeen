@@ -17,11 +17,10 @@ export function PwaStatusIcon() {
     const handleMessage = useCallback((event: MessageEvent) => {
         console.log('[PWA-Icon] Received message:', event.data);
         if (event.data.type === 'PRECACHE_TOTAL_RESPONSE') {
-            // Reset progress when we get a new total
             setProgress(0);
             setTotal(event.data.total);
             if (event.data.total > 0) {
-                console.log('[PWA-Icon] State -> caching');
+                console.log('[PWA-Icon] State changed to -> caching');
                 setCachingState("caching");
             }
         } else if (event.data.type === 'PRECACHE_PROGRESS') {
@@ -33,10 +32,10 @@ export function PwaStatusIcon() {
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
             const updateReadyState = () => {
                 if(navigator.serviceWorker.controller) {
-                    console.log('[PWA-Icon] State -> ready (controller found)');
+                    console.log('[PWA-Icon] A controller is found. State changed to -> ready');
                     setCachingState("ready");
                 } else {
-                    console.log('[PWA-Icon] State -> idle (no controller)');
+                    console.log('[PWA-Icon] No controller found. State changed to -> idle');
                     setCachingState("idle");
                 }
             };
@@ -54,9 +53,9 @@ export function PwaStatusIcon() {
     }, [handleMessage]);
 
     useEffect(() => {
-        console.log(`[PWA-Icon] Progress update: ${progress}/${total}, State: ${cachingState}`);
+        console.log(`[PWA-Icon] Progress: ${progress}/${total}, State: ${cachingState}`);
         if (cachingState === 'caching' && total > 0 && progress >= total) {
-            console.log('[PWA-Icon] Caching complete. State -> ready');
+            console.log('[PWA-Icon] Caching complete. State changed to -> ready');
             setCachingState('ready');
             toast({ title: "اكتمل التخزين!", description: "التطبيق جاهز للعمل بدون إنترنت." });
         }
@@ -77,18 +76,24 @@ export function PwaStatusIcon() {
                 return;
             }
 
-            // Manually trigger an update check. This will trigger the 'install' event in sw.js
             await registration.update();
+            console.log('[PWA-Icon] Update check triggered.');
 
-            // After update, the new SW might be in waiting. Let's ask it for the total.
             const newWorker = registration.installing || registration.waiting;
             if (newWorker) {
-                console.log('[PWA-Icon] Found new worker, asking for total precache items.');
+                console.log('[PWA-Icon] New worker found. Asking for total precache items.');
                 const messageChannel = new MessageChannel();
                 messageChannel.port1.onmessage = handleMessage;
                 newWorker.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
             } else {
-                console.log('[PWA-Icon] No new worker found after update check. App is likely up to date.');
+                console.log('[PWA-Icon] No new worker after update check. App is likely up to date.');
+                // If no new worker, but we are not ready, let's check the active one.
+                if (cachingState !== 'ready' && registration.active) {
+                    console.log('[PWA-Icon] Checking active worker for precache items.');
+                    const messageChannel = new MessageChannel();
+                    messageChannel.port1.onmessage = handleMessage;
+                    registration.active.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
+                }
             }
 
         } catch (error) {
