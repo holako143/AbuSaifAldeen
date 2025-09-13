@@ -19,19 +19,25 @@ export function SettingsView() {
       <CardContent className="space-y-6 pt-6">
         <div className="space-y-2">
           <Label>مظهر التطبيق (الثيم)</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => setTheme("light")}>
               فاتح
             </Button>
             <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => setTheme("dark")}>
               داكن
             </Button>
-             <Button variant={theme === 'system' ? 'default' : 'outline'} onClick={() => setTheme("system")}>
+            <Button variant={theme === 'system' ? 'default' : 'outline'} onClick={() => setTheme("system")}>
               النظام
+            </Button>
+            <Button variant={theme === 'theme-dusk' ? 'default' : 'outline'} onClick={() => setTheme("theme-dusk")}>
+              غسق
+            </Button>
+            <Button variant={theme === 'theme-oceanic' ? 'default' : 'outline'} onClick={() => setTheme("theme-oceanic")}>
+              محيط
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            اختر بين المظهر الفاتح أو الداكن، أو اجعله يتبع إعدادات النظام.
+            اختر بين المظاهر القياسية (فاتح، داكن، النظام) أو جرب الثيمات المتحركة الجديدة.
           </p>
         </div>
         {/* Other settings can be added here in the future */}
