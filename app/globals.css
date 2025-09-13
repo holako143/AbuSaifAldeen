@@ -115,12 +115,30 @@
   100% { background-position: 0% 50%; }
 }
 
+@keyframes gradient-mirage {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradient-sakura {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradient-matrix {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 
 /* New Animated Themes */
 @layer base {
   .theme-dusk {
     /* Color Palette: Dark, purple, pink, orange tones */
-    --background: 260 60% 10%; /* Fallback */
+    --background: 260 60% 10%;
     --foreground: 30 60% 95%;
     --card: 260 50% 15%;
     --card-foreground: 30 60% 95%;
@@ -143,7 +161,7 @@
 
   .theme-oceanic {
     /* Color Palette: Deep blue, teal, green tones */
-    --background: 210 70% 12%; /* Fallback */
+    --background: 210 70% 12%;
     --foreground: 180 50% 95%;
     --card: 210 60% 18%;
     --card-foreground: 180 50% 95%;
@@ -164,6 +182,75 @@
     --ring: 170 80% 45%;
   }
 
+  .theme-mirage {
+    /* Color Palette: Warm, sandy, desert tones */
+    --background: 35 50% 15%;
+    --foreground: 45 80% 95%;
+    --card: 35 45% 20%;
+    --card-foreground: 45 80% 95%;
+    --popover: 35 50% 15%;
+    --popover-foreground: 45 80% 95%;
+    --primary: 40 90% 60%;
+    --primary-foreground: 35 50% 15%;
+    --secondary: 35 45% 25%;
+    --secondary-foreground: 45 80% 95%;
+    --muted: 35 45% 25%;
+    --muted-foreground: 40 20% 65%;
+    --accent: 40 90% 60%;
+    --accent-foreground: 35 50% 15%;
+    --destructive: 0 80% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 35 45% 30%;
+    --input: 35 45% 30%;
+    --ring: 40 90% 60%;
+  }
+
+  .theme-sakura {
+    /* Color Palette: Soft pink, white, cherry blossom tones */
+    --background: 340 40% 95%;
+    --foreground: 340 30% 10%;
+    --card: 340 50% 98%;
+    --card-foreground: 340 30% 10%;
+    --popover: 340 40% 95%;
+    --popover-foreground: 340 30% 10%;
+    --primary: 340 80% 65%;
+    --primary-foreground: 340 40% 10%;
+    --secondary: 340 40% 92%;
+    --secondary-foreground: 340 30% 10%;
+    --muted: 340 40% 92%;
+    --muted-foreground: 340 15% 45%;
+    --accent: 340 80% 65%;
+    --accent-foreground: 340 40% 10%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 30% 88%;
+    --input: 340 30% 88%;
+    --ring: 340 80% 65%;
+  }
+
+  .theme-matrix {
+    /* Color Palette: Dark green, glowing green, black tones */
+    --background: 120 100% 4%;
+    --foreground: 120 80% 85%;
+    --card: 120 80% 8%;
+    --card-foreground: 120 80% 85%;
+    --popover: 120 100% 4%;
+    --popover-foreground: 120 80% 85%;
+    --primary: 120 90% 50%;
+    --primary-foreground: 120 100% 4%;
+    --secondary: 120 80% 12%;
+    --secondary-foreground: 120 80% 85%;
+    --muted: 120 80% 12%;
+    --muted-foreground: 120 30% 55%;
+    --accent: 120 90% 50%;
+    --accent-foreground: 120 100% 4%;
+    --destructive: 0 80% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 120 80% 16%;
+    --input: 120 80% 16%;
+    --ring: 120 90% 50%;
+  }
+
   /* Apply animated backgrounds */
   .theme-dusk body {
     background: linear-gradient(-45deg, #230a44, #4a1a6c, #82268a, #b8329d);
@@ -175,5 +262,28 @@
     background: linear-gradient(-45deg, #022c43, #053f5e, #115173, #247ba0);
     background-size: 400% 400%;
     animation: gradient-oceanic 18s ease infinite;
+  }
+
+  .theme-mirage body {
+    background: linear-gradient(-45deg, #4d3618, #a06d3a, #e0a96d, #f5d3a9);
+    background-size: 400% 400%;
+    animation: gradient-mirage 20s ease infinite;
+  }
+
+  .theme-sakura body {
+    background: linear-gradient(45deg, #fde9f2, #f8c8dc, #f4a8c6, #f088b0);
+    background-size: 400% 400%;
+    animation: gradient-sakura 22s ease infinite;
+  }
+
+  .theme-matrix body {
+    background-color: #000;
+    --matrix-color: #0f0;
+    background-image:
+      radial-gradient(var(--matrix-color) 1px, transparent 1px),
+      radial-gradient(var(--matrix-color) 1px, #000 1px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
+    animation: gradient-matrix 0.2s infinite linear;
   }
 }
