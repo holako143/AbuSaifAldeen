@@ -115,65 +115,161 @@
   100% { background-position: 0% 50%; }
 }
 
+@keyframes gradient-mirage {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 
-/* New Animated Themes */
+@keyframes gradient-sakura {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradient-matrix {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+
+/* Refined Animated Themes */
 @layer base {
   .theme-dusk {
-    /* Color Palette: Dark, purple, pink, orange tones */
-    --background: 260 60% 10%; /* Fallback */
-    --foreground: 30 60% 95%;
-    --card: 260 50% 15%;
-    --card-foreground: 30 60% 95%;
-    --popover: 260 60% 10%;
-    --popover-foreground: 30 60% 95%;
-    --primary: 330 80% 60%;
-    --primary-foreground: 260 60% 10%;
-    --secondary: 260 50% 20%;
-    --secondary-foreground: 30 60% 95%;
-    --muted: 260 50% 20%;
-    --muted-foreground: 260 20% 65%;
-    --accent: 330 80% 60%;
-    --accent-foreground: 260 60% 10%;
-    --destructive: 0 70% 50%;
+    --background: 259 60% 8%;
+    --foreground: 259 15% 90%;
+    --card: 259 50% 12%;
+    --card-foreground: 259 15% 90%;
+    --popover: 259 60% 8%;
+    --popover-foreground: 259 15% 90%;
+    --primary: 320 85% 65%;
+    --primary-foreground: 320 20% 10%;
+    --secondary: 259 50% 16%;
+    --secondary-foreground: 259 15% 90%;
+    --muted: 259 50% 16%;
+    --muted-foreground: 259 10% 60%;
+    --accent: 320 85% 65%;
+    --accent-foreground: 320 20% 10%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 260 50% 25%;
-    --input: 260 50% 25%;
-    --ring: 330 80% 60%;
+    --border: 259 50% 20%;
+    --input: 259 50% 20%;
+    --ring: 320 85% 70%;
   }
 
   .theme-oceanic {
-    /* Color Palette: Deep blue, teal, green tones */
-    --background: 210 70% 12%; /* Fallback */
-    --foreground: 180 50% 95%;
-    --card: 210 60% 18%;
-    --card-foreground: 180 50% 95%;
-    --popover: 210 70% 12%;
-    --popover-foreground: 180 50% 95%;
-    --primary: 170 80% 45%;
-    --primary-foreground: 210 70% 12%;
-    --secondary: 210 60% 22%;
-    --secondary-foreground: 180 50% 95%;
-    --muted: 210 60% 22%;
-    --muted-foreground: 210 20% 65%;
-    --accent: 170 80% 45%;
-    --accent-foreground: 210 70% 12%;
-    --destructive: 0 70% 55%;
+    --background: 205 90% 10%;
+    --foreground: 205 20% 92%;
+    --card: 205 80% 15%;
+    --card-foreground: 205 20% 92%;
+    --popover: 205 90% 10%;
+    --popover-foreground: 205 20% 92%;
+    --primary: 180 90% 50%;
+    --primary-foreground: 180 30% 10%;
+    --secondary: 205 80% 20%;
+    --secondary-foreground: 205 20% 92%;
+    --muted: 205 80% 20%;
+    --muted-foreground: 205 15% 65%;
+    --accent: 180 90% 50%;
+    --accent-foreground: 180 30% 10%;
+    --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 60% 28%;
-    --input: 210 60% 28%;
-    --ring: 170 80% 45%;
+    --border: 205 80% 25%;
+    --input: 205 80% 25%;
+    --ring: 180 90% 55%;
+  }
+
+  .theme-mirage {
+    --background: 25 35% 12%;
+    --foreground: 35 40% 90%;
+    --card: 25 30% 16%;
+    --card-foreground: 35 40% 90%;
+    --popover: 25 35% 12%;
+    --popover-foreground: 35 40% 90%;
+    --primary: 30 95% 60%;
+    --primary-foreground: 30 30% 10%;
+    --secondary: 25 30% 22%;
+    --secondary-foreground: 35 40% 90%;
+    --muted: 25 30% 22%;
+    --muted-foreground: 35 20% 60%;
+    --accent: 30 95% 60%;
+    --accent-foreground: 30 30% 10%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 25 30% 28%;
+    --input: 25 30% 28%;
+    --ring: 30 95% 65%;
+  }
+
+  .theme-sakura {
+    --background: 350 100% 98%;
+    --foreground: 350 40% 15%;
+    --card: 350 80% 96%;
+    --card-foreground: 350 40% 15%;
+    --popover: 350 100% 98%;
+    --popover-foreground: 350 40% 15%;
+    --primary: 340 90% 60%;
+    --primary-foreground: 340 30% 10%;
+    --secondary: 350 80% 94%;
+    --secondary-foreground: 350 40% 15%;
+    --muted: 350 80% 94%;
+    --muted-foreground: 350 20% 50%;
+    --accent: 340 90% 60%;
+    --accent-foreground: 340 30% 10%;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 350 60% 90%;
+    --input: 350 60% 90%;
+    --ring: 340 90% 65%;
+  }
+
+  .theme-matrix {
+    --background: 120 100% 5%;
+    --foreground: 130 90% 70%;
+    --card: 120 90% 8%;
+    --card-foreground: 130 90% 70%;
+    --popover: 120 100% 5%;
+    --popover-foreground: 130 90% 70%;
+    --primary: 130 95% 55%;
+    --primary-foreground: 130 100% 5%;
+    --secondary: 120 90% 11%;
+    --secondary-foreground: 130 90% 70%;
+    --muted: 120 90% 11%;
+    --muted-foreground: 130 30% 50%;
+    --accent: 130 95% 55%;
+    --accent-foreground: 130 100% 5%;
+    --destructive: 0 85% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 120 90% 14%;
+    --input: 120 90% 14%;
+    --ring: 130 95% 60%;
   }
 
   /* Apply animated backgrounds */
   .theme-dusk body {
-    background: linear-gradient(-45deg, #230a44, #4a1a6c, #82268a, #b8329d);
-    background-size: 400% 400%;
-    animation: gradient-dusk 15s ease infinite;
+    background: linear-gradient(270deg, #1a0f2e, #2c1a4c, #4a286b);
+    background-size: 600% 600%;
+    animation: gradient-dusk 20s ease infinite;
   }
 
   .theme-oceanic body {
-    background: linear-gradient(-45deg, #022c43, #053f5e, #115173, #247ba0);
-    background-size: 400% 400%;
-    animation: gradient-oceanic 18s ease infinite;
+    background: linear-gradient(270deg, #021a2d, #043a5e, #105c8d);
+    background-size: 600% 600%;
+    animation: gradient-oceanic 22s ease infinite;
+  }
+
+  .theme-mirage body {
+    background: linear-gradient(270deg, #2a1c0e, #4a321d, #7b5536);
+    background-size: 600% 600%;
+    animation: gradient-mirage 25s ease infinite;
+  }
+
+  .theme-sakura body {
+    background: #fdf6f9;
+  }
+
+  .theme-matrix body {
+    background-color: #0d1a0d;
   }
 }
