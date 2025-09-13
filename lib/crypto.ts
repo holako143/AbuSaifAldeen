@@ -112,3 +112,38 @@ export const decryptAES = async (encryptedPayload: string, password: string): Pr
     throw new Error("Decryption failed. The password may be incorrect or the data may be corrupt.");
   }
 };
+
+/**
+ * Encrypts a plaintext string using multiple layers of AES-GCM.
+ * @param plaintext The text to encrypt.
+ * @param passwords An array of passwords to use for each encryption layer.
+ * @returns A base64 string representing the final encrypted layer.
+ */
+export const encryptMultiple = async (plaintext: string, passwords: string[]): Promise<string> => {
+  if (passwords.length === 0) {
+    throw new Error("Password array cannot be empty.");
+  }
+  let currentPlaintext = plaintext;
+  for (const password of passwords) {
+    currentPlaintext = await encryptAES(currentPlaintext, password);
+  }
+  return currentPlaintext;
+};
+
+/**
+ * Decrypts a ciphertext string that was encrypted with multiple layers.
+ * @param ciphertext The final ciphertext.
+ * @param passwords An array of passwords to use for each decryption layer, in the original order of encryption.
+ * @returns The original plaintext.
+ */
+export const decryptMultiple = async (ciphertext: string, passwords: string[]): Promise<string> => {
+    if (passwords.length === 0) {
+        throw new Error("Password array cannot be empty.");
+    }
+    let currentCiphertext = ciphertext;
+    // Decrypt in the reverse order of encryption
+    for (const password of passwords.slice().reverse()) {
+        currentCiphertext = await decryptAES(currentCiphertext, password);
+    }
+    return currentCiphertext;
+};

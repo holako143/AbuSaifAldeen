@@ -47,8 +47,10 @@ function mergeConfig(nextConfig, userConfig) {
   }
 }
 
-// Reverting to a minimal PWA config to disable broken features
-export default withPWA({
+// Reverting to a minimal PWA config to disable all PWA features.
+const pwaConfig = {
   dest: "public",
-  disable: true, // Disabling PWA features for now
-})(nextConfig)
+  disable: true,
+}
+
+export default withPWA(pwaConfig)(nextConfig)

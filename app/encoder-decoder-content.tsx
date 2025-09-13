@@ -35,7 +35,7 @@ export function Base64EncoderDecoderContent() {
   const [outputText, setOutputText] = useState("");
   const [errorText, setErrorText] = useState("");
   const [defaultTab, setDefaultTab] = useState("emoji");
-  const [password, setPassword] = useState("");
+  const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -62,14 +62,20 @@ export function Base64EncoderDecoderContent() {
   useEffect(() => {
     const processText = async () => {
       if (inputText.trim() === "") { setOutputText(""); setErrorText(""); return; }
-      if (isPasswordGloballyEnabled && !password) { setErrorText("كلمة السر مطلوبة عند تفعيل خيار كلمة السر."); setOutputText(""); return; }
+
+      const activePasswords = passwords.map(p => p.value).filter(Boolean);
+      if (isPasswordGloballyEnabled && activePasswords.length === 0) {
+        setErrorText("كلمة سر واحدة على الأقل مطلوبة عند تفعيل خيار كلمة السر.");
+        setOutputText("");
+        return;
+      }
 
       setIsProcessing(true);
       setErrorText("");
       try {
         const result = isEncoding
-          ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined })
-          : await decode({ text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
+          ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, passwords: isPasswordGloballyEnabled ? activePasswords : [] })
+          : await decode({ text: inputText, type: encryptionType, passwords: isPasswordGloballyEnabled ? activePasswords : [] });
 
         setOutputText(result);
 
@@ -100,7 +106,7 @@ export function Base64EncoderDecoderContent() {
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, password, encryptionType, defaultTab, autoCopy, toast]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, encryptionType, defaultTab, autoCopy, toast]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
@@ -176,11 +182,35 @@ export function Base64EncoderDecoderContent() {
                 {encryptionType === 'aes256' && <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>}
                 {encryptionType === 'simple' && <div className="flex items-center gap-1 text-xs text-amber-500"><ShieldAlert className="h-4 w-4"/><span>Salt</span></div>}
             </div>
-            <div className="relative pt-2">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input type="password" placeholder="أدخل كلمة السر هنا..." value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
+            <div className="space-y-2 pt-2">
+              {passwords.map((p, index) => (
+                <div key={p.id} className="flex items-center gap-2">
+                  <div className="relative flex-grow">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder={`كلمة السر للطبقة ${index + 1}`}
+                      value={p.value}
+                      onChange={(e) => {
+                        const newPasswords = [...passwords];
+                        newPasswords[index].value = e.target.value;
+                        setPasswords(newPasswords);
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+                  {passwords.length > 1 && (
+                    <Button variant="ghost" size="icon" onClick={() => setPasswords(passwords.filter(item => item.id !== p.id))}>
+                      <X className="h-4 w-4 text-red-500"/>
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
+                إضافة طبقة تشفير
+              </Button>
             </div>
-            </div>
+        </div>
         )}
 
         <div>
