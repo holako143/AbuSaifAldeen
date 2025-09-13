@@ -1,33 +1,39 @@
-// This script is designed to be imported by the main service worker.
-// It adds a plugin to the workbox precaching route to broadcast progress.
+console.log('[SW-Progress] Script loaded.');
 
-// A plugin to broadcast a message after each asset is precached.
+// Using handlerDidComplete is more reliable as it fires after any request handled by the precache strategy.
 const broadcastPlugin = {
-  cacheDidUpdate: async ({ cacheName, request }) => {
-    // Ensure we only broadcast for precache events.
-    if (cacheName.startsWith('workbox-precache')) {
-      const clients = await self.clients.matchAll({ type: 'window' });
-      if (clients && clients.length) {
-        // Broadcast a message to all window clients.
-        clients.forEach(client => {
-          client.postMessage({ type: 'PRECACHE_PROGRESS' });
-        });
-      }
+  handlerDidComplete: async ({ request, event }) => {
+    const clients = await self.clients.matchAll({ type: 'window' });
+    if (clients && clients.length) {
+      console.log('[SW-Progress] Broadcasting PRECACHE_PROGRESS for:', request.url);
+      clients.forEach(client => {
+        client.postMessage({ type: 'PRECACHE_PROGRESS', url: request.url });
+      });
     }
-  }
+    // The response must be returned to the next plugin in the chain.
+    return event.response;
+  },
 };
 
-// A listener to respond to a request for the total number of precache items.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_PRECACHE_TOTAL') {
+    console.log('[SW-Progress] Received GET_PRECACHE_TOTAL request.');
     const manifest = self.__WB_MANIFEST || [];
-    // Respond to the specific client that sent the message.
+    console.log(`[SW-Progress] Manifest size: ${manifest.length}`);
     event.ports[0].postMessage({ type: 'PRECACHE_TOTAL_RESPONSE', total: manifest.length });
   }
 });
 
+self.addEventListener('install', () => {
+  console.log('[SW-Progress] Install event triggered. Adding plugins.');
+  if (typeof workbox !== 'undefined' && workbox.precaching) {
+    workbox.precaching.addPlugins([broadcastPlugin]);
+    console.log('[SW-Progress] Broadcast plugin added.');
+  } else {
+    console.error('[SW-Progress] Workbox or workbox.precaching is not defined.');
+  }
+});
 
-// Add the plugin to the precaching strategy.
-if (typeof workbox !== 'undefined' && workbox.precaching) {
-  workbox.precaching.addPlugins([broadcastPlugin]);
-}
+self.addEventListener('activate', () => {
+    console.log('[SW-Progress] Service worker activated.');
+});

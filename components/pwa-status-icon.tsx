@@ -15,9 +15,13 @@ export function PwaStatusIcon() {
     const { toast } = useToast();
 
     const handleMessage = useCallback((event: MessageEvent) => {
+        console.log('[PWA-Icon] Received message:', event.data);
         if (event.data.type === 'PRECACHE_TOTAL_RESPONSE') {
+            // Reset progress when we get a new total
+            setProgress(0);
             setTotal(event.data.total);
             if (event.data.total > 0) {
+                console.log('[PWA-Icon] State -> caching');
                 setCachingState("caching");
             }
         } else if (event.data.type === 'PRECACHE_PROGRESS') {
@@ -26,34 +30,40 @@ export function PwaStatusIcon() {
     }, []);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            // If a service worker is already in control, we assume it's ready.
-            setCachingState("ready");
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            const updateReadyState = () => {
+                if(navigator.serviceWorker.controller) {
+                    console.log('[PWA-Icon] State -> ready (controller found)');
+                    setCachingState("ready");
+                } else {
+                    console.log('[PWA-Icon] State -> idle (no controller)');
+                    setCachingState("idle");
+                }
+            };
+
+            updateReadyState();
+
+            navigator.serviceWorker.addEventListener('controllerchange', updateReadyState);
+            navigator.serviceWorker.addEventListener('message', handleMessage);
+
+            return () => {
+                navigator.serviceWorker.removeEventListener('controllerchange', updateReadyState);
+                navigator.serviceWorker.removeEventListener('message', handleMessage);
+            };
         }
-
-        const controllerChangeHandler = () => {
-            setCachingState(navigator.serviceWorker.controller ? "ready" : "idle");
-        };
-
-        navigator.serviceWorker?.addEventListener('controllerchange', controllerChangeHandler);
-        navigator.serviceWorker?.addEventListener('message', handleMessage);
-
-        return () => {
-            navigator.serviceWorker?.removeEventListener('controllerchange', controllerChangeHandler);
-            navigator.serviceWorker?.removeEventListener('message', handleMessage);
-        };
     }, [handleMessage]);
 
-
     useEffect(() => {
-        if (cachingState === 'caching' && total > 0 && progress === total) {
+        console.log(`[PWA-Icon] Progress update: ${progress}/${total}, State: ${cachingState}`);
+        if (cachingState === 'caching' && total > 0 && progress >= total) {
+            console.log('[PWA-Icon] Caching complete. State -> ready');
             setCachingState('ready');
             toast({ title: "اكتمل التخزين!", description: "التطبيق جاهز للعمل بدون إنترنت." });
         }
     }, [progress, total, cachingState, toast]);
 
     const handleIconClick = async () => {
-        if (!('serviceWorker' in navigator) || !navigator.serviceWorker.ready) {
+        if (!('serviceWorker' in navigator)) {
             toast({ variant: "destructive", title: "متصفحك لا يدعم هذه الميزة." });
             return;
         }
@@ -61,15 +71,25 @@ export function PwaStatusIcon() {
         toast({ title: "جاري التحقق من وجود تحديثات..." });
 
         try {
-            const registration = await navigator.serviceWorker.ready;
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (!registration) {
+                toast({ variant: "destructive", title: "فشل الحصول على تسجيل عامل الخدمة." });
+                return;
+            }
 
-            // This logic asks the service worker for the total number of files to precache.
-            const messageChannel = new MessageChannel();
-            messageChannel.port1.onmessage = handleMessage;
-            registration.active?.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
-
-            // Manually trigger an update check.
+            // Manually trigger an update check. This will trigger the 'install' event in sw.js
             await registration.update();
+
+            // After update, the new SW might be in waiting. Let's ask it for the total.
+            const newWorker = registration.installing || registration.waiting;
+            if (newWorker) {
+                console.log('[PWA-Icon] Found new worker, asking for total precache items.');
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = handleMessage;
+                newWorker.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
+            } else {
+                console.log('[PWA-Icon] No new worker found after update check. App is likely up to date.');
+            }
 
         } catch (error) {
             console.error("Error during PWA update check:", error);
