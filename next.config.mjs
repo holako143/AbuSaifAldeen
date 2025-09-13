@@ -53,6 +53,6 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   runtimeCaching,
-  disable: process.env.NODE_ENV === "development",
   importScripts: ["/sw-progress.js"],
+  disable: process.env.NODE_ENV === "development",
 })(nextConfig)
