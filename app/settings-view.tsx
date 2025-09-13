@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -10,6 +11,11 @@ import { cn } from "@/lib/utils";
 // A new, more visual theme switcher component
 function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const themes = [
     { name: "فاتح", value: "light", class: "bg-gray-100" },
@@ -62,6 +68,10 @@ function ThemeSwitcher() {
   );
 
   function ThemeCard({ name, value, class: themeClass }: { name: string, value: string, class: string }) {
+    if (!isMounted) {
+      return null; // or a skeleton loader
+    }
+
     const isSelected = theme === value;
     return (
       <div className="w-24">

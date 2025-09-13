@@ -9,18 +9,21 @@ import { useToast } from "./ui/use-toast";
 type CachingState = "idle" | "caching" | "ready";
 
 export function PwaStatusIcon() {
+    const [isMounted, setIsMounted] = useState(false);
     const [cachingState, setCachingState] = useState<CachingState>("idle");
     const [progress, setProgress] = useState(0);
     const [total, setTotal] = useState(0);
     const { toast } = useToast();
 
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const handleMessage = useCallback((event: MessageEvent) => {
-        console.log('[PWA-Icon] Received message:', event.data);
         if (event.data.type === 'PRECACHE_TOTAL_RESPONSE') {
             setProgress(0);
             setTotal(event.data.total);
             if (event.data.total > 0) {
-                console.log('[PWA-Icon] State changed to -> caching');
                 setCachingState("caching");
             }
         } else if (event.data.type === 'PRECACHE_PROGRESS') {
@@ -29,15 +32,11 @@ export function PwaStatusIcon() {
     }, []);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        if (!isMounted) return;
+
+        if ('serviceWorker' in navigator) {
             const updateReadyState = () => {
-                if(navigator.serviceWorker.controller) {
-                    console.log('[PWA-Icon] A controller is found. State changed to -> ready');
-                    setCachingState("ready");
-                } else {
-                    console.log('[PWA-Icon] No controller found. State changed to -> idle');
-                    setCachingState("idle");
-                }
+                setCachingState(navigator.serviceWorker.controller ? "ready" : "idle");
             };
 
             updateReadyState();
@@ -50,16 +49,16 @@ export function PwaStatusIcon() {
                 navigator.serviceWorker.removeEventListener('message', handleMessage);
             };
         }
-    }, [handleMessage]);
+    }, [isMounted, handleMessage]);
 
     useEffect(() => {
-        console.log(`[PWA-Icon] Progress: ${progress}/${total}, State: ${cachingState}`);
+        if (!isMounted) return;
+
         if (cachingState === 'caching' && total > 0 && progress >= total) {
-            console.log('[PWA-Icon] Caching complete. State changed to -> ready');
             setCachingState('ready');
             toast({ title: "اكتمل التخزين!", description: "التطبيق جاهز للعمل بدون إنترنت." });
         }
-    }, [progress, total, cachingState, toast]);
+    }, [isMounted, progress, total, cachingState, toast]);
 
     const handleIconClick = async () => {
         if (!('serviceWorker' in navigator)) {
@@ -72,28 +71,20 @@ export function PwaStatusIcon() {
         try {
             const registration = await navigator.serviceWorker.getRegistration();
             if (!registration) {
-                toast({ variant: "destructive", title: "فشل الحصول على تسجيل عامل الخدمة." });
                 return;
             }
 
             await registration.update();
-            console.log('[PWA-Icon] Update check triggered.');
 
             const newWorker = registration.installing || registration.waiting;
             if (newWorker) {
-                console.log('[PWA-Icon] New worker found. Asking for total precache items.');
                 const messageChannel = new MessageChannel();
                 messageChannel.port1.onmessage = handleMessage;
                 newWorker.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
-            } else {
-                console.log('[PWA-Icon] No new worker after update check. App is likely up to date.');
-                // If no new worker, but we are not ready, let's check the active one.
-                if (cachingState !== 'ready' && registration.active) {
-                    console.log('[PWA-Icon] Checking active worker for precache items.');
-                    const messageChannel = new MessageChannel();
-                    messageChannel.port1.onmessage = handleMessage;
-                    registration.active.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
-                }
+            } else if (cachingState !== 'ready' && registration.active) {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = handleMessage;
+                registration.active.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
             }
 
         } catch (error) {
@@ -101,6 +92,11 @@ export function PwaStatusIcon() {
             toast({ variant: "destructive", title: "فشل التحقق من التحديثات." });
         }
     };
+
+    if (!isMounted) {
+        // Render a placeholder or nothing on the server and initial client render
+        return <div className="h-10 w-10" />; // Placeholder to avoid layout shift
+    }
 
     const renderIcon = () => {
         switch (cachingState) {
