@@ -1,5 +1,4 @@
 import withPWA from "next-pwa";
-import runtimeCaching from "next-pwa/cache.js";
 
 let userConfig = undefined
 try {
@@ -47,6 +46,8 @@ function mergeConfig(nextConfig, userConfig) {
     }
   }
 }
+
+import runtimeCaching from "next-pwa/cache.js";
 
 export default withPWA({
   dest: "public",

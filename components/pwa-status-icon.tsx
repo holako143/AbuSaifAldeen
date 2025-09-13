@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Wifi, WifiOff, DownloadCloud } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
-type CachingState = "idle" | "caching" | "ready";
+type CachingState = "idle" | "caching" | "ready" | "error";
 
 export function PwaStatusIcon() {
     const [isMounted, setIsMounted] = useState(false);
@@ -25,6 +25,9 @@ export function PwaStatusIcon() {
             setTotal(event.data.total);
             if (event.data.total > 0) {
                 setCachingState("caching");
+            } else {
+                // If there's nothing to precache, we can consider it ready
+                setCachingState("ready");
             }
         } else if (event.data.type === 'PRECACHE_PROGRESS') {
             setProgress(prev => prev + 1);
@@ -32,69 +35,64 @@ export function PwaStatusIcon() {
     }, []);
 
     useEffect(() => {
-        if (!isMounted) return;
+        if (!isMounted || typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
-        if ('serviceWorker' in navigator) {
-            const updateReadyState = () => {
-                setCachingState(navigator.serviceWorker.controller ? "ready" : "idle");
-            };
-
-            updateReadyState();
-
-            navigator.serviceWorker.addEventListener('controllerchange', updateReadyState);
-            navigator.serviceWorker.addEventListener('message', handleMessage);
-
-            return () => {
-                navigator.serviceWorker.removeEventListener('controllerchange', updateReadyState);
-                navigator.serviceWorker.removeEventListener('message', handleMessage);
-            };
+        const wb = (window as any).workbox;
+        if (!wb) {
+            console.error("Workbox not found. PWA features will be disabled.");
+            setCachingState("error");
+            return;
         }
+
+        const onControlling = () => setCachingState("ready");
+        const onActivated = (event: any) => {
+            if (!event.isUpdate) {
+                // If it's a fresh install, ask for the total to kick off the progress UI
+                wb.messageSW({ type: 'GET_PRECACHE_TOTAL' }).then((reply: any) => {
+                    handleMessage({ data: reply } as MessageEvent);
+                });
+            } else {
+                 setCachingState("ready");
+            }
+        };
+
+        wb.addEventListener('controlling', onControlling);
+        wb.addEventListener('activated', onActivated);
+        wb.addEventListener('message', handleMessage);
+
+        wb.register().catch((error: Error) => {
+            console.error('Service worker registration failed:', error);
+            setCachingState("error");
+        });
+
+        // Check initial state
+        if(navigator.serviceWorker.controller) {
+            setCachingState("ready");
+        }
+
+        return () => {
+            wb.removeEventListener('controlling', onControlling);
+            wb.removeEventListener('activated', onActivated);
+            wb.removeEventListener('message', handleMessage);
+        };
     }, [isMounted, handleMessage]);
 
     useEffect(() => {
-        if (!isMounted) return;
-
         if (cachingState === 'caching' && total > 0 && progress >= total) {
             setCachingState('ready');
             toast({ title: "اكتمل التخزين!", description: "التطبيق جاهز للعمل بدون إنترنت." });
         }
-    }, [isMounted, progress, total, cachingState, toast]);
+    }, [progress, total, cachingState, toast]);
 
-    const handleIconClick = async () => {
-        if (!('serviceWorker' in navigator)) {
-            toast({ variant: "destructive", title: "متصفحك لا يدعم هذه الميزة." });
-            return;
-        }
-
-        toast({ title: "جاري التحقق من وجود تحديثات..." });
-
-        try {
-            const registration = await navigator.serviceWorker.getRegistration();
-            if (!registration) {
-                return;
-            }
-
-            await registration.update();
-
-            const newWorker = registration.installing || registration.waiting;
-            if (newWorker) {
-                const messageChannel = new MessageChannel();
-                messageChannel.port1.onmessage = handleMessage;
-                newWorker.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
-            } else if (cachingState !== 'ready' && registration.active) {
-                const messageChannel = new MessageChannel();
-                messageChannel.port1.onmessage = handleMessage;
-                registration.active.postMessage({ type: 'GET_PRECACHE_TOTAL' }, [messageChannel.port2]);
-            }
-
-        } catch (error) {
-            console.error("Error during PWA update check:", error);
-            toast({ variant: "destructive", title: "فشل التحقق من التحديثات." });
+    const handleIconClick = () => {
+        const wb = (window as any).workbox;
+        if (wb) {
+            wb.update();
+            toast({ title: "جاري البحث عن تحديثات..." });
         }
     };
 
     if (!isMounted) {
-        // Render a placeholder or nothing on the server and initial client render
         return <div className="h-10 w-10" />; // Placeholder to avoid layout shift
     }
 
@@ -103,7 +101,7 @@ export function PwaStatusIcon() {
             case 'caching':
                 return (
                     <div className="relative h-[1.2rem] w-[1.2rem] flex justify-center items-center">
-                        <DownloadCloud className="h-full w-full" />
+                        <DownloadCloud className="h-full w-full animate-pulse" />
                         <span className="absolute text-xs font-bold text-primary" style={{ fontSize: '0.6rem' }}>
                             {progress}
                         </span>
@@ -111,6 +109,8 @@ export function PwaStatusIcon() {
                 );
             case 'ready':
                 return <Wifi className="h-[1.2rem] w-[1.2rem] text-green-500" />;
+            case 'error':
+                 return <WifiOff className="h-[1.2rem] w-[1.2rem] text-red-500" />;
             case 'idle':
             default:
                 return <WifiOff className="h-[1.2rem] w-[1.2rem]" />;
@@ -123,9 +123,11 @@ export function PwaStatusIcon() {
                 return `جاري تحميل الملفات... (${progress}/${total})`;
             case 'ready':
                 return "التطبيق جاهز للعمل بدون إنترنت";
+            case 'error':
+                return "حدث خطأ في تفعيل وضع عدم الإتصال";
             case 'idle':
             default:
-                return "اضغط لتفعيل وضع عدم الاتصال";
+                return "جاري تهيئة وضع عدم الإتصال...";
         }
     }
 
