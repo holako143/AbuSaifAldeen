@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -179,59 +179,27 @@ export function VaultPage() {
                     <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>
+            </CardHeader>
             <CardContent>
                 <div className="space-y-2">
-                    {filteredItems.length > 0 ? filteredItems.map(item => {
-                        const commonItemHeader = (
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{item.title}</h3>
-                                <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
-                            </div>
-                        );
-
-                        const commonItemContent = showContent[item.id] && (
-                            <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2">{item.text}</p>
-                        );
-
-                        if (isDesktop) {
-                            return (
-                                <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
-                                    <div className="flex justify-between items-center">
-                                        {commonItemHeader}
-                                        <div className="flex items-center">
-                                            <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
-                                                {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="mr-2 h-4 w-4" /> {t('vaultPage.mobile.copy')}</DropdownMenuItem>
-                                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">{t('vaultPage.editButton')}</div>} />
-                                                    <DropdownMenuItem onClick={() => setItemToDelete(item)} className="text-red-500 focus:text-red-600">{t('vaultPage.mobile.delete')}</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-                                    {commonItemContent}
+                    {filteredItems.length > 0 ? filteredItems.map(item => (
+                        <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
+                            <div className="flex justify-between items-center gap-2">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <h3 className="font-semibold truncate">{item.title}</h3>
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">•</span>
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatRelativeTime(item.createdAt, locale)}</span>
                                 </div>
-                            )
-                        }
-
-                        // Mobile View
-                        return (
-                            <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
-                                {commonItemHeader}
-                                {commonItemContent}
-                                <div className="flex items-center justify-end gap-1 border-t pt-2 mt-2">
-                                    <Button variant="ghost" size="sm" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}>{showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}</Button>
-                                    <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}>{t('vaultPage.mobile.copy')}</Button>
-                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="sm">{t('vaultPage.editButton')}</Button>} />
-                                    <Button onClick={() => setItemToDelete(item)} variant="ghost" size="sm" className="text-red-500 hover:text-red-600">{t('vaultPage.mobile.delete')}</Button>
+                                <div className="flex items-center flex-shrink-0">
+                                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}><span className="sr-only">{showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}</span>{showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}</Button></TooltipTrigger><TooltipContent>{showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>{t('vaultPage.mobile.copy')}</TooltipContent></Tooltip>
+                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>{t('vaultPage.editButton')}</TooltipContent></Tooltip>} />
+                                    <Tooltip><TooltipTrigger asChild><Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></TooltipTrigger><TooltipContent>{t('vaultPage.mobile.delete')}</TooltipContent></Tooltip>
                                 </div>
                             </div>
-                        )
-                    }) : (
+                            {showContent[item.id] && <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2 break-all">{item.text}</p>}
+                        </div>
+                    )) : (
                         <div className="text-center py-12 text-muted-foreground">
                             <p>{searchQuery ? t('vaultPage.noResults') : t('vaultPage.emptyState')}</p>
                             <p className="text-sm">{searchQuery ? t('vaultPage.noResultsDescription') : t('vaultPage.emptyStateDescription')}</p>
