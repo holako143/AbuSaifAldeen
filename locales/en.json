@@ -147,6 +147,12 @@
     "editButton": "Edit",
     "emptyState": "The vault is empty.",
     "emptyStateDescription": "Click 'Add New Item' to get started.",
+    "searchPlaceholder": "Search in {count} items...",
+    "noResults": "No results found",
+    "noResultsDescription": "Try a different search term.",
+    "deleteConfirmTitle": "Are you sure?",
+    "deleteConfirmDescription": "This will permanently delete the item. This action cannot be undone.",
+    "deleteConfirmAction": "Yes, delete",
     "toasts": {
       "unlockedSuccess": "Vault unlocked successfully!",
       "deleteSuccess": "Item deleted.",

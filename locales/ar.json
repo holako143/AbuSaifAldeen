@@ -146,6 +146,12 @@
     "editButton": "تعديل",
     "emptyState": "الخزنة فارغة.",
     "emptyStateDescription": "انقر على 'إضافة عنصر جديد' للبدء.",
+    "searchPlaceholder": "ابحث في {count} عنصر...",
+    "noResults": "لا توجد نتائج",
+    "noResultsDescription": "جرب كلمة بحث مختلفة.",
+    "deleteConfirmTitle": "هل أنت متأكد؟",
+    "deleteConfirmDescription": "سيتم حذف هذا العنصر بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirmAction": "نعم، احذف",
     "toasts": {
       "unlockedSuccess": "تم فتح الخزنة بنجاح!",
       "deleteSuccess": "تم حذف العنصر.",
