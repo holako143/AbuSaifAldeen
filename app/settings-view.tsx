@@ -15,66 +15,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { changeMasterPassword } from "@/lib/vault";
 
-function ChangePasswordForm() {
-    const { t } = useTranslation();
-    const { toast } = useToast();
-    const { masterPassword, setMasterPassword, setIsVaultUnlocked } = useAppContext();
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handlePasswordChange = async () => {
-        if (newPassword !== confirmPassword) {
-            toast({ variant: "destructive", title: t('settings.vault.errorMismatch') });
-            return;
-        }
-        if (!masterPassword) return; // Should not happen if this form is visible
-
-        setIsLoading(true);
-        try {
-            await changeMasterPassword(masterPassword, newPassword);
-            toast({ title: t('settings.vault.success'), description: t('settings.vault.successDescription') });
-            // Lock the vault
-            setMasterPassword(null);
-            setIsVaultUnlocked(false);
-            // Clear fields
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } catch (error: any) {
-            const errorMessage = error.message.includes("decryption failed")
-                ? t('settings.vault.errorWrongPassword')
-                : error.message;
-            toast({ variant: "destructive", title: "Error", description: errorMessage });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // This component assumes masterPassword is not null, as it's only shown when vault is unlocked.
-    // The check for currentPassword is done by `changeMasterPassword` which uses the real masterPassword from context.
-    return (
-        <div className="space-y-4">
-            <div>
-                <h3 className="text-lg font-medium">{t('settings.vault.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('settings.vault.description')}</p>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
-                <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
-                <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handlePasswordChange} disabled={isLoading || !newPassword || !confirmPassword}>
-                {isLoading ? "جاري التغيير..." : t('settings.vault.button')}
-            </Button>
-        </div>
-    );
-}
-
 function LanguageSwitcher() {
     const { t } = useTranslation();
     const { locale, setLocale } = useAppContext();
@@ -168,12 +108,6 @@ export function SettingsView() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
-        {isVaultUnlocked && (
-            <>
-                <ChangePasswordForm />
-                <Separator />
-            </>
-        )}
         <LanguageSwitcher />
         <Separator />
         <ThemeCustomizer />

@@ -9,6 +9,11 @@ const VARIATION_SELECTOR_END = 0xfe0f;
 const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
 
+const isVariationSelector = (code: number): boolean => {
+    return (code >= VARIATION_SELECTOR_START && code <= VARIATION_SELECTOR_END) ||
+           (code >= VARIATION_SELECTOR_SUPPLEMENT_START && code <= VARIATION_SELECTOR_SUPPLEMENT_END);
+};
+
 function toVariationSelector(byte: number): string | null {
     if (byte >= 0 && byte < 16) return String.fromCodePoint(VARIATION_SELECTOR_START + byte);
     if (byte >= 16 && byte < 256) return String.fromCodePoint(VARIATION_SELECTOR_SUPPLEMENT_START + byte - 16);
@@ -87,19 +92,49 @@ interface DecodeParams {
 }
 
 export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
-    const hiddenText = decodeFromEmoji(text);
+    // 1. Split the input text into potential messages.
+    // A new message starts with a non-variation-selector character (the base emoji).
+    const messages: string[] = [];
+    let currentMessage = "";
+    for (const char of text) {
+        // Use codePointAt for multi-byte characters
+        const code = char.codePointAt(0);
+        if (code && !isVariationSelector(code)) {
+            // It's a base character, so the previous message (if any) has ended.
+            if (currentMessage) messages.push(currentMessage);
+            currentMessage = char; // Start a new message.
+        } else {
+            currentMessage += char; // It's part of the current message's data.
+        }
+    }
+    if (currentMessage) messages.push(currentMessage); // Add the last message.
 
-    if (type !== 'aes256') {
-        throw new Error(`Unsupported encryption type: ${type}`);
+    // 2. Process each message individually.
+    const decodedLines = [];
+    for (const message of messages) {
+        if (!message.trim()) continue;
+
+        try {
+            const hiddenText = decodeFromEmoji(message);
+
+            if (type !== 'aes256') {
+                throw new Error(`Unsupported encryption type: ${type}`);
+            }
+
+            if (!passwords || passwords.length === 0) {
+                decodedLines.push(hiddenText);
+            } else {
+                const decryptedText = passwords.length > 1
+                    ? await decryptMultiple(hiddenText, passwords)
+                    : await decryptAES(hiddenText, passwords[0]);
+                decodedLines.push(decryptedText);
+            }
+        } catch (e) {
+            // If one message fails, the whole operation fails.
+            // This is to prevent partially correct output which could be misleading.
+            throw e;
+        }
     }
 
-    if (!passwords || passwords.length === 0) {
-        // If no password, we assume the text was not encrypted.
-        return hiddenText;
-    }
-
-    // Use multiple decryption if more than one password is provided
-    return passwords.length > 1
-        ? await decryptMultiple(hiddenText, passwords)
-        : await decryptAES(hiddenText, passwords[0]);
+    return decodedLines.join('\n');
 }

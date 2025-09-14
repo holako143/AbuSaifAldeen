@@ -4,9 +4,10 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -16,6 +17,75 @@ import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatRelativeTime } from "@/lib/utils";
+import { Settings } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { changeMasterPassword } from "@/lib/vault";
+
+function ChangePasswordDialog() {
+    const { t } = useTranslation();
+    const { masterPassword, setMasterPassword, setIsVaultUnlocked } = useAppContext();
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handlePasswordChange = async () => {
+        if (newPassword !== confirmPassword) {
+            toast({ variant: "destructive", title: t('settings.vault.errorMismatch') });
+            return;
+        }
+        if (!masterPassword) return;
+
+        setIsLoading(true);
+        try {
+            await changeMasterPassword(masterPassword, newPassword);
+            toast({ title: t('settings.vault.success'), description: t('settings.vault.successDescription') });
+            setMasterPassword(null);
+            setIsVaultUnlocked(false);
+            setNewPassword('');
+            setConfirmPassword('');
+            setIsOpen(false);
+        } catch (error: any) {
+            const errorMessage = error.message.includes("decryption failed")
+                ? t('settings.vault.errorWrongPassword')
+                : error.message;
+            toast({ variant: "destructive", title: "Error", description: errorMessage });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{t('settings.vault.title')}</DialogTitle>
+                    <DialogDescription>{t('settings.vault.description')}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
+                        <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
+                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button></DialogClose>
+                    <Button onClick={handlePasswordChange} disabled={isLoading || !newPassword || !confirmPassword}>
+                        {isLoading ? "جاري التغيير..." : t('settings.vault.button')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export function VaultPage() {
     const { setMasterPassword: setGlobalMasterPassword, setIsVaultUnlocked, locale } = useAppContext();
@@ -29,6 +99,7 @@ export function VaultPage() {
     const [editingItem, setEditingItem] = useState<VaultEntry | null>(null);
     const [showContent, setShowContent] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [itemToDelete, setItemToDelete] = useState<VaultEntry | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -172,71 +243,90 @@ export function VaultPage() {
                         />
                     </div>
                     <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
-                    <Button variant="outline" size="icon" onClick={handleExport}><Download className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="icon" onClick={handleImportClick}><Upload className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={handleExport} aria-label={t('vaultPage.exportButton')}><Download className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={handleImportClick} aria-label={t('vaultPage.importButton')}><Upload className="h-4 w-4" /></Button>
                     <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
+                    <ChangePasswordDialog />
                     <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="space-y-2">
-                    {filteredItems.length > 0 ? filteredItems.map(item => {
-                        const commonItemHeader = (
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{item.title}</h3>
-                                <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
-                            </div>
-                        );
-
-                        const commonItemContent = showContent[item.id] && (
-                            <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2">{item.text}</p>
-                        );
-
-                        if (isDesktop) {
-                            return (
+                {filteredItems.length > 0 ? (
+                    isDesktop ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[40%]">{t('history.table.original')}</TableHead>
+                                    <TableHead>{t('history.table.time')}</TableHead>
+                                    <TableHead className="text-right">{t('history.table.actions')}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredItems.map(item => (
+                                    <Collapsible asChild key={item.id}>
+                                        <>
+                                            <CollapsibleTrigger asChild>
+                                                <TableRow className="cursor-pointer">
+                                                    <TableCell className="font-semibold">{item.title}</TableCell>
+                                                    <TableCell>{formatRelativeTime(item.createdAt, locale)}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
+                                                        <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                                        <Button onClick={(e) => {e.stopPropagation(); setItemToDelete(item)}} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent asChild>
+                                                <tr>
+                                                    <td colSpan={3} className="p-2 bg-muted">
+                                                        <p className="text-sm text-muted-foreground p-2 break-all">{item.text}</p>
+                                                    </td>
+                                                </tr>
+                                            </CollapsibleContent>
+                                        </>
+                                    </Collapsible>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="space-y-2">
+                            {filteredItems.map(item => (
                                 <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
-                                    <div className="flex justify-between items-center">
-                                        {commonItemHeader}
-                                        <div className="flex items-center">
-                                            <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
-                                                {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="mr-2 h-4 w-4" /> {t('vaultPage.mobile.copy')}</DropdownMenuItem>
-                                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">{t('vaultPage.editButton')}</div>} />
-                                                    <AlertDialog><AlertDialogTrigger asChild><div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground text-red-500 focus:text-red-600 w-full">{t('vaultPage.mobile.delete')}</div></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                    <div className="flex justify-between items-start gap-2">
+                                        <div className="flex flex-col">
+                                            <h3 className="font-semibold">{item.title}</h3>
+                                            <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
+                                        </div>
+                                        <div className="flex items-center flex-shrink-0">
+                                            <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
+                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                            <Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </div>
-                                    {commonItemContent}
+                                    {showContent[item.id] && <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2 break-all">{item.text}</p>}
                                 </div>
-                            )
-                        }
-
-                        // Mobile View
-                        return (
-                            <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
-                                {commonItemHeader}
-                                {commonItemContent}
-                                <div className="flex items-center justify-end gap-1 border-t pt-2 mt-2">
-                                    <Button variant="ghost" size="sm" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}>{showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}</Button>
-                                    <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}>{t('vaultPage.mobile.copy')}</Button>
-                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="sm">{t('vaultPage.editButton')}</Button>} />
-                                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600">{t('vaultPage.mobile.delete')}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                                </div>
-                            </div>
-                        )
-                    }) : (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <p>{searchQuery ? t('vaultPage.noResults') : t('vaultPage.emptyState')}</p>
-                            <p className="text-sm">{searchQuery ? t('vaultPage.noResultsDescription') : t('vaultPage.emptyStateDescription')}</p>
+                            ))}
                         </div>
-                    )}
-                </div>
+                    )
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                        <p>{searchQuery ? t('vaultPage.noResults') : t('vaultPage.emptyState')}</p>
+                        <p className="text-sm">{searchQuery ? t('vaultPage.noResultsDescription') : t('vaultPage.emptyStateDescription')}</p>
+                    </div>
+                )}
+                <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
+                            <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => {if(itemToDelete) handleDelete(itemToDelete.id); setItemToDelete(null);}}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
     );
