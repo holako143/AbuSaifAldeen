@@ -128,7 +128,9 @@
       "noOutput": "There is no output to save",
       "titleRequired": "Please enter a title.",
       "saveSuccess": "Saved to vault successfully!",
-      "saveFailed": "Failed to save"
+      "saveFailed": "Failed to save",
+      "vaultRevealed": "Secret Vault Revealed!",
+      "vaultRevealedDescription": "You can now access it from the sidebar."
     }
   },
   "vaultPage": {

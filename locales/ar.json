@@ -127,7 +127,9 @@
       "noOutput": "لا يوجد ناتج للحفظ",
       "titleRequired": "الرجاء إدخال عنوان.",
       "saveSuccess": "تم الحفظ في الخزنة بنجاح!",
-      "saveFailed": "فشل الحفظ"
+      "saveFailed": "فشل الحفظ",
+      "vaultRevealed": "تم كشف الخزنة السرية!",
+      "vaultRevealedDescription": "يمكنك الآن الوصول إليها من القائمة الجانبية."
     }
   },
   "vaultPage": {

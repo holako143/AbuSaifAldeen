@@ -13,10 +13,12 @@ import { useTranslation } from "@/hooks/use-translation";
 interface AddToVaultDialogProps {
   outputText: string;
   children: React.ReactNode;
+  mode: 'encode' | 'decode';
+  inputText: string;
 }
 
-export function AddToVaultDialog({ outputText, children }: AddToVaultDialogProps) {
-  const { isVaultUnlocked, masterPassword, setActiveView } = useAppContext();
+export function AddToVaultDialog({ outputText, children, mode, inputText }: AddToVaultDialogProps) {
+  const { isVaultUnlocked, masterPassword, setActiveView, setIsVaultVisible } = useAppContext();
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -54,9 +56,16 @@ export function AddToVaultDialog({ outputText, children }: AddToVaultDialogProps
     }
   };
 
+  const handleDoubleClick = () => {
+    if (mode === 'decode' && inputText === 'خزنة') {
+        setIsVaultVisible(true);
+        toast({ title: t('vaultDialog.toasts.vaultRevealed'), description: t('vaultDialog.toasts.vaultRevealedDescription') });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <div onClick={handleOpen}>
+        <div onClick={handleOpen} onDoubleClick={handleDoubleClick}>
             {children}
         </div>
       <DialogContent>

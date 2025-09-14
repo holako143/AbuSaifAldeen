@@ -209,7 +209,7 @@ export function Base64EncoderDecoderContent() {
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button>}
-                <AddToVaultDialog outputText={outputText}>
+                <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-amber-500"><Star className="h-5 w-5" /></Button>
