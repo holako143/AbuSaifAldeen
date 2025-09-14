@@ -197,6 +197,12 @@
       "editItem": "Edit item",
       "deleteItem": "Delete item"
     },
+    "mobile": {
+        "show": "Show",
+        "hide": "Hide",
+        "copy": "Copy",
+        "delete": "Delete"
+    },
     "toasts": {
       "unlockedSuccess": "Vault unlocked successfully!",
       "deleteSuccess": "Item deleted.",

@@ -196,6 +196,12 @@
       "editItem": "تعديل العنصر",
       "deleteItem": "حذف العنصر"
     },
+    "mobile": {
+        "show": "إظهار",
+        "hide": "إخفاء",
+        "copy": "نسخ",
+        "delete": "حذف"
+    },
     "toasts": {
       "unlockedSuccess": "تم فتح الخزنة بنجاح!",
       "deleteSuccess": "تم حذف العنصر.",
