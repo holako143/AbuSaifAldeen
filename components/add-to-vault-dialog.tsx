@@ -42,8 +42,12 @@ export function AddToVaultDialog({ outputText, children, mode, inputText }: AddT
   };
 
   const handleSave = async () => {
-    if (!title || !outputText || !masterPassword) {
+    if (!title) {
         toast({ variant: "destructive", title: t('vaultDialog.toasts.titleRequired') });
+        return;
+    }
+    if (!masterPassword) {
+        toast({ variant: "destructive", title: t('vaultDialog.toasts.vaultLocked'), description: t('vaultDialog.toasts.vaultLockedDescription') });
         return;
     }
     try {
@@ -58,8 +62,12 @@ export function AddToVaultDialog({ outputText, children, mode, inputText }: AddT
 
   const handleDoubleClick = () => {
     if (mode === 'decode' && inputText === 'خزنة') {
+      if (isVaultUnlocked) {
+        setActiveView('vault');
+      } else {
         setIsVaultVisible(true);
         toast({ title: t('vaultDialog.toasts.vaultRevealed'), description: t('vaultDialog.toasts.vaultRevealedDescription') });
+      }
     }
   };
 

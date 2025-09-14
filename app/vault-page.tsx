@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useAppContext } from "@/context/app-context";
 import { useTranslation } from "@/hooks/use-translation";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatRelativeTime } from "@/lib/utils";
 
 export function VaultPage() {
@@ -148,14 +150,14 @@ export function VaultPage() {
                                     <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
                                 </div>
                                 <div className="flex items-center">
-                                    <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}>
+                                <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
                                         {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="h-4 w-4" /></Button>
-                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon">{t('vaultPage.editButton')}</Button>} />
+                                <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.a11y.copyContent')}><Copy className="h-4 w-4" /></Button>
+                                <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button aria-label={t('vaultPage.a11y.editItem')} variant="ghost" size="icon">{t('vaultPage.editButton')}</Button>} />
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                        <Button variant="ghost" size="icon" aria-label={t('vaultPage.a11y.deleteItem')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -188,40 +190,70 @@ export function VaultPage() {
 
 function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, item?: VaultEntry, triggerButton: React.ReactElement }) {
     const { t } = useTranslation();
+    const [isOpen, setIsOpen] = useState(false);
+    const isDesktop = useMediaQuery("(min-width: 768px)");
+
+    const title = item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd');
+    const description = t('vaultPage.editDialog.description');
+
+    if (isDesktop) {
+        return (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                        <DialogDescription>{description}</DialogDescription>
+                    </DialogHeader>
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} />
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+    return (
+        <Drawer open={isOpen} onOpenChange={setIsOpen}>
+            <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader className="text-left">
+                    <DrawerTitle>{item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd')}</DrawerTitle>
+                    <DrawerDescription>{t('vaultPage.editDialog.description')}</DrawerDescription>
+                </DrawerHeader>
+                <div className="p-4">
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} />
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+}
+
+function EditItemForm({ item, onSave, setIsOpen }: { item?: VaultEntry, onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, setIsOpen: (isOpen: boolean) => void }) {
+    const { t } = useTranslation();
     const [title, setTitle] = useState(item?.title || '');
     const [text, setText] = useState(item?.text || '');
-    const [isOpen, setIsOpen] = useState(false);
 
     const handleSubmit = async () => {
         const success = await onSave({ id: item?.id, title, text });
         if(success) setIsOpen(false);
     }
 
-    // Reset form when dialog opens with new item data
     useEffect(() => {
-        if (isOpen) {
-            setTitle(item?.title || '');
-            setText(item?.text || '');
-        }
-    }, [isOpen, item]);
+        setTitle(item?.title || '');
+        setText(item?.text || '');
+    }, [item]);
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd')}</DialogTitle>
-                    <DialogDescription>{t('vaultPage.editDialog.description')}</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <Input placeholder={t('vaultPage.editDialog.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
-                    <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px]" />
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button></DialogClose>
-                    <Button onClick={handleSubmit}>{t('vaultPage.editDialog.save')}</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <>
+            <div className="grid gap-4 py-4">
+                <Input placeholder={t('vaultPage.editDialog.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px]" />
+            </div>
+            <DialogFooter className="pt-2 sm:justify-between gap-2 flex-col-reverse sm:flex-row">
+                 <DialogClose asChild>
+                    <Button variant="outline" className="w-full">{t('vaultPage.editDialog.cancel')}</Button>
+                 </DialogClose>
+                 <Button onClick={handleSubmit} className="w-full">{t('vaultPage.editDialog.save')}</Button>
+            </DialogFooter>
+        </>
     );
 }

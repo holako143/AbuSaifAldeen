@@ -15,7 +15,16 @@
     "alphabetsTab": "Alphabets",
     "processingPlaceholder": "Processing...",
     "outputTextPlaceholder": "Output...",
-    "saveToVault": "Save to Vault"
+    "saveToVault": "Save to Vault",
+    "a11y": {
+      "removeLayer": "Remove encryption layer",
+      "paste": "Paste text from clipboard",
+      "clearInput": "Clear input field",
+      "copyOutput": "Copy output to clipboard",
+      "shareOutput": "Share output",
+      "saveToVault": "Save output to vault",
+      "swap": "Swap input and output fields"
+    }
   },
   "toasts": {
     "autoCopySuccess": "Output copied to clipboard automatically!",
@@ -153,6 +162,12 @@
     "deleteConfirmTitle": "Are you sure?",
     "deleteConfirmDescription": "This will permanently delete the item. This action cannot be undone.",
     "deleteConfirmAction": "Yes, delete",
+    "a11y": {
+      "toggleVisibility": "Show/hide secret content",
+      "copyContent": "Copy secret content",
+      "editItem": "Edit item",
+      "deleteItem": "Delete item"
+    },
     "toasts": {
       "unlockedSuccess": "Vault unlocked successfully!",
       "deleteSuccess": "Item deleted.",

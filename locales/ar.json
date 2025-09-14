@@ -15,7 +15,16 @@
     "alphabetsTab": "الحروف",
     "processingPlaceholder": "جاري المعالجة...",
     "outputTextPlaceholder": "الناتج...",
-    "saveToVault": "حفظ في الخزنة"
+    "saveToVault": "حفظ في الخزنة",
+    "a11y": {
+      "removeLayer": "إزالة طبقة التشفير",
+      "paste": "لصق النص من الحافظة",
+      "clearInput": "مسح حقل الإدخال",
+      "copyOutput": "نسخ الناتج إلى الحافظة",
+      "shareOutput": "مشاركة الناتج",
+      "saveToVault": "حفظ الناتج في الخزنة",
+      "swap": "تبديل حقول الإدخال والإخراج"
+    }
   },
   "toasts": {
     "autoCopySuccess": "تم نسخ الناتج تلقائيًا!",
@@ -152,6 +161,12 @@
     "deleteConfirmTitle": "هل أنت متأكد؟",
     "deleteConfirmDescription": "سيتم حذف هذا العنصر بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
     "deleteConfirmAction": "نعم، احذف",
+    "a11y": {
+      "toggleVisibility": "إظهار/إخفاء المحتوى السري",
+      "copyContent": "نسخ المحتوى السري",
+      "editItem": "تعديل العنصر",
+      "deleteItem": "حذف العنصر"
+    },
     "toasts": {
       "unlockedSuccess": "تم فتح الخزنة بنجاح!",
       "deleteSuccess": "تم حذف العنصر.",
@@ -169,6 +184,17 @@
       "contentPlaceholder": "المحتوى السري...",
       "cancel": "إلغاء",
       "save": "حفظ"
+    }
+  },
+  "encoderDecoder": {
+    "a11y": {
+      "removeLayer": "إزالة طبقة التشفير",
+      "paste": "لصق النص من الحافظة",
+      "clearInput": "مسح حقل الإدخال",
+      "copyOutput": "نسخ الناتج إلى الحافظة",
+      "shareOutput": "مشاركة الناتج",
+      "saveToVault": "حفظ الناتج في الخزنة",
+      "swap": "تبديل حقول الإدخال والإخراج"
     }
   }
 }
