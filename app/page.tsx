@@ -8,13 +8,15 @@ import { SettingsView } from "./settings-view";
 import { VaultPage } from "./vault-page";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppProvider, useAppContext } from "@/context/app-context";
+import { useTranslation } from "@/hooks/use-translation";
 
 function LoadingFallback() {
+  const { t } = useTranslation();
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardContent className="pt-6">
         <div className="text-center p-12">
-          <p>جارٍ التحميل...</p>
+          <p>{t('app.loading')}</p>
         </div>
       </CardContent>
     </Card>

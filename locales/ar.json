@@ -1,0 +1,166 @@
+{
+  "encoderDecoder": {
+    "title": "التشفير وفك التشفير",
+    "encodeLabel": "تشفير النص",
+    "decodeLabel": "فك التشفير",
+    "passwordRequiredError": "كلمة سر واحدة على الأقل مطلوبة عند تفعيل خيار كلمة السر.",
+    "genericError": "خطأ في {mode}",
+    "encodeError": "التشفير",
+    "decodeError": "فك التشفير",
+    "passwordEnabledLabel": "كلمة السر مفعلة",
+    "passwordLayerPlaceholder": "كلمة السر للطبقة {layer}",
+    "addEncryptionLayer": "إضافة طبقة تشفير",
+    "inputTextPlaceholder": "اكتب النص المراد تشفيره",
+    "iconsTab": "الايقونات",
+    "alphabetsTab": "الحروف",
+    "processingPlaceholder": "جاري المعالجة...",
+    "outputTextPlaceholder": "الناتج...",
+    "saveToVault": "حفظ في الخزنة"
+  },
+  "toasts": {
+    "autoCopySuccess": "تم نسخ الناتج تلقائيًا!",
+    "copySuccess": "تم نسخ الناتج بنجاح!",
+    "pasteSuccess": "تم اللصق بنجاح!",
+    "pasteFailed": "فشل اللصق",
+    "swapped": "تم التبديل!"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "description": "قم بتخصيص مظهر وهوية التطبيق ليتناسب مع تفضيلاتك وأسلوبك.",
+    "standardThemes": "الثيمات القياسية",
+    "standardThemesDescription": "مظاهر بسيطة وفعالة للتركيز.",
+    "premiumThemes": "الثيمات المميزة",
+    "premiumThemesDescription": "مظاهر حيوية مع خلفيات متحركة.",
+    "themes": {
+      "light": "فاتح",
+      "dark": "داكن",
+      "dusk": "غسق",
+      "oceanic": "محيط",
+      "mirage": "سراب",
+      "sakura": "ساكورا",
+      "matrix": "مصفوفة",
+      "system": "النظام"
+    },
+    "language": "اللغة",
+    "languages": {
+      "ar": "العربية",
+      "en": "الإنجليزية"
+    }
+  },
+  "app": {
+    "loading": "جارٍ التحميل..."
+  },
+  "sidebar": {
+    "title": "القائمة",
+    "home": "الرئيسية",
+    "history": "سجل التشفير",
+    "vault": "الخزنة السرية",
+    "emojiManagement": "إدارة الإيموجي",
+    "settings": "الإعدادات",
+    "autoCopy": "نسخ تلقائي للناتج"
+  },
+  "topbar": {
+    "appName": "شفريشن",
+    "logoTooltip": "اضغط مرة للرئيسية، ومرتين للوضع الآمن",
+    "safeModeEnabled": "تم تفعيل الوضع الآمن",
+    "safeModeEnabledDesc": "سيتم الآن تشفير البيانات باستخدام AES-256.",
+    "safeModeDisabled": "تم تعطيل الوضع الآمن",
+    "safeModeDisabledDesc": "لن يتم تطبيق أي تشفير.",
+    "toggleTheme": "تغيير المظهر",
+    "toggleThemeSr": "Toggle theme",
+    "openMenuSr": "Open menu"
+  },
+  "history": {
+    "title": "سجل التشفير",
+    "description": "هنا يمكنك مراجعة وتصفية عملياتك السابقة.",
+    "export": "تصدير",
+    "import": "استيراد",
+    "clearAll": "مسح الكل",
+    "clearConfirmTitle": "هل أنت متأكد تمامًا؟",
+    "clearConfirmDescription": "هذا الإجراء لا يمكن التراجع عنه.",
+    "cancel": "إلغاء",
+    "confirmClear": "نعم، قم بالمسح",
+    "filterAll": "الكل",
+    "filterEncode": "تشفير",
+    "filterDecode": "فك تشفير",
+    "table": {
+      "type": "النوع",
+      "original": "النص الأصلي",
+      "output": "الناتج",
+      "time": "الوقت",
+      "actions": "إجراءات"
+    },
+    "mobile": {
+      "original": "الأصلي:",
+      "output": "الناتج:"
+    },
+    "empty": {
+      "noRecords": "لا توجد سجلات لعرضها.",
+      "startUsing": "ابدأ بالتشفير أو فك التشفير وستظهر عملياتك هنا!",
+      "noFilterMatch": "لا توجد سجلات تطابق هذا الفلتر."
+    },
+    "toasts": {
+      "copied": "تم النسخ!",
+      "copiedDescription": "تم نسخ النص إلى الحافظة.",
+      "deleted": "تم الحذف",
+      "deletedDescription": "تم حذف السجل بنجاح.",
+      "cleared": "تم مسح السجل",
+      "clearedDescription": "تم مسح جميع السجلات بنجاح.",
+      "exported": "تم التصدير",
+      "exportedDescription": "تم تصدير السجل كملف JSON.",
+      "imported": "تم الاستيراد بنجاح",
+      "importError": "خطأ في الاستيراد",
+      "importErrorDescription": "الملف غير صالح أو تالف."
+    }
+  },
+  "vaultDialog": {
+    "title": "إضافة إلى الخزنة",
+    "description": "أدخل عنواناً لهذا العنصر المحفوظ.",
+    "placeholder": "عنوان العنصر (مثال: مفتاح API لموقعي)",
+    "contentLabel": "المحتوى:",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "toasts": {
+      "vaultLocked": "الخزنة مقفلة",
+      "vaultLockedDescription": "الرجاء فتح الخزنة أولاً من صفحة الخزنة.",
+      "goToVault": "الانتقال للخزنة",
+      "noOutput": "لا يوجد ناتج للحفظ",
+      "titleRequired": "الرجاء إدخال عنوان.",
+      "saveSuccess": "تم الحفظ في الخزنة بنجاح!",
+      "saveFailed": "فشل الحفظ"
+    }
+  },
+  "vaultPage": {
+    "unlockError": "الرجاء إدخال كلمة المرور الرئيسية.",
+    "unlockTitle": "خزنة سرية",
+    "unlockDescription": "أدخل كلمة المرور الرئيسية لفتح الخزنة.",
+    "masterPasswordPlaceholder": "كلمة المرور الرئيسية",
+    "unlocking": "جاري الفتح...",
+    "unlockButton": "فتح الخزنة",
+    "unlockedTitle": "الخزنة مفتوحة",
+    "unlockedDescription": "يمكنك الآن إدارة عناصرك المحفوظة.",
+    "addNewItem": "إضافة عنصر جديد",
+    "lockButton": "إغلاق الخزنة",
+    "editButton": "تعديل",
+    "emptyState": "الخزنة فارغة.",
+    "emptyStateDescription": "انقر على 'إضافة عنصر جديد' للبدء.",
+    "toasts": {
+      "unlockedSuccess": "تم فتح الخزنة بنجاح!",
+      "deleteSuccess": "تم حذف العنصر.",
+      "deleteFailed": "فشل الحذف",
+      "updateSuccess": "تم تحديث العنصر بنجاح",
+      "addSuccess": "تمت إضافة العنصر بنجاح",
+      "saveFailed": "فشل الحفظ",
+      "copySuccess": "تم نسخ المحتوى!"
+    },
+    "editDialog": {
+      "titleEdit": "تعديل عنصر",
+      "titleAdd": "إضافة عنصر جديد",
+      "description": "املأ تفاصيل العنصر السري أدناه.",
+      "titlePlaceholder": "عنوان العنصر (مثال: كلمة سر الموقع الفلاني)",
+      "contentPlaceholder": "المحتوى السري...",
+      "cancel": "إلغاء",
+      "save": "حفظ"
+    }
+  }
+}

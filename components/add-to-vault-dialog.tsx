@@ -8,6 +8,7 @@ import { Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAppContext } from "@/context/app-context";
 import { addToVault } from "@/lib/vault";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface AddToVaultDialogProps {
   outputText: string;
@@ -16,6 +17,7 @@ interface AddToVaultDialogProps {
 
 export function AddToVaultDialog({ outputText, children }: AddToVaultDialogProps) {
   const { isVaultUnlocked, masterPassword, setActiveView } = useAppContext();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -24,14 +26,14 @@ export function AddToVaultDialog({ outputText, children }: AddToVaultDialogProps
     if (!isVaultUnlocked) {
       toast({
         variant: "destructive",
-        title: "الخزنة مقفلة",
-        description: "الرجاء فتح الخزنة أولاً من صفحة الخزنة.",
-        action: <Button onClick={() => setActiveView('vault')}>الانتقال للخزنة</Button>,
+        title: t('vaultDialog.toasts.vaultLocked'),
+        description: t('vaultDialog.toasts.vaultLockedDescription'),
+        action: <Button onClick={() => setActiveView('vault')}>{t('vaultDialog.toasts.goToVault')}</Button>,
       });
       return;
     }
     if (!outputText) {
-        toast({ variant: "destructive", title: "لا يوجد ناتج للحفظ" });
+        toast({ variant: "destructive", title: t('vaultDialog.toasts.noOutput') });
         return;
     }
     setIsOpen(true);
@@ -39,16 +41,16 @@ export function AddToVaultDialog({ outputText, children }: AddToVaultDialogProps
 
   const handleSave = async () => {
     if (!title || !outputText || !masterPassword) {
-        toast({ variant: "destructive", title: "الرجاء إدخال عنوان." });
+        toast({ variant: "destructive", title: t('vaultDialog.toasts.titleRequired') });
         return;
     }
     try {
         await addToVault(title, outputText, masterPassword);
-        toast({ title: "تم الحفظ في الخزنة بنجاح!" });
+        toast({ title: t('vaultDialog.toasts.saveSuccess') });
         setIsOpen(false);
         setTitle('');
     } catch (e: any) {
-        toast({ variant: "destructive", title: "فشل الحفظ", description: e.message });
+        toast({ variant: "destructive", title: t('vaultDialog.toasts.saveFailed'), description: e.message });
     }
   };
 
@@ -59,22 +61,22 @@ export function AddToVaultDialog({ outputText, children }: AddToVaultDialogProps
         </div>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>إضافة إلى الخزنة</DialogTitle>
-          <DialogDescription>أدخل عنواناً لهذا العنصر المحفوظ.</DialogDescription>
+          <DialogTitle>{t('vaultDialog.title')}</DialogTitle>
+          <DialogDescription>{t('vaultDialog.description')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
             <Input
-                placeholder="عنوان العنصر (مثال: مفتاح API لموقعي)"
+                placeholder={t('vaultDialog.placeholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
             />
             <p className="text-sm text-muted-foreground p-2 border rounded-md bg-muted truncate">
-                <span className="font-bold">المحتوى:</span> {outputText}
+                <span className="font-bold">{t('vaultDialog.contentLabel')}</span> {outputText}
             </p>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-          <Button onClick={handleSave}>حفظ</Button>
+          <DialogClose asChild><Button variant="outline">{t('vaultDialog.cancel')}</Button></DialogClose>
+          <Button onClick={handleSave}>{t('vaultDialog.save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -4,7 +4,13 @@ import { createContext, useState, useContext, ReactNode, Dispatch, SetStateActio
 import { View } from '@/components/sidebar';
 import { EncryptionType } from '@/app/encoding';
 
+export type Locale = 'ar' | 'en';
+
 interface AppContextType {
+    // Language Management
+    locale: Locale;
+    setLocale: Dispatch<SetStateAction<Locale>>;
+
     // View Management
     activeView: View;
     setActiveView: Dispatch<SetStateAction<View>>;
@@ -12,8 +18,6 @@ interface AppContextType {
     // Security Management
     isPasswordEnabled: boolean;
     setIsPasswordEnabled: Dispatch<SetStateAction<boolean>>;
-    encryptionType: EncryptionType;
-    setEncryptionType: Dispatch<SetStateAction<EncryptionType>>;
 
     // Vault Management
     isVaultVisible: boolean;
@@ -35,9 +39,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
+    const [locale, setLocale] = useState<Locale>('ar');
     const [activeView, setActiveView] = useState<View>('encoder-decoder');
     const [isPasswordEnabled, setIsPasswordEnabled] = useState(false);
-    const [encryptionType, setEncryptionType] = useState<EncryptionType>('simple');
     const [isVaultVisible, setIsVaultVisible] = useState(false);
     const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
     const [masterPassword, setMasterPassword] = useState<string | null>(null);
@@ -46,28 +50,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     // Load settings from localStorage on initial mount
     useEffect(() => {
-        const storedEncType = localStorage.getItem("shifrishan-encryption-type") as EncryptionType;
-        if (storedEncType) setEncryptionType(storedEncType);
-
         const storedAutoCopy = localStorage.getItem("shifrishan-auto-copy");
-        // Only set from storage if a value actually exists, otherwise keep the default
-        if (storedAutoCopy !== null) {
-            setAutoCopy(JSON.parse(storedAutoCopy));
-        }
+        if (storedAutoCopy !== null) setAutoCopy(JSON.parse(storedAutoCopy));
+
+        const storedLocale = localStorage.getItem("shifrishan-locale") as Locale;
+        if (storedLocale) setLocale(storedLocale);
     }, []);
 
-    // Persist auto-copy setting to localStorage whenever it changes
+    // Persist settings to localStorage whenever they change
     useEffect(() => {
         localStorage.setItem("shifrishan-auto-copy", JSON.stringify(autoCopy));
     }, [autoCopy]);
 
+    useEffect(() => {
+        localStorage.setItem("shifrishan-locale", locale);
+        document.documentElement.lang = locale;
+        document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+    }, [locale]);
+
     const value = {
+        locale,
+        setLocale,
         activeView,
         setActiveView,
         isPasswordEnabled,
         setIsPasswordEnabled,
-        encryptionType,
-        setEncryptionType,
         isVaultVisible,
         setIsVaultVisible,
         isVaultUnlocked,
