@@ -316,6 +316,18 @@ export function VaultPage() {
                     </div>
                 )}
                 <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
+                            <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => {if(itemToDelete) handleDelete(itemToDelete.id); setItemToDelete(null);}}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardContent>
         </Card>
     );
 }
