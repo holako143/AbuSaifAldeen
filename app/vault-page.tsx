@@ -179,7 +179,6 @@ export function VaultPage() {
                     <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>
-            </CardHeader>
             <CardContent>
                 <div className="space-y-2">
                     {filteredItems.length > 0 ? filteredItems.map(item => (
