@@ -1,19 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useAppContext } from "@/context/app-context";
 import { useTranslation } from "@/hooks/use-translation";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { formatRelativeTime } from "@/lib/utils";
 
 export function VaultPage() {
-    const { setMasterPassword: setGlobalMasterPassword, setIsVaultUnlocked } = useAppContext();
+    const { setMasterPassword: setGlobalMasterPassword, setIsVaultUnlocked, locale } = useAppContext();
     const { t } = useTranslation();
     const { toast } = useToast();
     const [items, setItems] = useState<VaultEntry[]>([]);
@@ -23,6 +27,12 @@ export function VaultPage() {
     const [error, setError] = useState('');
     const [editingItem, setEditingItem] = useState<VaultEntry | null>(null);
     const [showContent, setShowContent] = useState<Record<string, boolean>>({});
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredItems = useMemo(() => {
+        if (!searchQuery) return items;
+        return items.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [items, searchQuery]);
 
     const handleUnlock = async () => {
         if (!masterPassword) {
@@ -110,29 +120,56 @@ export function VaultPage() {
 
     return (
         <Card className="w-full animate-in">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                     <CardTitle className="text-2xl flex items-center gap-2"><Unlock /> {t('vaultPage.unlockedTitle')}</CardTitle>
                     <CardDescription>{t('vaultPage.unlockedDescription')}</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex w-full md:w-auto gap-2">
+                     <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder={t('vaultPage.searchPlaceholder', { count: items.length })}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 w-full"
+                        />
+                    </div>
                     <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
                     <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-2">
-                    {items.length > 0 ? items.map(item => (
+                    {filteredItems.length > 0 ? filteredItems.map(item => (
                         <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
                             <div className="flex justify-between items-center">
-                                <h3 className="font-semibold">{item.title}</h3>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold">{item.title}</h3>
+                                    <span className="text-xs text-muted-foreground">•</span>
+                                    <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
+                                </div>
                                 <div className="flex items-center">
-                                    <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}>
+                                <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
                                         {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="h-4 w-4" /></Button>
-                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon">{t('vaultPage.editButton')}</Button>} />
-                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.a11y.copyContent')}><Copy className="h-4 w-4" /></Button>
+                                <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button aria-label={t('vaultPage.a11y.editItem')} variant="ghost" size="icon">{t('vaultPage.editButton')}</Button>} />
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" aria-label={t('vaultPage.a11y.deleteItem')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
+                                                <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </div>
                             {showContent[item.id] && (
@@ -141,8 +178,8 @@ export function VaultPage() {
                         </div>
                     )) : (
                         <div className="text-center py-12 text-muted-foreground">
-                            <p>{t('vaultPage.emptyState')}</p>
-                            <p className="text-sm">{t('vaultPage.emptyStateDescription')}</p>
+                            <p>{searchQuery ? t('vaultPage.noResults') : t('vaultPage.emptyState')}</p>
+                            <p className="text-sm">{searchQuery ? t('vaultPage.noResultsDescription') : t('vaultPage.emptyStateDescription')}</p>
                         </div>
                     )}
                 </div>
@@ -153,40 +190,70 @@ export function VaultPage() {
 
 function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, item?: VaultEntry, triggerButton: React.ReactElement }) {
     const { t } = useTranslation();
+    const [isOpen, setIsOpen] = useState(false);
+    const isDesktop = useMediaQuery("(min-width: 768px)");
+
+    const title = item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd');
+    const description = t('vaultPage.editDialog.description');
+
+    if (isDesktop) {
+        return (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                        <DialogDescription>{description}</DialogDescription>
+                    </DialogHeader>
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} />
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+    return (
+        <Drawer open={isOpen} onOpenChange={setIsOpen}>
+            <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader className="text-left">
+                    <DrawerTitle>{item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd')}</DrawerTitle>
+                    <DrawerDescription>{t('vaultPage.editDialog.description')}</DrawerDescription>
+                </DrawerHeader>
+                <div className="p-4">
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} />
+                </div>
+            </DrawerContent>
+        </Drawer>
+    );
+}
+
+function EditItemForm({ item, onSave, setIsOpen }: { item?: VaultEntry, onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, setIsOpen: (isOpen: boolean) => void }) {
+    const { t } = useTranslation();
     const [title, setTitle] = useState(item?.title || '');
     const [text, setText] = useState(item?.text || '');
-    const [isOpen, setIsOpen] = useState(false);
 
     const handleSubmit = async () => {
         const success = await onSave({ id: item?.id, title, text });
         if(success) setIsOpen(false);
     }
 
-    // Reset form when dialog opens with new item data
     useEffect(() => {
-        if (isOpen) {
-            setTitle(item?.title || '');
-            setText(item?.text || '');
-        }
-    }, [isOpen, item]);
+        setTitle(item?.title || '');
+        setText(item?.text || '');
+    }, [item]);
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd')}</DialogTitle>
-                    <DialogDescription>{t('vaultPage.editDialog.description')}</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <Input placeholder={t('vaultPage.editDialog.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
-                    <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px]" />
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button></DialogClose>
-                    <Button onClick={handleSubmit}>{t('vaultPage.editDialog.save')}</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <>
+            <div className="grid gap-4 py-4">
+                <Input placeholder={t('vaultPage.editDialog.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px]" />
+            </div>
+            <DialogFooter className="pt-2 sm:justify-between gap-2 flex-col-reverse sm:flex-row">
+                 <DialogClose asChild>
+                    <Button variant="outline" className="w-full">{t('vaultPage.editDialog.cancel')}</Button>
+                 </DialogClose>
+                 <Button onClick={handleSubmit} className="w-full">{t('vaultPage.editDialog.save')}</Button>
+            </DialogFooter>
+        </>
     );
 }

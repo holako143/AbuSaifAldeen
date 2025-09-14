@@ -15,7 +15,16 @@
     "alphabetsTab": "الحروف",
     "processingPlaceholder": "جاري المعالجة...",
     "outputTextPlaceholder": "الناتج...",
-    "saveToVault": "حفظ في الخزنة"
+    "saveToVault": "حفظ في الخزنة",
+    "a11y": {
+      "removeLayer": "إزالة طبقة التشفير",
+      "paste": "لصق النص من الحافظة",
+      "clearInput": "مسح حقل الإدخال",
+      "copyOutput": "نسخ الناتج إلى الحافظة",
+      "shareOutput": "مشاركة الناتج",
+      "saveToVault": "حفظ الناتج في الخزنة",
+      "swap": "تبديل حقول الإدخال والإخراج"
+    }
   },
   "toasts": {
     "autoCopySuccess": "تم نسخ الناتج تلقائيًا!",
@@ -39,12 +48,29 @@
       "mirage": "سراب",
       "sakura": "ساكورا",
       "matrix": "مصفوفة",
-      "system": "النظام"
+      "system": "النظام",
+      "sunset": "غروب",
+      "emerald": "زمرد",
+      "amethyst": "جمشت",
+      "ruby": "ياقوت",
+      "midnight": "منتصف الليل"
     },
     "language": "اللغة",
     "languages": {
       "ar": "العربية",
       "en": "الإنجليزية"
+    },
+    "vault": {
+      "title": "إعدادات الخزنة",
+      "description": "تغيير كلمة المرور الرئيسية الخاصة بك.",
+      "currentPassword": "كلمة المرور الحالية",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmPassword": "تأكيد كلمة المرور الجديدة",
+      "button": "تغيير كلمة المرور",
+      "success": "تم تغيير كلمة المرور بنجاح!",
+      "successDescription": "تم قفل الخزنة. الرجاء فتحها بكلمة المرور الجديدة.",
+      "errorMismatch": "كلمتا المرور الجديدتان غير متطابقتين.",
+      "errorWrongPassword": "كلمة المرور الحالية خاطئة."
     }
   },
   "app": {
@@ -127,7 +153,9 @@
       "noOutput": "لا يوجد ناتج للحفظ",
       "titleRequired": "الرجاء إدخال عنوان.",
       "saveSuccess": "تم الحفظ في الخزنة بنجاح!",
-      "saveFailed": "فشل الحفظ"
+      "saveFailed": "فشل الحفظ",
+      "vaultRevealed": "تم كشف الخزنة السرية!",
+      "vaultRevealedDescription": "يمكنك الآن الوصول إليها من القائمة الجانبية."
     }
   },
   "vaultPage": {
@@ -144,6 +172,18 @@
     "editButton": "تعديل",
     "emptyState": "الخزنة فارغة.",
     "emptyStateDescription": "انقر على 'إضافة عنصر جديد' للبدء.",
+    "searchPlaceholder": "ابحث في {count} عنصر...",
+    "noResults": "لا توجد نتائج",
+    "noResultsDescription": "جرب كلمة بحث مختلفة.",
+    "deleteConfirmTitle": "هل أنت متأكد؟",
+    "deleteConfirmDescription": "سيتم حذف هذا العنصر بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirmAction": "نعم، احذف",
+    "a11y": {
+      "toggleVisibility": "إظهار/إخفاء المحتوى السري",
+      "copyContent": "نسخ المحتوى السري",
+      "editItem": "تعديل العنصر",
+      "deleteItem": "حذف العنصر"
+    },
     "toasts": {
       "unlockedSuccess": "تم فتح الخزنة بنجاح!",
       "deleteSuccess": "تم حذف العنصر.",
@@ -161,6 +201,17 @@
       "contentPlaceholder": "المحتوى السري...",
       "cancel": "إلغاء",
       "save": "حفظ"
+    }
+  },
+  "encoderDecoder": {
+    "a11y": {
+      "removeLayer": "إزالة طبقة التشفير",
+      "paste": "لصق النص من الحافظة",
+      "clearInput": "مسح حقل الإدخال",
+      "copyOutput": "نسخ الناتج إلى الحافظة",
+      "shareOutput": "مشاركة الناتج",
+      "saveToVault": "حفظ الناتج في الخزنة",
+      "swap": "تبديل حقول الإدخال والإخراج"
     }
   }
 }

@@ -9,6 +9,16 @@ export interface VaultEntry {
 }
 
 const VAULT_STORAGE_KEY = "shifrishan-vault-encrypted";
+const VAULT_HASH_KEY = "shifrishan-vault-hash";
+
+// Helper to create a SHA-256 hash of the master password for verification
+const hashPassword = async (password: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 /**
  * Retrieves and decrypts all vault items from localStorage.
@@ -17,17 +27,29 @@ const VAULT_STORAGE_KEY = "shifrishan-vault-encrypted";
  */
 export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[]> => {
   if (typeof window === "undefined") return [];
-  try {
-    const encryptedBlob = localStorage.getItem(VAULT_STORAGE_KEY);
-    if (!encryptedBlob) return [];
 
-    const itemsJson = await decryptAES(encryptedBlob, masterPassword);
-    return JSON.parse(itemsJson) as VaultEntry[];
-  } catch (error) {
-    console.error("Failed to decrypt or parse vault items", error);
-    // Throw a specific error for wrong password to be caught in the UI
-    throw new Error("كلمة المرور خاطئة أو الخزنة تالفة.");
+  const encryptedBlob = localStorage.getItem(VAULT_STORAGE_KEY);
+  const storedHash = localStorage.getItem(VAULT_HASH_KEY);
+
+  if (!storedHash) {
+    // No hash means this is a completely new vault.
+    // If there's also no data, return empty. If there's data, it's an old vault version.
+    return encryptedBlob ? JSON.parse(await decryptAES(encryptedBlob, masterPassword)) : [];
   }
+
+  // Verify password against hash
+  const providedHash = await hashPassword(masterPassword);
+  if (providedHash !== storedHash) {
+    throw new Error("كلمة المرور خاطئة.");
+  }
+
+  // If we are here, password is correct. Now get data.
+  if (!encryptedBlob) {
+    return []; // Correct password, but vault is empty.
+  }
+
+  const itemsJson = await decryptAES(encryptedBlob, masterPassword);
+  return JSON.parse(itemsJson);
 };
 
 /**
@@ -37,14 +59,14 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
  */
 const saveVaultItems = async (items: VaultEntry[], masterPassword: string): Promise<void> => {
   if (typeof window === "undefined") return;
-  try {
-    const itemsJson = JSON.stringify(items);
-    const encryptedBlob = await encryptAES(itemsJson, masterPassword);
-    localStorage.setItem(VAULT_STORAGE_KEY, encryptedBlob);
-  } catch (error) {
-    console.error("Failed to encrypt and save vault items", error);
-    throw new Error("فشل حفظ الخزنة.");
-  }
+
+  const itemsJson = JSON.stringify(items);
+  const encryptedBlob = await encryptAES(itemsJson, masterPassword);
+  localStorage.setItem(VAULT_STORAGE_KEY, encryptedBlob);
+
+  // Also save the hash of the new password for verification
+  const passwordHash = await hashPassword(masterPassword);
+  localStorage.setItem(VAULT_HASH_KEY, passwordHash);
 };
 
 /**
@@ -103,4 +125,23 @@ export const updateVaultItem = async (updatedEntry: VaultEntry, masterPassword: 
  */
 export const updateVaultOrder = async (updatedItems: VaultEntry[], masterPassword: string): Promise<void> => {
     await saveVaultItems(updatedItems, masterPassword);
+}
+
+/**
+ * Changes the master password for the vault.
+ * Re-encrypts all items with the new password.
+ * @param oldPassword The current master password.
+ * @param newPassword The new master password.
+ */
+export const changeMasterPassword = async (oldPassword: string, newPassword: string): Promise<void> => {
+    if (!newPassword) {
+        throw new Error("لا يمكن أن تكون كلمة المرور الجديدة فارغة.");
+    }
+    // This step implicitly verifies the old password.
+    // If it's wrong, getVaultItems will throw an error.
+    const items = await getVaultItems(oldPassword);
+
+    // Re-encrypt and save with the new password.
+    // This will also update the password hash.
+    await saveVaultItems(items, newPassword);
 }

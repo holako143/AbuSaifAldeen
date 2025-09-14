@@ -15,7 +15,16 @@
     "alphabetsTab": "Alphabets",
     "processingPlaceholder": "Processing...",
     "outputTextPlaceholder": "Output...",
-    "saveToVault": "Save to Vault"
+    "saveToVault": "Save to Vault",
+    "a11y": {
+      "removeLayer": "Remove encryption layer",
+      "paste": "Paste text from clipboard",
+      "clearInput": "Clear input field",
+      "copyOutput": "Copy output to clipboard",
+      "shareOutput": "Share output",
+      "saveToVault": "Save output to vault",
+      "swap": "Swap input and output fields"
+    }
   },
   "toasts": {
     "autoCopySuccess": "Output copied to clipboard automatically!",
@@ -39,12 +48,29 @@
       "mirage": "Mirage",
       "sakura": "Sakura",
       "matrix": "Matrix",
-      "system": "System"
+      "system": "System",
+      "sunset": "Sunset",
+      "emerald": "Emerald",
+      "amethyst": "Amethyst",
+      "ruby": "Ruby",
+      "midnight": "Midnight"
     },
     "language": "Language",
     "languages": {
       "ar": "Arabic",
       "en": "English"
+    },
+    "vault": {
+      "title": "Vault Settings",
+      "description": "Change your master password.",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "button": "Change Password",
+      "success": "Password changed successfully!",
+      "successDescription": "The vault has been locked. Please unlock it with your new password.",
+      "errorMismatch": "The new passwords do not match.",
+      "errorWrongPassword": "The current password is incorrect."
     },
     "language": "Language"
   },
@@ -128,7 +154,9 @@
       "noOutput": "There is no output to save",
       "titleRequired": "Please enter a title.",
       "saveSuccess": "Saved to vault successfully!",
-      "saveFailed": "Failed to save"
+      "saveFailed": "Failed to save",
+      "vaultRevealed": "Secret Vault Revealed!",
+      "vaultRevealedDescription": "You can now access it from the sidebar."
     }
   },
   "vaultPage": {
@@ -145,6 +173,18 @@
     "editButton": "Edit",
     "emptyState": "The vault is empty.",
     "emptyStateDescription": "Click 'Add New Item' to get started.",
+    "searchPlaceholder": "Search in {count} items...",
+    "noResults": "No results found",
+    "noResultsDescription": "Try a different search term.",
+    "deleteConfirmTitle": "Are you sure?",
+    "deleteConfirmDescription": "This will permanently delete the item. This action cannot be undone.",
+    "deleteConfirmAction": "Yes, delete",
+    "a11y": {
+      "toggleVisibility": "Show/hide secret content",
+      "copyContent": "Copy secret content",
+      "editItem": "Edit item",
+      "deleteItem": "Delete item"
+    },
     "toasts": {
       "unlockedSuccess": "Vault unlocked successfully!",
       "deleteSuccess": "Item deleted.",
