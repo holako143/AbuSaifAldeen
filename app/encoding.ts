@@ -87,19 +87,32 @@ interface DecodeParams {
 }
 
 export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
-    const hiddenText = decodeFromEmoji(text);
+    const lines = text.split('\n');
+    const decodedLines = [];
 
-    if (type !== 'aes256') {
-        throw new Error(`Unsupported encryption type: ${type}`);
+    for (const line of lines) {
+        if (!line.trim()) {
+            decodedLines.push('');
+            continue;
+        }
+
+        // We will process each line. If any line fails, the entire process fails.
+        // This is simpler than trying to return partial results and is safer.
+        const hiddenText = decodeFromEmoji(line);
+
+        if (type !== 'aes256') {
+            throw new Error(`Unsupported encryption type: ${type}`);
+        }
+
+        if (!passwords || passwords.length === 0) {
+            decodedLines.push(hiddenText);
+        } else {
+            const decryptedText = passwords.length > 1
+                ? await decryptMultiple(hiddenText, passwords)
+                : await decryptAES(hiddenText, passwords[0]);
+            decodedLines.push(decryptedText);
+        }
     }
 
-    if (!passwords || passwords.length === 0) {
-        // If no password, we assume the text was not encrypted.
-        return hiddenText;
-    }
-
-    // Use multiple decryption if more than one password is provided
-    return passwords.length > 1
-        ? await decryptMultiple(hiddenText, passwords)
-        : await decryptAES(hiddenText, passwords[0]);
+    return decodedLines.join('\n');
 }

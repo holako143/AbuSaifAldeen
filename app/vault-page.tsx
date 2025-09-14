@@ -20,7 +20,6 @@ import { formatRelativeTime } from "@/lib/utils";
 import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { changeMasterPassword } from "@/lib/vault";
-import { EmojiPasswordInput } from "@/components/emoji-password-input";
 
 function ChangePasswordDialog() {
     const { t } = useTranslation();
@@ -69,12 +68,12 @@ function ChangePasswordDialog() {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>{t('settings.vault.newPassword')}</Label>
-                        <EmojiPasswordInput value={newPassword} onChange={setNewPassword} />
+                        <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
+                        <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                        <Label>{t('settings.vault.confirmPassword')}</Label>
-                        <EmojiPasswordInput value={confirmPassword} onChange={setConfirmPassword} />
+                        <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
+                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                     </div>
                 </div>
                 <DialogFooter>
@@ -210,9 +209,12 @@ export function VaultPage() {
                     <CardDescription>{t('vaultPage.unlockDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <EmojiPasswordInput
+                    <Input
+                        type="password"
+                        placeholder={t('vaultPage.masterPasswordPlaceholder')}
                         value={masterPassword}
-                        onChange={setMasterPassword}
+                        onChange={(e) => setMasterPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
                     />
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                     <Button onClick={handleUnlock} disabled={isLoading} className="w-full">

@@ -28,7 +28,8 @@
     "layers": {
       "title": "طبقات التشفير",
       "count": "{count} طبقات نشطة"
-    }
+    },
+    "decryptionErrorLine": "خطأ في فك تشفير هذا السطر"
   },
   "toasts": {
     "autoCopySuccess": "تم نسخ الناتج تلقائيًا!",
@@ -199,9 +200,6 @@
       "copyContent": "نسخ المحتوى السري",
       "editItem": "تعديل العنصر",
       "deleteItem": "حذف العنصر"
-    },
-    "emojiPassword": {
-        "add": "إضافة إيموجي"
     },
     "mobile": {
         "show": "إظهار",

@@ -28,7 +28,8 @@
     "layers": {
       "title": "Encryption Layers",
       "count": "{count} active layers"
-    }
+    },
+    "decryptionErrorLine": "Error decrypting this line"
   },
   "toasts": {
     "autoCopySuccess": "Output copied to clipboard automatically!",
@@ -200,9 +201,6 @@
       "copyContent": "Copy secret content",
       "editItem": "Edit item",
       "deleteItem": "Delete item"
-    },
-    "emojiPassword": {
-        "add": "Add Emoji"
     },
     "mobile": {
         "show": "Show",
