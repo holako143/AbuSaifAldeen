@@ -104,49 +104,10 @@ function LanguageSwitcher() {
 function ThemeCustomizer() {
     const { t } = useTranslation();
     const {
-        primaryColor, setPrimaryColor,
-        backgroundColor, setBackgroundColor,
-        textColor, setTextColor
-    } = useAppContext();
-
-    const ColorInput = ({ label, value, onChange }: { label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
-        <div className="flex items-center justify-between p-2 border rounded-lg">
-            <Label>{label}</Label>
-            <div className="relative">
-                <input
-                    type="color"
-                    value={value}
-                    onChange={onChange}
-                    className="w-8 h-8 p-0 border-none appearance-none bg-transparent cursor-pointer"
-                    style={{'--color': value} as React.CSSProperties}
-                />
-                 <div className="absolute inset-0 rounded-full pointer-events-none" style={{backgroundColor: value, border: '1px solid #88888844'}}></div>
-            </div>
-        </div>
-    );
-
-    return (
-        <div className="space-y-4">
-             <div>
-                <h3 className="text-lg font-medium">{t('settings.theme.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('settings.theme.description')}</p>
-            </div>
-            <div className="space-y-2">
-                <ColorInput label={t('settings.theme.primary')} value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
-                <ColorInput label={t('settings.theme.background')} value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
-                <ColorInput label={t('settings.theme.text')} value={textColor} onChange={(e) => setTextColor(e.target.value)} />
-            </div>
-        </div>
-    );
-}
-
-
-function ThemeCustomizer() {
-    const { t } = useTranslation();
-    const {
         themeMode, setThemeMode,
         primaryColor, setPrimaryColor,
-        backgroundColor, setBackgroundColor,
+        backgroundColorStart, setBackgroundColorStart,
+        backgroundColorEnd, setBackgroundColorEnd,
         textColor, setTextColor
     } = useAppContext();
 
