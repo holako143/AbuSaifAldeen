@@ -52,6 +52,9 @@ const pwaConfig = {
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development", // Disable PWA in dev mode
+  fallbacks: {
+    document: "/_offline.html",
+  },
   runtimeCaching: [
     {
       urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
