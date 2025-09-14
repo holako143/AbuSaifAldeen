@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem } from "@/lib/vault";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +28,7 @@ export function VaultPage() {
     const [editingItem, setEditingItem] = useState<VaultEntry | null>(null);
     const [showContent, setShowContent] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const filteredItems = useMemo(() => {
         if (!searchQuery) return items;
@@ -94,6 +95,39 @@ export function VaultPage() {
         }
     };
 
+    const handleExport = () => {
+        const result = exportEncryptedVault();
+        if (result.success) {
+            toast({ title: t('vaultPage.toasts.exportSuccess') });
+        } else if (result.messageKey) {
+            toast({ variant: "destructive", title: t(result.messageKey) });
+        }
+    };
+
+    const handleImportClick = () => fileInputRef.current?.click();
+
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result as string;
+                const result = importEncryptedVault(text);
+                if (result.success) {
+                    handleLock(); // Lock the vault to force re-authentication with new password
+                    toast({ title: t('vaultPage.toasts.importSuccess') });
+                } else if (result.message) {
+                    toast({ variant: "destructive", title: t('vaultPage.toasts.importError'), description: result.message });
+                }
+            } catch (error) {
+                toast({ variant: "destructive", title: t('vaultPage.toasts.importError'), description: t('vaultPage.toasts.importErrorInvalid') });
+            }
+        };
+        reader.readAsText(file);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
     if (isLocked) {
         return (
             <Card className="w-full max-w-md mx-auto animate-in">
@@ -136,6 +170,9 @@ export function VaultPage() {
                         />
                     </div>
                     <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
+                    <Button variant="outline" size="icon" onClick={handleExport}><Download className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={handleImportClick}><Upload className="h-4 w-4" /></Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
                     <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>

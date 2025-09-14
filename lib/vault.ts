@@ -145,3 +145,48 @@ export const changeMasterPassword = async (oldPassword: string, newPassword: str
     // This will also update the password hash.
     await saveVaultItems(items, newPassword);
 }
+
+/**
+ * Exports the raw encrypted vault blob to a file.
+ */
+export const exportEncryptedVault = (): { success: boolean, messageKey?: string } => {
+    if (typeof window === "undefined") return { success: false, messageKey: 'common.errors.notInBrowser' };
+
+    const encryptedBlob = localStorage.getItem(VAULT_STORAGE_KEY);
+    if (!encryptedBlob) {
+        return { success: false, messageKey: 'vaultPage.toasts.exportErrorEmpty' };
+    }
+
+    const blob = new Blob([encryptedBlob], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `shifrishan-vault-backup-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return { success: true };
+};
+
+/**
+ * Imports an encrypted vault blob, overwriting the current vault.
+ * @param vaultContent The raw encrypted string from the backup file.
+ * @returns An object indicating success or failure.
+ */
+export const importEncryptedVault = (vaultContent: string): { success: boolean, message?: string } => {
+    if (typeof window === "undefined") return { success: false, message: 'Not in browser' };
+
+    if (!vaultContent || typeof vaultContent !== 'string' || !vaultContent.startsWith('{"iv"')) {
+        // Basic sanity check to see if it looks like our encrypted JSON object
+        return { success: false, message: "الملف غير صالح أو تالف." };
+    }
+
+    // This is a destructive action. Overwrite the vault.
+    localStorage.setItem(VAULT_STORAGE_KEY, vaultContent);
+    // Remove the old password hash. The user will need to unlock with the new vault's password.
+    // A new hash will be generated on the next save operation.
+    localStorage.removeItem(VAULT_HASH_KEY);
+
+    return { success: true };
+};

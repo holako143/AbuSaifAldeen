@@ -72,6 +72,13 @@
       "errorMismatch": "The new passwords do not match.",
       "errorWrongPassword": "The current password is incorrect."
     },
+    "theme": {
+      "title": "Customize Theme",
+      "description": "Choose your own colors to customize the app's look and feel.",
+      "primary": "Primary Color (buttons and highlights)",
+      "background": "Background Color",
+      "text": "Text Color"
+    },
     "language": "Language"
   },
   "app": {
@@ -192,8 +199,15 @@
       "updateSuccess": "Item updated successfully",
       "addSuccess": "Item added successfully",
       "saveFailed": "Failed to save",
-      "copySuccess": "Content copied!"
+      "copySuccess": "Content copied!",
+      "exportSuccess": "Vault exported successfully.",
+      "exportErrorEmpty": "Vault is empty, nothing to export.",
+      "importSuccess": "Vault imported successfully! The vault will now be locked. Please unlock it with the password for the imported file.",
+      "importError": "Failed to import vault.",
+      "importErrorInvalid": "The imported file is invalid or corrupt."
     },
+    "exportButton": "Export Vault",
+    "importButton": "Import Vault",
     "editDialog": {
       "titleEdit": "Edit Item",
       "titleAdd": "Add New Item",
