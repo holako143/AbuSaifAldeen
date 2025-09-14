@@ -29,6 +29,7 @@ export function VaultPage() {
     const [editingItem, setEditingItem] = useState<VaultEntry | null>(null);
     const [showContent, setShowContent] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [itemToDelete, setItemToDelete] = useState<VaultEntry | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -207,7 +208,7 @@ export function VaultPage() {
                                                 <DropdownMenuContent>
                                                     <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="mr-2 h-4 w-4" /> {t('vaultPage.mobile.copy')}</DropdownMenuItem>
                                                     <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">{t('vaultPage.editButton')}</div>} />
-                                                    <AlertDialog><AlertDialogTrigger asChild><div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground text-red-500 focus:text-red-600 w-full">{t('vaultPage.mobile.delete')}</div></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                                                    <DropdownMenuItem onClick={() => setItemToDelete(item)} className="text-red-500 focus:text-red-600">{t('vaultPage.mobile.delete')}</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -226,7 +227,7 @@ export function VaultPage() {
                                     <Button variant="ghost" size="sm" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}>{showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}</Button>
                                     <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}>{t('vaultPage.mobile.copy')}</Button>
                                     <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="sm">{t('vaultPage.editButton')}</Button>} />
-                                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600">{t('vaultPage.mobile.delete')}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                                    <Button onClick={() => setItemToDelete(item)} variant="ghost" size="sm" className="text-red-500 hover:text-red-600">{t('vaultPage.mobile.delete')}</Button>
                                 </div>
                             </div>
                         )
@@ -237,6 +238,18 @@ export function VaultPage() {
                         </div>
                     )}
                 </div>
+                <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
+                            <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => {if(itemToDelete) handleDelete(itemToDelete.id); setItemToDelete(null);}}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
     );
