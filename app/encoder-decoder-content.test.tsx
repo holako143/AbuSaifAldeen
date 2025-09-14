@@ -40,7 +40,7 @@ describe('Base64EncoderDecoderContent', () => {
     );
 
     // Check for the title in English
-    expect(screen.getByText('Encoder & Decoder')).toBeInTheDocument();
+    expect(screen.getByText('تشفير & فك التشفير')).toBeInTheDocument();
 
     // Check for text areas by their English placeholders
     expect(screen.getByPlaceholderText('Enter the text to be processed')).toBeInTheDocument();
