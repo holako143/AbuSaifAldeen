@@ -12,10 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { decode, encode } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
-import { addToVault } from "@/lib/vault";
 import { getCustomAlphabetList, getCustomEmojiList, promoteListItem, EMOJI_STORAGE_KEY, ALPHABET_STORAGE_KEY } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
 import { useAppContext } from "@/context/app-context";
+import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
 
 export function Base64EncoderDecoderContent() {
   const {
@@ -35,7 +35,7 @@ export function Base64EncoderDecoderContent() {
   const [outputText, setOutputText] = useState("");
   const [errorText, setErrorText] = useState("");
   const [defaultTab, setDefaultTab] = useState("emoji");
-  const [password, setPassword] = useState("");
+  const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -62,14 +62,20 @@ export function Base64EncoderDecoderContent() {
   useEffect(() => {
     const processText = async () => {
       if (inputText.trim() === "") { setOutputText(""); setErrorText(""); return; }
-      if (isPasswordGloballyEnabled && !password) { setErrorText("كلمة السر مطلوبة عند تفعيل خيار كلمة السر."); setOutputText(""); return; }
+
+      const activePasswords = passwords.map(p => p.value).filter(Boolean);
+      if (isPasswordGloballyEnabled && activePasswords.length === 0) {
+        setErrorText("كلمة سر واحدة على الأقل مطلوبة عند تفعيل خيار كلمة السر.");
+        setOutputText("");
+        return;
+      }
 
       setIsProcessing(true);
       setErrorText("");
       try {
         const result = isEncoding
-          ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined })
-          : await decode({ text: inputText, type: encryptionType, password: isPasswordGloballyEnabled ? password : undefined });
+          ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, passwords: isPasswordGloballyEnabled ? activePasswords : [] })
+          : await decode({ text: inputText, type: encryptionType, passwords: isPasswordGloballyEnabled ? activePasswords : [] });
 
         setOutputText(result);
 
@@ -100,7 +106,7 @@ export function Base64EncoderDecoderContent() {
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, password, encryptionType, defaultTab, autoCopy, toast]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, encryptionType, defaultTab, autoCopy, toast]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
@@ -127,36 +133,6 @@ export function Base64EncoderDecoderContent() {
     toast({ title: "تم التبديل!" });
   };
 
-  const handleSaveToVault = () => {
-      if (!outputText) return;
-      if (inputText.trim() === 'خزنة' && mode === 'decode') return;
-      const result = addToVault(outputText);
-      if (result) {
-          toast({ title: "تم الحفظ في الخزنة!" });
-      } else {
-          toast({ variant: "destructive", title: "العنصر موجود بالفعل في الخزنة." });
-      }
-  };
-
-  const handleStarClick = () => {
-      if (clickTimeout.current) {
-          clearTimeout(clickTimeout.current);
-          clickTimeout.current = null;
-          if (inputText.trim() === 'خزنة' && mode === 'decode') {
-              setIsVaultVisible(true);
-              setActiveView('vault');
-              toast({ title: "تم إظهار الخزنة السرية في القائمة."});
-          } else if (mode !== 'decode') {
-              toast({ variant: "default", title: "لإظهار الخزنة", description: "يجب أن تكون في وضع 'فك التشفير' أولاً." });
-          }
-      } else {
-          clickTimeout.current = setTimeout(() => {
-              handleSaveToVault();
-              clickTimeout.current = null;
-          }, 300);
-      }
-  }
-
   return (
     <Card className="w-full max-w-2xl mx-auto animate-in">
         <CardHeader>
@@ -176,11 +152,35 @@ export function Base64EncoderDecoderContent() {
                 {encryptionType === 'aes256' && <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>}
                 {encryptionType === 'simple' && <div className="flex items-center gap-1 text-xs text-amber-500"><ShieldAlert className="h-4 w-4"/><span>Salt</span></div>}
             </div>
-            <div className="relative pt-2">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input type="password" placeholder="أدخل كلمة السر هنا..." value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
+            <div className="space-y-2 pt-2">
+              {passwords.map((p, index) => (
+                <div key={p.id} className="flex items-center gap-2">
+                  <div className="relative flex-grow">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder={`كلمة السر للطبقة ${index + 1}`}
+                      value={p.value}
+                      onChange={(e) => {
+                        const newPasswords = [...passwords];
+                        newPasswords[index].value = e.target.value;
+                        setPasswords(newPasswords);
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+                  {passwords.length > 1 && (
+                    <Button variant="ghost" size="icon" onClick={() => setPasswords(passwords.filter(item => item.id !== p.id))}>
+                      <X className="h-4 w-4 text-red-500"/>
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
+                إضافة طبقة تشفير
+              </Button>
             </div>
-            </div>
+        </div>
         )}
 
         <div>
@@ -207,7 +207,14 @@ export function Base64EncoderDecoderContent() {
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button>}
-                <Button variant="ghost" size="icon" onClick={handleStarClick} className="text-amber-500"><Star className="h-5 w-5" /></Button>
+                <AddToVaultDialog outputText={outputText}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-amber-500"><Star className="h-5 w-5" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>حفظ في الخزنة</p></TooltipContent>
+                    </Tooltip>
+                </AddToVaultDialog>
                 <Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-5 w-5" /></Button>
             </div>
         </div>

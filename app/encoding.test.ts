@@ -40,13 +40,13 @@ describe('emoji encoder/decoder (simple mode)', () => {
             emoji: '🤫',
             text: text,
             type: 'simple',
-            password: salt
+            passwords: [salt]
         });
 
         const decoded = await decode({
             text: encoded,
             type: 'simple',
-            password: salt
+            passwords: [salt]
         });
 
         expect(decoded).toBe(expectedDecoded);

@@ -1,4 +1,4 @@
-import { encryptAES, decryptAES } from "../lib/crypto";
+import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib/crypto";
 
 export type EncryptionType = 'simple' | 'aes256';
 
@@ -60,18 +60,21 @@ interface EncodeParams {
     emoji: string;
     text: string;
     type: EncryptionType;
-    password?: string;
+    passwords?: string[];
 }
 
-export async function encode({ emoji, text, type, password }: EncodeParams): Promise<string> {
+export async function encode({ emoji, text, type, passwords }: EncodeParams): Promise<string> {
     if (type === 'aes256') {
-        if (!password) throw new Error("Password is required for AES-256 encryption.");
-        const encryptedText = await encryptAES(text, password);
+        if (!passwords || passwords.length === 0) throw new Error("Password is required for AES-256 encryption.");
+        // Use multiple encryption if more than one password is provided, otherwise use single encryption
+        const encryptedText = passwords.length > 1
+            ? await encryptMultiple(text, passwords)
+            : await encryptAES(text, passwords[0]);
         return encodeToEmoji(emoji, encryptedText);
     }
 
-    // Simple mode (with optional, insecure salt)
-    const textToEncode = password ? `${password}::${text}` : text;
+    // Simple mode (with optional, insecure salt) - only uses the first password if provided
+    const textToEncode = passwords && passwords.length > 0 ? `${passwords[0]}::${text}` : text;
     return encodeToEmoji(emoji, textToEncode);
 }
 
@@ -79,15 +82,18 @@ export async function encode({ emoji, text, type, password }: EncodeParams): Pro
 interface DecodeParams {
     text: string;
     type: EncryptionType;
-    password?: string;
+    passwords?: string[];
 }
 
-export async function decode({ text, type, password }: DecodeParams): Promise<string> {
+export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
     const hiddenText = decodeFromEmoji(text);
 
     if (type === 'aes256') {
-        if (!password) throw new Error("Password is required for AES-256 decryption.");
-        return await decryptAES(hiddenText, password);
+        if (!passwords || passwords.length === 0) throw new Error("Password is required for AES-256 decryption.");
+        // Use multiple decryption if more than one password is provided
+        return passwords.length > 1
+            ? await decryptMultiple(hiddenText, passwords)
+            : await decryptAES(hiddenText, passwords[0]);
     }
 
     // Simple mode: just return the hidden text

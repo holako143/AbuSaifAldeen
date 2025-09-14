@@ -6,11 +6,10 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sidebar } from "./sidebar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useToast } from "./ui/use-toast";
 import { useAppContext } from "@/context/app-context";
-import { PwaStatusIcon } from "./pwa-status-icon";
 
 export function TopBar() {
   const {
@@ -47,59 +46,53 @@ export function TopBar() {
   };
 
   return (
-    <TooltipProvider>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <div className="animate-in">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleLogoClick}
-                  onDoubleClick={handleLogoDoubleClick}
-                  className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6"
-                >
-                  <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
-                  <h1 className="text-xl font-bold">شفريشن</h1>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>اضغط مرة للرئيسية، ومرتين للوضع الآمن</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
-            <div className="animate-in" style={{ animationDelay: "0.2s" }}>
-              <PwaStatusIcon />
-            </div>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={toggleTheme} className="animate-in" style={{ animationDelay: "0.3s" }}>
-                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>تغيير المظهر</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="animate-in" style={{ animationDelay: "0.4s" }}>
-                  <Menu className="h-6 w-6" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <Sidebar closeSidebar={() => setSidebarOpen(false)} />
-              </SheetContent>
-            </Sheet>
-          </div>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        <div className="animate-in">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleLogoClick}
+                onDoubleClick={handleLogoDoubleClick}
+                className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6"
+              >
+                <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
+                <h1 className="text-xl font-bold">شفريشن</h1>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>اضغط مرة للرئيسية، ومرتين للوضع الآمن</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
-      </header>
-    </TooltipProvider>
+
+        <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={toggleTheme} className="animate-in" style={{ animationDelay: "0.3s" }}>
+                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>تغيير المظهر</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="animate-in" style={{ animationDelay: "0.4s" }}>
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <Sidebar closeSidebar={() => setSidebarOpen(false)} />
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
   );
 }
