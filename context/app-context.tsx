@@ -18,6 +18,10 @@ interface AppContextType {
     // Vault Management
     isVaultVisible: boolean;
     setIsVaultVisible: Dispatch<SetStateAction<boolean>>;
+    isVaultUnlocked: boolean;
+    setIsVaultUnlocked: Dispatch<SetStateAction<boolean>>;
+    masterPassword: string | null;
+    setMasterPassword: Dispatch<SetStateAction<string | null>>;
 
     // Data passing
     textToDecode: string | null;
@@ -35,6 +39,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [isPasswordEnabled, setIsPasswordEnabled] = useState(false);
     const [encryptionType, setEncryptionType] = useState<EncryptionType>('simple');
     const [isVaultVisible, setIsVaultVisible] = useState(false);
+    const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
+    const [masterPassword, setMasterPassword] = useState<string | null>(null);
     const [textToDecode, setTextToDecode] = useState<string | null>(null);
     const [autoCopy, setAutoCopy] = useState(true); // Default to true
 
@@ -64,6 +70,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setEncryptionType,
         isVaultVisible,
         setIsVaultVisible,
+        isVaultUnlocked,
+        setIsVaultUnlocked,
+        masterPassword,
+        setMasterPassword,
         textToDecode,
         setTextToDecode,
         autoCopy,

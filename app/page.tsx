@@ -1,15 +1,13 @@
 "use client";
 
 import { Suspense } from "react";
-import { TopBar } from "@/components/top-bar";
-import { Base64EncoderDecoderContent } from "./encoder-decoder-content";
+import dynamic from 'next/dynamic';
 import { HistoryView } from "./history-view";
 import { EmojiManagementView } from "./emoji-management-view";
 import { SettingsView } from "./settings-view";
 import { VaultPage } from "./vault-page";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppProvider, useAppContext } from "@/context/app-context";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 
 function LoadingFallback() {
   return (
@@ -22,6 +20,9 @@ function LoadingFallback() {
     </Card>
   );
 }
+
+const TopBar = dynamic(() => import('@/components/top-bar').then(mod => mod.TopBar), { ssr: false });
+const Base64EncoderDecoderContent = dynamic(() => import('./encoder-decoder-content').then(mod => mod.Base64EncoderDecoderContent), { ssr: false });
 
 function AppContent() {
   const { activeView } = useAppContext();
@@ -52,7 +53,6 @@ function AppContent() {
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         {renderContent()}
       </main>
-      <PwaInstallPrompt />
     </div>
   );
 }

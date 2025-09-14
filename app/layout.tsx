@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { AppProvider } from "@/components/app-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,15 +22,9 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
       </head>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          themes={['light', 'dark', 'system', 'theme-dusk', 'theme-oceanic', 'theme-mirage', 'theme-sakura', 'theme-matrix']}
-        >
+        <AppProvider>
           {children}
-          <SonnerToaster richColors />
-        </ThemeProvider>
+        </AppProvider>
       </body>
     </html>
   );
