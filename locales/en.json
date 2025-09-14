@@ -24,6 +24,10 @@
       "shareOutput": "Share output",
       "saveToVault": "Save output to vault",
       "swap": "Swap input and output fields"
+    },
+    "layers": {
+      "title": "Encryption Layers",
+      "count": "{count} active layers"
     }
   },
   "toasts": {
@@ -196,6 +200,9 @@
       "copyContent": "Copy secret content",
       "editItem": "Edit item",
       "deleteItem": "Delete item"
+    },
+    "emojiPassword": {
+        "add": "Add Emoji"
     },
     "mobile": {
         "show": "Show",

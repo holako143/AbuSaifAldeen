@@ -154,8 +154,11 @@ export function Base64EncoderDecoderContent() {
         {isPasswordGloballyEnabled && (
             <div className="space-y-2 p-3 border rounded-lg animate-in">
             <div className="flex items-center justify-between">
-                <Label>{t('encoderDecoder.passwordEnabledLabel')}</Label>
-                <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>
+                <Label className="font-semibold">{t('encoderDecoder.layers.title')}</Label>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{t('encoderDecoder.layers.count', { count: passwords.filter(p => p.value).length })}</span>
+                    <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>
+                </div>
             </div>
             <div className="space-y-2 pt-2">
               {passwords.map((p, index) => (
