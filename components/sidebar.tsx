@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { History, Settings, Smile, Home, Archive } from "lucide-react";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";

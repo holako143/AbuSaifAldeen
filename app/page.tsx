@@ -7,7 +7,7 @@ import { EmojiManagementView } from "./emoji-management-view";
 import { SettingsView } from "./settings-view";
 import { VaultPage } from "./vault-page";
 import { Card, CardContent } from "@/components/ui/card";
-import { AppProvider, useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 
 function LoadingFallback() {
@@ -62,8 +62,6 @@ function AppContent() {
 
 export default function HomePage() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <AppContent />
   );
 }

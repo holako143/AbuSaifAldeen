@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@/__tests__/test-utils';
 import userEvent from '@testing-library/user-event';
 import { Base64EncoderDecoderContent } from './encoder-decoder-content';
-import { useAppContext } from '@/context/app-context';
+import { useAppContext } from '@/components/app-provider';
 import React from 'react';
 
 // Mock the encoding module to prevent calls to the Web Crypto API in JSDOM

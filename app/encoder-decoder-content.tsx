@@ -14,7 +14,7 @@ import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
 import { getCustomAlphabetList, getCustomEmojiList, promoteListItem, EMOJI_STORAGE_KEY, ALPHABET_STORAGE_KEY } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -140,6 +140,60 @@ function ThemeCustomizer() {
     );
 }
 
+
+function ThemeCustomizer() {
+    const { t } = useTranslation();
+    const {
+        themeMode, setThemeMode,
+        primaryColor, setPrimaryColor,
+        backgroundColor, setBackgroundColor,
+        textColor, setTextColor
+    } = useAppContext();
+
+    const ColorInput = ({ label, value, onChange }: { label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+        <div className="flex items-center justify-between p-2 border rounded-lg">
+            <Label>{label}</Label>
+            <div className="relative">
+                <input
+                    type="color"
+                    value={value}
+                    onChange={onChange}
+                    className="w-8 h-8 p-0 border-none appearance-none bg-transparent cursor-pointer"
+                    style={{'--color': value} as React.CSSProperties}
+                />
+                 <div className="absolute inset-0 rounded-full pointer-events-none" style={{backgroundColor: value, border: '1px solid #88888844'}}></div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="space-y-4">
+             <div>
+                <h3 className="text-lg font-medium">{t('settings.theme.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('settings.theme.description')}</p>
+            </div>
+            <ToggleGroup
+                type="single"
+                value={themeMode}
+                onValueChange={(value) => { if (value) setThemeMode(value as 'light' | 'dark' | 'custom'); }}
+                className="justify-start"
+            >
+                <ToggleGroupItem value="light">{t('settings.theme.light')}</ToggleGroupItem>
+                <ToggleGroupItem value="dark">{t('settings.theme.dark')}</ToggleGroupItem>
+                <ToggleGroupItem value="custom">{t('settings.theme.custom')}</ToggleGroupItem>
+            </ToggleGroup>
+
+            {themeMode === 'custom' && (
+                <div className="space-y-2 p-4 border rounded-lg animate-in">
+                    <ColorInput label={t('settings.theme.primary')} value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
+                    <ColorInput label={t('settings.theme.backgroundStart')} value={backgroundColorStart} onChange={(e) => setBackgroundColorStart(e.target.value)} />
+                    <ColorInput label={t('settings.theme.backgroundEnd')} value={backgroundColorEnd} onChange={(e) => setBackgroundColorEnd(e.target.value)} />
+                    <ColorInput label={t('settings.theme.text')} value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+                </div>
+            )}
+        </div>
+    );
+}
 
 export function SettingsView() {
     const { t } = useTranslation();

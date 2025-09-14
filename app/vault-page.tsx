@@ -4,14 +4,15 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatRelativeTime } from "@/lib/utils";
@@ -190,23 +191,38 @@ export function VaultPage() {
                                 <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
                                         {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
                                     </Button>
-                                <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.a11y.copyContent')}><Copy className="h-4 w-4" /></Button>
-                                <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button aria-label={t('vaultPage.a11y.editItem')} variant="ghost" size="icon">{t('vaultPage.editButton')}</Button>} />
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" aria-label={t('vaultPage.a11y.deleteItem')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
-                                                <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}>
+                                                <Copy className="ml-2 h-4 w-4" /> {t('vaultPage.a11y.copyContent')}
+                                            </DropdownMenuItem>
+                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={
+                                                <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
+                                                    {t('vaultPage.editButton')}
+                                                </div>
+                                            } />
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground text-red-500 focus:text-red-600">
+                                                        {t('vaultPage.a11y.deleteItem')}
+                                                    </div>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
+                                                        <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </div>
                             {showContent[item.id] && (

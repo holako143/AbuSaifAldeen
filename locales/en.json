@@ -77,7 +77,12 @@
       "description": "Choose your own colors to customize the app's look and feel.",
       "primary": "Primary Color (buttons and highlights)",
       "background": "Background Color",
-      "text": "Text Color"
+      "backgroundStart": "Background Color (Start)",
+      "backgroundEnd": "Background Color (End)",
+      "text": "Text Color",
+      "light": "Light",
+      "dark": "Dark",
+      "custom": "Custom"
     },
     "language": "Language"
   },

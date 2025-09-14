@@ -11,7 +11,7 @@ import { Copy, Trash2, Upload, Download, CircleX, Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 
 type FilterType = "all" | "encode" | "decode";

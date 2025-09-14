@@ -9,7 +9,7 @@ import { Sidebar } from "./sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useToast } from "./ui/use-toast";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 
 export function TopBar() {
