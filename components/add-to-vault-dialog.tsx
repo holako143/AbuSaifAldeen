@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { addToVault } from "@/lib/vault";
 import { useTranslation } from "@/hooks/use-translation";
 

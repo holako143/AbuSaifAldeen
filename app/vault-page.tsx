@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem } from "@/lib/vault";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatRelativeTime } from "@/lib/utils";
@@ -28,6 +29,8 @@ export function VaultPage() {
     const [editingItem, setEditingItem] = useState<VaultEntry | null>(null);
     const [showContent, setShowContent] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const isDesktop = useMediaQuery("(min-width: 768px)");
 
     const filteredItems = useMemo(() => {
         if (!searchQuery) return items;
@@ -94,6 +97,39 @@ export function VaultPage() {
         }
     };
 
+    const handleExport = () => {
+        const result = exportEncryptedVault();
+        if (result.success) {
+            toast({ title: t('vaultPage.toasts.exportSuccess') });
+        } else if (result.messageKey) {
+            toast({ variant: "destructive", title: t(result.messageKey) });
+        }
+    };
+
+    const handleImportClick = () => fileInputRef.current?.click();
+
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result as string;
+                const result = importEncryptedVault(text);
+                if (result.success) {
+                    handleLock(); // Lock the vault to force re-authentication with new password
+                    toast({ title: t('vaultPage.toasts.importSuccess') });
+                } else if (result.message) {
+                    toast({ variant: "destructive", title: t('vaultPage.toasts.importError'), description: result.message });
+                }
+            } catch (error) {
+                toast({ variant: "destructive", title: t('vaultPage.toasts.importError'), description: t('vaultPage.toasts.importErrorInvalid') });
+            }
+        };
+        reader.readAsText(file);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
     if (isLocked) {
         return (
             <Card className="w-full max-w-md mx-auto animate-in">
@@ -136,47 +172,65 @@ export function VaultPage() {
                         />
                     </div>
                     <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
+                    <Button variant="outline" size="icon" onClick={handleExport}><Download className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={handleImportClick}><Upload className="h-4 w-4" /></Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
                     <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-2">
-                    {filteredItems.length > 0 ? filteredItems.map(item => (
-                        <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="font-semibold">{item.title}</h3>
-                                    <span className="text-xs text-muted-foreground">•</span>
-                                    <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
+                    {filteredItems.length > 0 ? filteredItems.map(item => {
+                        const commonItemHeader = (
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{item.title}</h3>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
+                            </div>
+                        );
+
+                        const commonItemContent = showContent[item.id] && (
+                            <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2">{item.text}</p>
+                        );
+
+                        if (isDesktop) {
+                            return (
+                                <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
+                                    <div className="flex justify-between items-center">
+                                        {commonItemHeader}
+                                        <div className="flex items-center">
+                                            <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
+                                                {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}><Copy className="mr-2 h-4 w-4" /> {t('vaultPage.mobile.copy')}</DropdownMenuItem>
+                                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">{t('vaultPage.editButton')}</div>} />
+                                                    <AlertDialog><AlertDialogTrigger asChild><div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground text-red-500 focus:text-red-600 w-full">{t('vaultPage.mobile.delete')}</div></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </div>
+                                    {commonItemContent}
                                 </div>
-                                <div className="flex items-center">
-                                <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={t('vaultPage.a11y.toggleVisibility')}>
-                                        {showContent[item.id] ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                    </Button>
-                                <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.a11y.copyContent')}><Copy className="h-4 w-4" /></Button>
-                                <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button aria-label={t('vaultPage.a11y.editItem')} variant="ghost" size="icon">{t('vaultPage.editButton')}</Button>} />
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" aria-label={t('vaultPage.a11y.deleteItem')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle>
-                                                <AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                            )
+                        }
+
+                        // Mobile View
+                        return (
+                            <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
+                                {commonItemHeader}
+                                {commonItemContent}
+                                <div className="flex items-center justify-end gap-1 border-t pt-2 mt-2">
+                                    <Button variant="ghost" size="sm" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))}>{showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}</Button>
+                                    <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}>{t('vaultPage.mobile.copy')}</Button>
+                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="sm">{t('vaultPage.editButton')}</Button>} />
+                                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600">{t('vaultPage.mobile.delete')}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('vaultPage.deleteConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('vaultPage.deleteConfirmDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t('vaultPage.editDialog.cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>{t('vaultPage.deleteConfirmAction')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                                 </div>
                             </div>
-                            {showContent[item.id] && (
-                                <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in">{item.text}</p>
-                            )}
-                        </div>
-                    )) : (
+                        )
+                    }) : (
                         <div className="text-center py-12 text-muted-foreground">
                             <p>{searchQuery ? t('vaultPage.noResults') : t('vaultPage.emptyState')}</p>
                             <p className="text-sm">{searchQuery ? t('vaultPage.noResultsDescription') : t('vaultPage.emptyStateDescription')}</p>

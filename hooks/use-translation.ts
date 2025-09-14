@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/app-context';
+import { useAppContext } from '@/components/app-provider';
 import ar from '@/locales/ar.json';
 import en from '@/locales/en.json';
 

@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -101,97 +101,59 @@ function LanguageSwitcher() {
     );
 }
 
+function ThemeCustomizer() {
+    const { t } = useTranslation();
+    const {
+        themeMode, setThemeMode,
+        primaryColor, setPrimaryColor,
+        backgroundColorStart, setBackgroundColorStart,
+        backgroundColorEnd, setBackgroundColorEnd,
+        textColor, setTextColor
+    } = useAppContext();
 
-function ThemeSwitcher() {
-  const { theme, setTheme } = useTheme();
-  const { t } = useTranslation();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const themes = [
-    { name: t('settings.themes.light'), value: "light", class: "bg-gray-100" },
-    { name: t('settings.themes.dark'), value: "dark", class: "bg-gray-800" },
-    { name: t('settings.themes.dusk'), value: "theme-dusk", class: "theme-dusk-gradient" },
-    { name: t('settings.themes.oceanic'), value: "theme-oceanic", class: "theme-oceanic-gradient" },
-    { name: t('settings.themes.mirage'), value: "theme-mirage", class: "theme-mirage-gradient" },
-    { name: t('settings.themes.sakura'), value: "theme-sakura", class: "theme-sakura-gradient" },
-    { name: t('settings.themes.matrix'), value: "theme-matrix", class: "theme-matrix-gradient" },
-    { name: t('settings.themes.sunset'), value: "theme-sunset", class: "theme-sunset-gradient" },
-    { name: t('settings.themes.emerald'), value: "theme-emerald", class: "theme-emerald-gradient" },
-    { name: t('settings.themes.amethyst'), value: "theme-amethyst", class: "theme-amethyst-gradient" },
-    { name: t('settings.themes.ruby'), value: "theme-ruby", class: "theme-ruby-gradient" },
-    { name: t('settings.themes.midnight'), value: "theme-midnight", class: "theme-midnight-gradient" },
-  ];
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-medium">{t('settings.standardThemes')}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t('settings.standardThemesDescription')}
-        </p>
-        <div className="flex flex-wrap gap-4 mt-4">
-          {themes.slice(0, 2).map((t) => (
-            <ThemeCard key={t.value} {...t} />
-          ))}
-           <div className="w-24 h-24"> {/* Placeholder for system theme */}
-             <button
-                onClick={() => setTheme('system')}
-                className={cn(
-                  "w-full h-full rounded-lg border-2 flex flex-col items-center justify-center transition-all",
-                  theme === 'system' ? "border-primary scale-105" : "border-muted hover:border-muted-foreground",
-                )}
-              >
-                <div className="h-10 w-16 rounded-md bg-gradient-to-br from-gray-100 from-50% to-gray-800 to-50%"></div>
-                <span className="mt-2 text-sm font-medium">{t('settings.themes.system')}</span>
-              </button>
-           </div>
-        </div>
-      </div>
-      <Separator />
-      <div>
-        <h3 className="text-lg font-medium">{t('settings.premiumThemes')}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t('settings.premiumThemesDescription')}
-        </p>
-        <div className="flex flex-wrap gap-4 mt-4">
-          {themes.slice(2).map((t) => (
-            <ThemeCard key={t.value} {...t} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  function ThemeCard({ name, value, class: themeClass }: { name: string, value: string, class: string }) {
-    if (!isMounted) {
-      return null; // or a skeleton loader
-    }
-
-    const isSelected = theme === value;
-    return (
-      <div className="w-24">
-        <button
-          onClick={() => setTheme(value)}
-          className={cn(
-            "w-full h-24 rounded-lg border-2 flex items-center justify-center transition-all relative overflow-hidden",
-            isSelected ? "border-primary ring-2 ring-primary" : "border-muted hover:border-muted-foreground",
-          )}
-        >
-          <div className={cn("h-full w-full", themeClass)} />
-           {isSelected && (
-            <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
-                <Check className="h-6 w-6 text-primary-foreground" />
+    const ColorInput = ({ label, value, onChange }: { label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+        <div className="flex items-center justify-between p-2 border rounded-lg">
+            <Label>{label}</Label>
+            <div className="relative">
+                <input
+                    type="color"
+                    value={value}
+                    onChange={onChange}
+                    className="w-8 h-8 p-0 border-none appearance-none bg-transparent cursor-pointer"
+                    style={{'--color': value} as React.CSSProperties}
+                />
+                 <div className="absolute inset-0 rounded-full pointer-events-none" style={{backgroundColor: value, border: '1px solid #88888844'}}></div>
             </div>
-           )}
-        </button>
-        <p className="text-center text-sm font-medium mt-2">{name}</p>
-      </div>
+        </div>
     );
-  }
+
+    return (
+        <div className="space-y-4">
+             <div>
+                <h3 className="text-lg font-medium">{t('settings.theme.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('settings.theme.description')}</p>
+            </div>
+            <ToggleGroup
+                type="single"
+                value={themeMode}
+                onValueChange={(value) => { if (value) setThemeMode(value as 'light' | 'dark' | 'custom'); }}
+                className="justify-start"
+            >
+                <ToggleGroupItem value="light">{t('settings.theme.light')}</ToggleGroupItem>
+                <ToggleGroupItem value="dark">{t('settings.theme.dark')}</ToggleGroupItem>
+                <ToggleGroupItem value="custom">{t('settings.theme.custom')}</ToggleGroupItem>
+            </ToggleGroup>
+
+            {themeMode === 'custom' && (
+                <div className="space-y-2 p-4 border rounded-lg animate-in">
+                    <ColorInput label={t('settings.theme.primary')} value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
+                    <ColorInput label={t('settings.theme.backgroundStart')} value={backgroundColorStart} onChange={(e) => setBackgroundColorStart(e.target.value)} />
+                    <ColorInput label={t('settings.theme.backgroundEnd')} value={backgroundColorEnd} onChange={(e) => setBackgroundColorEnd(e.target.value)} />
+                    <ColorInput label={t('settings.theme.text')} value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+                </div>
+            )}
+        </div>
+    );
 }
 
 export function SettingsView() {
@@ -214,7 +176,7 @@ export function SettingsView() {
         )}
         <LanguageSwitcher />
         <Separator />
-        <ThemeSwitcher />
+        <ThemeCustomizer />
       </CardContent>
     </Card>
   );

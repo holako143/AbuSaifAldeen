@@ -14,7 +14,7 @@ import { EmojiSelector } from "@/components/emoji-selector";
 import { addToHistory } from "@/lib/history";
 import { getCustomAlphabetList, getCustomEmojiList, promoteListItem, EMOJI_STORAGE_KEY, ALPHABET_STORAGE_KEY } from "@/lib/emoji-storage";
 import { useToast } from "@/components/ui/use-toast";
-import { useAppContext } from "@/context/app-context";
+import { useAppContext } from "@/components/app-provider";
 import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -89,13 +89,16 @@ export function Base64EncoderDecoderContent() {
               toast({ title: t('toasts.autoCopySuccess')});
           }
 
-          const listKey = defaultTab === 'emoji' ? EMOJI_STORAGE_KEY : ALPHABET_STORAGE_KEY;
-          promoteListItem(listKey, selectedEmoji);
-          if (defaultTab === 'emoji') {
-            setEmojiList(getCustomEmojiList());
-          } else {
-            setAlphabetList(getCustomAlphabetList());
-          }
+          // The promotion logic was causing the emoji list to re-render and lose scroll position.
+          // This is disabled to fix the bug. A better implementation would be to only promote
+          // on explicit user action, not on every text change.
+          // const listKey = defaultTab === 'emoji' ? EMOJI_STORAGE_KEY : ALPHABET_STORAGE_KEY;
+          // promoteListItem(listKey, selectedEmoji);
+          // if (defaultTab === 'emoji') {
+          //   setEmojiList(getCustomEmojiList());
+          // } else {
+          //   setAlphabetList(getCustomAlphabetList());
+          // }
         } else if (result) {
             addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
         }
