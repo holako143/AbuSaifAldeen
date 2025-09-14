@@ -92,3 +92,15 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Gradients for custom themes */
+.theme-dusk-gradient { background: linear-gradient(-45deg, #230a44, #4a1a6c, #82268a, #b8329d); }
+.theme-oceanic-gradient { background: linear-gradient(-45deg, #022c43, #053f5e, #115173, #247ba0); }
+.theme-mirage-gradient { background: linear-gradient(-45deg, #4d3618, #a06d3a, #e0a96d, #f5d3a9); }
+.theme-sakura-gradient { background: linear-gradient(45deg, #fde9f2, #f8c8dc, #f4a8c6, #f088b0); }
+.theme-matrix-gradient { background-color: #000; background-image: radial-gradient(#0f0 1px, transparent 1px), radial-gradient(#0f0 1px, #000 1px); background-size: 20px 20px; background-position: 0 0, 10px 10px; }
+.theme-sunset-gradient { background: linear-gradient(to right, #ff7e5f, #feb47b); }
+.theme-emerald-gradient { background: linear-gradient(to right, #00994d, #00cc66); }
+.theme-amethyst-gradient { background: linear-gradient(to right, #9d50bb, #6e48aa); }
+.theme-ruby-gradient { background: linear-gradient(to right, #e52d27, #b31217); }
+.theme-midnight-gradient { background: linear-gradient(to right, #0f2027, #203a43, #2c5364); }

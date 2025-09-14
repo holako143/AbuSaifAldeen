@@ -48,12 +48,29 @@
       "mirage": "Mirage",
       "sakura": "Sakura",
       "matrix": "Matrix",
-      "system": "System"
+      "system": "System",
+      "sunset": "Sunset",
+      "emerald": "Emerald",
+      "amethyst": "Amethyst",
+      "ruby": "Ruby",
+      "midnight": "Midnight"
     },
     "language": "Language",
     "languages": {
       "ar": "Arabic",
       "en": "English"
+    },
+    "vault": {
+      "title": "Vault Settings",
+      "description": "Change your master password.",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "button": "Change Password",
+      "success": "Password changed successfully!",
+      "successDescription": "The vault has been locked. Please unlock it with your new password.",
+      "errorMismatch": "The new passwords do not match.",
+      "errorWrongPassword": "The current password is incorrect."
     },
     "language": "Language"
   },

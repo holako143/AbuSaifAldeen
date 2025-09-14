@@ -47,21 +47,14 @@ export function TopBar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <div className="animate-in">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleLogoClick}
-                onDoubleClick={handleLogoDoubleClick}
-                className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6"
-              >
-                <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
-                <h1 className="text-xl font-bold">{t('topbar.appName')}</h1>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('topbar.logoTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
+            <button
+              onClick={handleLogoClick}
+              onDoubleClick={handleLogoDoubleClick}
+              className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6"
+            >
+              <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
+              <h1 className="text-xl font-bold">{t('topbar.appName')}</h1>
+            </button>
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">

@@ -68,6 +68,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
     }, [locale]);
 
+    // Auto-lock vault when navigating away
+    useEffect(() => {
+        if (activeView !== 'vault' && isVaultUnlocked) {
+            setIsVaultUnlocked(false);
+            setMasterPassword(null);
+        }
+    }, [activeView]);
+
     const value = {
         locale,
         setLocale,
