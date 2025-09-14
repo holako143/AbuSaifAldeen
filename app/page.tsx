@@ -2,10 +2,6 @@
 
 import { Suspense } from "react";
 import dynamic from 'next/dynamic';
-import { HistoryView } from "./history-view";
-import { EmojiManagementView } from "./emoji-management-view";
-import { SettingsView } from "./settings-view";
-import { VaultPage } from "./vault-page";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppProvider, useAppContext } from "@/context/app-context";
 
@@ -21,8 +17,13 @@ function LoadingFallback() {
   );
 }
 
-const TopBar = dynamic(() => import('@/components/top-bar').then(mod => mod.TopBar), { ssr: false });
-const Base64EncoderDecoderContent = dynamic(() => import('./encoder-decoder-content').then(mod => mod.Base64EncoderDecoderContent), { ssr: false });
+const TopBar = dynamic(() => import('@/components/top-bar').then(mod => mod.TopBar), { ssr: false, loading: () => <div className="h-14" /> });
+const Base64EncoderDecoderContent = dynamic(() => import('./encoder-decoder-content').then(mod => mod.Base64EncoderDecoderContent), { ssr: false, loading: () => <LoadingFallback /> });
+const HistoryView = dynamic(() => import('./history-view').then(mod => mod.HistoryView), { ssr: false, loading: () => <LoadingFallback /> });
+const EmojiManagementView = dynamic(() => import('./emoji-management-view').then(mod => mod.EmojiManagementView), { ssr: false, loading: () => <LoadingFallback /> });
+const SettingsView = dynamic(() => import('./settings-view').then(mod => mod.SettingsView), { ssr: false, loading: () => <LoadingFallback /> });
+const VaultPage = dynamic(() => import('./vault-page').then(mod => mod.VaultPage), { ssr: false, loading: () => <LoadingFallback /> });
+
 
 function AppContent() {
   const { activeView } = useAppContext();
@@ -39,11 +40,7 @@ function AppContent() {
         return <VaultPage />;
       case "encoder-decoder":
       default:
-        return (
-          <Suspense fallback={<LoadingFallback />}>
-            <Base64EncoderDecoderContent />
-          </Suspense>
-        );
+        return <Base64EncoderDecoderContent />;
     }
   };
 
