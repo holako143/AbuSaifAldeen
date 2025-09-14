@@ -12,11 +12,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAppContext } from "@/context/app-context";
+import { useTranslation } from "@/hooks/use-translation";
 
 type FilterType = "all" | "encode" | "decode";
 
 export function HistoryView() {
-  const { setActiveView, setTextToDecode } = useAppContext();
+  const { setActiveView, setTextToDecode, locale } = useAppContext();
+  const { t } = useTranslation();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const { toast } = useToast();
@@ -38,19 +40,19 @@ export function HistoryView() {
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "تم النسخ!", description: "تم نسخ النص إلى الحافظة." });
+    toast({ title: t('history.toasts.copied'), description: t('history.toasts.copiedDescription') });
   };
 
   const handleDelete = (id: string) => {
     deleteFromHistory(id);
     setHistory(getHistory());
-    toast({ title: "تم الحذف", description: "تم حذف السجل بنجاح." });
+    toast({ title: t('history.toasts.deleted'), description: t('history.toasts.deletedDescription') });
   };
 
   const handleClearAll = () => {
     clearHistory();
     setHistory([]);
-    toast({ title: "تم مسح السجل", description: "تم مسح جميع السجلات بنجاح." });
+    toast({ title: t('history.toasts.cleared'), description: t('history.toasts.clearedDescription') });
   };
 
   const handleExport = () => {
@@ -64,7 +66,7 @@ export function HistoryView() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: "تم التصدير", description: "تم تصدير السجل كملف JSON." });
+    toast({ title: t('history.toasts.exported'), description: t('history.toasts.exportedDescription') });
   };
 
   const handleImportClick = () => fileInputRef.current?.click();
@@ -79,10 +81,10 @@ export function HistoryView() {
         const importedData = JSON.parse(text);
         if (importHistory(importedData)) {
           setHistory(getHistory());
-          toast({ title: "تم الاستيراد بنجاح" });
+          toast({ title: t('history.toasts.imported') });
         } else { throw new Error("Invalid history file format"); }
       } catch (error) {
-        toast({ variant: "destructive", title: "خطأ في الاستيراد", description: "الملف غير صالح أو تالف." });
+        toast({ variant: "destructive", title: t('history.toasts.importError'), description: t('history.toasts.importErrorDescription') });
       }
     };
     reader.readAsText(file);
@@ -90,23 +92,24 @@ export function HistoryView() {
   };
 
   const truncateText = (text: string, length = 30) => text.length > length ? `${text.substring(0, length)}...` : text;
+  const localeString = locale === 'ar' ? 'ar-EG' : 'en-US';
 
   return (
     <Card className="animate-in w-full">
       <CardHeader className="flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-            <CardTitle>سجل التشفير</CardTitle>
-            <CardDescription>هنا يمكنك مراجعة وتصفية عملياتك السابقة.</CardDescription>
+            <CardTitle>{t('history.title')}</CardTitle>
+            <CardDescription>{t('history.description')}</CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={history.length === 0}><Download className="ml-2 h-4 w-4" />تصدير</Button>
-          <Button variant="outline" size="sm" onClick={handleImportClick}><Upload className="ml-2 h-4 w-4" />استيراد</Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={history.length === 0}><Download className="ml-2 h-4 w-4" />{t('history.export')}</Button>
+          <Button variant="outline" size="sm" onClick={handleImportClick}><Upload className="ml-2 h-4 w-4" />{t('history.import')}</Button>
           <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
           <AlertDialog>
-            <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={history.length === 0}><CircleX className="ml-2 h-4 w-4" />مسح الكل</Button></AlertDialogTrigger>
+            <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={history.length === 0}><CircleX className="ml-2 h-4 w-4" />{t('history.clearAll')}</Button></AlertDialogTrigger>
             <AlertDialogContent>
-              <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle><AlertDialogDescription>هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription></AlertDialogHeader>
-              <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handleClearAll}>نعم، قم بالمسح</AlertDialogAction></AlertDialogFooter>
+              <AlertDialogHeader><AlertDialogTitle>{t('history.clearConfirmTitle')}</AlertDialogTitle><AlertDialogDescription>{t('history.clearConfirmDescription')}</AlertDialogDescription></AlertDialogHeader>
+              <AlertDialogFooter><AlertDialogCancel>{t('history.cancel')}</AlertDialogCancel><AlertDialogAction onClick={handleClearAll}>{t('history.confirmClear')}</AlertDialogAction></AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
@@ -114,9 +117,9 @@ export function HistoryView() {
       <CardContent>
         <div className="flex justify-center my-4">
             <ToggleGroup type="single" value={filter} onValueChange={(value: FilterType) => value && setFilter(value)} defaultValue="all">
-              <ToggleGroupItem value="all" aria-label="Toggle all">الكل</ToggleGroupItem>
-              <ToggleGroupItem value="encode" aria-label="Toggle encode">تشفير</ToggleGroupItem>
-              <ToggleGroupItem value="decode" aria-label="Toggle decode">فك تشفير</ToggleGroupItem>
+              <ToggleGroupItem value="all" aria-label="Toggle all">{t('history.filterAll')}</ToggleGroupItem>
+              <ToggleGroupItem value="encode" aria-label="Toggle encode">{t('history.filterEncode')}</ToggleGroupItem>
+              <ToggleGroupItem value="decode" aria-label="Toggle decode">{t('history.filterDecode')}</ToggleGroupItem>
             </ToggleGroup>
         </div>
         {filteredHistory.length > 0 ? (
@@ -124,16 +127,16 @@ export function HistoryView() {
             <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
-                  <TableHead>النوع</TableHead><TableHead>النص الأصلي</TableHead><TableHead>الناتج</TableHead><TableHead>الوقت</TableHead><TableHead className="text-right">إجراءات</TableHead>
+                  <TableHead>{t('history.table.type')}</TableHead><TableHead>{t('history.table.original')}</TableHead><TableHead>{t('history.table.output')}</TableHead><TableHead>{t('history.table.time')}</TableHead><TableHead className="text-right">{t('history.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredHistory.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell><Badge variant={item.mode === 'encode' ? 'default' : 'secondary'}>{item.mode === 'encode' ? 'تشفير' : 'فك تشفير'}</Badge></TableCell>
+                    <TableCell><Badge variant={item.mode === 'encode' ? 'default' : 'secondary'}>{t(`history.filter${item.mode.charAt(0).toUpperCase() + item.mode.slice(1)}`)}</Badge></TableCell>
                     <TableCell><Tooltip><TooltipTrigger>{truncateText(item.inputText)}</TooltipTrigger><TooltipContent><p className="max-w-xs break-words">{item.inputText}</p></TooltipContent></Tooltip></TableCell>
                     <TableCell><Tooltip><TooltipTrigger>{truncateText(item.outputText)}</TooltipTrigger><TooltipContent><p className="max-w-xs break-words">{item.outputText}</p></TooltipContent></Tooltip></TableCell>
-                    <TableCell>{new Date(item.timestamp).toLocaleString('ar-EG')}</TableCell>
+                    <TableCell>{new Date(item.timestamp).toLocaleString(localeString)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.outputText)}><Send className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleCopy(item.outputText)}><Copy className="h-4 w-4" /></Button>
@@ -148,8 +151,8 @@ export function HistoryView() {
                     <Card key={item.id} className="p-4">
                         <div className="flex justify-between items-start">
                             <div>
-                                <Badge variant={item.mode === 'encode' ? 'default' : 'secondary'}>{item.mode === 'encode' ? 'تشفير' : 'فك تشفير'}</Badge>
-                                <p className="text-xs text-muted-foreground mt-1">{new Date(item.timestamp).toLocaleString('ar-EG')}</p>
+                                <Badge variant={item.mode === 'encode' ? 'default' : 'secondary'}>{t(`history.filter${item.mode.charAt(0).toUpperCase() + item.mode.slice(1)}`)}</Badge>
+                                <p className="text-xs text-muted-foreground mt-1">{new Date(item.timestamp).toLocaleString(localeString)}</p>
                             </div>
                             <div className="flex">
                                 <Button variant="ghost" size="icon" onClick={() => handleSendToDecoder(item.outputText)}><Send className="h-4 w-4" /></Button>
@@ -158,8 +161,8 @@ export function HistoryView() {
                             </div>
                         </div>
                         <div className="mt-4 space-y-2">
-                            <div><p className="text-xs font-bold">الأصلي:</p><p className="text-sm break-words">{item.inputText}</p></div>
-                             <div><p className="text-xs font-bold">الناتج:</p><p className="text-sm break-words">{item.outputText}</p></div>
+                            <div><p className="text-xs font-bold">{t('history.mobile.original')}</p><p className="text-sm break-words">{item.inputText}</p></div>
+                             <div><p className="text-xs font-bold">{t('history.mobile.output')}</p><p className="text-sm break-words">{item.outputText}</p></div>
                         </div>
                     </Card>
                 ))}
@@ -167,8 +170,8 @@ export function HistoryView() {
           </TooltipProvider>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
-            <p>لا توجد سجلات لعرضها.</p>
-            <p className="text-sm">{filter === 'all' ? 'ابدأ بالتشفير أو فك التشفير وستظهر عملياتك هنا!' : 'لا توجد سجلات تطابق هذا الفلتر.'}</p>
+            <p>{t('history.empty.noRecords')}</p>
+            <p className="text-sm">{filter === 'all' ? t('history.empty.startUsing') : t('history.empty.noFilterMatch')}</p>
           </div>
         )}
       </CardContent>

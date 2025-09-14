@@ -1,0 +1,167 @@
+{
+  "encoderDecoder": {
+    "title": "Encoder & Decoder",
+    "encodeLabel": "Encode Text",
+    "decodeLabel": "Decode Text",
+    "passwordRequiredError": "At least one password is required when the password option is enabled.",
+    "genericError": "Error in {mode}",
+    "encodeError": "encoding",
+    "decodeError": "decoding",
+    "passwordEnabledLabel": "Password Enabled",
+    "passwordLayerPlaceholder": "Password for Layer {layer}",
+    "addEncryptionLayer": "Add Encryption Layer",
+    "inputTextPlaceholder": "Enter the text to be processed",
+    "iconsTab": "Icons",
+    "alphabetsTab": "Alphabets",
+    "processingPlaceholder": "Processing...",
+    "outputTextPlaceholder": "Output...",
+    "saveToVault": "Save to Vault"
+  },
+  "toasts": {
+    "autoCopySuccess": "Output copied to clipboard automatically!",
+    "copySuccess": "Output copied to clipboard!",
+    "pasteSuccess": "Pasted successfully!",
+    "pasteFailed": "Paste failed",
+    "swapped": "Swapped!"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Customize the application's appearance and identity to match your preferences and style.",
+    "standardThemes": "Standard Themes",
+    "standardThemesDescription": "Simple and effective themes for focus.",
+    "premiumThemes": "Premium Themes",
+    "premiumThemesDescription": "Vibrant themes with animated backgrounds.",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "dusk": "Dusk",
+      "oceanic": "Oceanic",
+      "mirage": "Mirage",
+      "sakura": "Sakura",
+      "matrix": "Matrix",
+      "system": "System"
+    },
+    "language": "Language",
+    "languages": {
+      "ar": "Arabic",
+      "en": "English"
+    },
+    "language": "Language"
+  },
+  "app": {
+    "loading": "Loading..."
+  },
+  "sidebar": {
+    "title": "Menu",
+    "home": "Home",
+    "history": "History",
+    "vault": "Secret Vault",
+    "emojiManagement": "Emoji Management",
+    "settings": "Settings",
+    "autoCopy": "Auto-copy output"
+  },
+  "topbar": {
+    "appName": "Shifrishan",
+    "logoTooltip": "Click once for Home, double-click for Secure Mode",
+    "safeModeEnabled": "Secure Mode Enabled",
+    "safeModeEnabledDesc": "Data will now be encrypted using AES-256.",
+    "safeModeDisabled": "Secure Mode Disabled",
+    "safeModeDisabledDesc": "No encryption will be applied.",
+    "toggleTheme": "Toggle theme",
+    "toggleThemeSr": "Toggle theme",
+    "openMenuSr": "Open menu"
+  },
+  "history": {
+    "title": "History",
+    "description": "Here you can review and filter your past operations.",
+    "export": "Export",
+    "import": "Import",
+    "clearAll": "Clear All",
+    "clearConfirmTitle": "Are you absolutely sure?",
+    "clearConfirmDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirmClear": "Yes, clear",
+    "filterAll": "All",
+    "filterEncode": "Encode",
+    "filterDecode": "Decode",
+    "table": {
+      "type": "Type",
+      "original": "Original",
+      "output": "Output",
+      "time": "Time",
+      "actions": "Actions"
+    },
+    "mobile": {
+      "original": "Original:",
+      "output": "Output:"
+    },
+    "empty": {
+      "noRecords": "No records to display.",
+      "startUsing": "Start encoding or decoding and your operations will show up here!",
+      "noFilterMatch": "No records match this filter."
+    },
+    "toasts": {
+      "copied": "Copied!",
+      "copiedDescription": "The text has been copied to the clipboard.",
+      "deleted": "Deleted",
+      "deletedDescription": "The record has been successfully deleted.",
+      "cleared": "History Cleared",
+      "clearedDescription": "All records have been successfully cleared.",
+      "exported": "Exported",
+      "exportedDescription": "The history has been exported as a JSON file.",
+      "imported": "Import Successful",
+      "importError": "Import Error",
+      "importErrorDescription": "The file is invalid or corrupted."
+    }
+  },
+  "vaultDialog": {
+    "title": "Add to Vault",
+    "description": "Enter a title for this saved item.",
+    "placeholder": "Item title (e.g., My Website API Key)",
+    "contentLabel": "Content:",
+    "cancel": "Cancel",
+    "save": "Save",
+    "toasts": {
+      "vaultLocked": "Vault is Locked",
+      "vaultLockedDescription": "Please unlock the vault from the Vault page first.",
+      "goToVault": "Go to Vault",
+      "noOutput": "There is no output to save",
+      "titleRequired": "Please enter a title.",
+      "saveSuccess": "Saved to vault successfully!",
+      "saveFailed": "Failed to save"
+    }
+  },
+  "vaultPage": {
+    "unlockError": "Please enter the master password.",
+    "unlockTitle": "Secret Vault",
+    "unlockDescription": "Enter the master password to unlock the vault.",
+    "masterPasswordPlaceholder": "Master Password",
+    "unlocking": "Unlocking...",
+    "unlockButton": "Unlock Vault",
+    "unlockedTitle": "Vault Unlocked",
+    "unlockedDescription": "You can now manage your saved items.",
+    "addNewItem": "Add New Item",
+    "lockButton": "Lock Vault",
+    "editButton": "Edit",
+    "emptyState": "The vault is empty.",
+    "emptyStateDescription": "Click 'Add New Item' to get started.",
+    "toasts": {
+      "unlockedSuccess": "Vault unlocked successfully!",
+      "deleteSuccess": "Item deleted.",
+      "deleteFailed": "Failed to delete",
+      "updateSuccess": "Item updated successfully",
+      "addSuccess": "Item added successfully",
+      "saveFailed": "Failed to save",
+      "copySuccess": "Content copied!"
+    },
+    "editDialog": {
+      "titleEdit": "Edit Item",
+      "titleAdd": "Add New Item",
+      "description": "Fill in the details for the secret item below.",
+      "titlePlaceholder": "Item title (e.g., Some Website's Password)",
+      "contentPlaceholder": "Secret content...",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  }
+}

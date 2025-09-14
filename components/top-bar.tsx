@@ -10,15 +10,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { useToast } from "./ui/use-toast";
 import { useAppContext } from "@/context/app-context";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function TopBar() {
   const {
     setActiveView,
     isPasswordEnabled,
     setIsPasswordEnabled,
-    setEncryptionType
   } = useAppContext();
-
+  const { t } = useTranslation();
   const { setTheme, theme } = useTheme();
   const { toast } = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -35,11 +35,9 @@ export function TopBar() {
     setIsPasswordEnabled(prev => {
         const newState = !prev;
         if (newState) {
-            setEncryptionType("aes256");
-            toast({ title: "تم تفعيل الوضع الآمن", description: "نوع التشفير الآن هو AES-256." });
+            toast({ title: t('topbar.safeModeEnabled'), description: t('topbar.safeModeEnabledDesc') });
         } else {
-            setEncryptionType("simple");
-            toast({ title: "تم تعطيل الوضع الآمن", description: "نوع التشفير الآن هو إخفاء بسيط." });
+            toast({ title: t('topbar.safeModeDisabled'), description: t('topbar.safeModeDisabledDesc') });
         }
         return newState;
     });
@@ -57,11 +55,11 @@ export function TopBar() {
                 className="flex items-center gap-2 mr-6 rtl:mr-0 rtl:ml-6"
               >
                 <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
-                <h1 className="text-xl font-bold">شفريشن</h1>
+                <h1 className="text-xl font-bold">{t('topbar.appName')}</h1>
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>اضغط مرة للرئيسية، ومرتين للوضع الآمن</p>
+              <p>{t('topbar.logoTooltip')}</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -72,11 +70,11 @@ export function TopBar() {
               <Button variant="ghost" size="icon" onClick={toggleTheme} className="animate-in" style={{ animationDelay: "0.3s" }}>
                 <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
+                <span className="sr-only">{t('topbar.toggleThemeSr')}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>تغيير المظهر</p>
+              <p>{t('topbar.toggleTheme')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -84,7 +82,7 @@ export function TopBar() {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="animate-in" style={{ animationDelay: "0.4s" }}>
                 <Menu className="h-6 w-6" />
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">{t('topbar.openMenuSr')}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left">

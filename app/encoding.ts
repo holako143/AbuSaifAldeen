@@ -1,6 +1,6 @@
 import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib/crypto";
 
-export type EncryptionType = 'simple' | 'aes256';
+export type EncryptionType = 'aes256';
 
 // --- Variation Selector (Emoji Hiding) Logic ---
 
@@ -64,18 +64,19 @@ interface EncodeParams {
 }
 
 export async function encode({ emoji, text, type, passwords }: EncodeParams): Promise<string> {
-    if (type === 'aes256') {
-        if (!passwords || passwords.length === 0) throw new Error("Password is required for AES-256 encryption.");
-        // Use multiple encryption if more than one password is provided, otherwise use single encryption
-        const encryptedText = passwords.length > 1
-            ? await encryptMultiple(text, passwords)
-            : await encryptAES(text, passwords[0]);
-        return encodeToEmoji(emoji, encryptedText);
+    if (type !== 'aes256') {
+        throw new Error(`Unsupported encryption type: ${type}`);
+    }
+    if (!passwords || passwords.length === 0) {
+        // If no password, just encode the text directly without encryption.
+        return encodeToEmoji(emoji, text);
     }
 
-    // Simple mode (with optional, insecure salt) - only uses the first password if provided
-    const textToEncode = passwords && passwords.length > 0 ? `${passwords[0]}::${text}` : text;
-    return encodeToEmoji(emoji, textToEncode);
+    // Use multiple encryption if more than one password is provided, otherwise use single encryption
+    const encryptedText = passwords.length > 1
+        ? await encryptMultiple(text, passwords)
+        : await encryptAES(text, passwords[0]);
+    return encodeToEmoji(emoji, encryptedText);
 }
 
 
@@ -88,14 +89,17 @@ interface DecodeParams {
 export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
     const hiddenText = decodeFromEmoji(text);
 
-    if (type === 'aes256') {
-        if (!passwords || passwords.length === 0) throw new Error("Password is required for AES-256 decryption.");
-        // Use multiple decryption if more than one password is provided
-        return passwords.length > 1
-            ? await decryptMultiple(hiddenText, passwords)
-            : await decryptAES(hiddenText, passwords[0]);
+    if (type !== 'aes256') {
+        throw new Error(`Unsupported encryption type: ${type}`);
     }
 
-    // Simple mode: just return the hidden text
-    return hiddenText;
+    if (!passwords || passwords.length === 0) {
+        // If no password, we assume the text was not encrypted.
+        return hiddenText;
+    }
+
+    // Use multiple decryption if more than one password is provided
+    return passwords.length > 1
+        ? await decryptMultiple(hiddenText, passwords)
+        : await decryptAES(hiddenText, passwords[0]);
 }

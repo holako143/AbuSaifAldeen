@@ -16,17 +16,19 @@ import { getCustomAlphabetList, getCustomEmojiList, promoteListItem, EMOJI_STORA
 import { useToast } from "@/components/ui/use-toast";
 import { useAppContext } from "@/context/app-context";
 import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
+import { useTranslation } from "@/hooks/use-translation";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function Base64EncoderDecoderContent() {
   const {
     isPasswordEnabled: isPasswordGloballyEnabled,
-    encryptionType,
     textToDecode,
     setTextToDecode,
     setActiveView,
     setIsVaultVisible,
     autoCopy
   } = useAppContext();
+  const { t } = useTranslation();
 
   const { toast } = useToast();
   const [mode, setModeState] = useState("encode");
@@ -65,7 +67,7 @@ export function Base64EncoderDecoderContent() {
 
       const activePasswords = passwords.map(p => p.value).filter(Boolean);
       if (isPasswordGloballyEnabled && activePasswords.length === 0) {
-        setErrorText("كلمة سر واحدة على الأقل مطلوبة عند تفعيل خيار كلمة السر.");
+        setErrorText(t('encoderDecoder.passwordRequiredError'));
         setOutputText("");
         return;
       }
@@ -74,8 +76,8 @@ export function Base64EncoderDecoderContent() {
       setErrorText("");
       try {
         const result = isEncoding
-          ? await encode({ emoji: selectedEmoji, text: inputText, type: encryptionType, passwords: isPasswordGloballyEnabled ? activePasswords : [] })
-          : await decode({ text: inputText, type: encryptionType, passwords: isPasswordGloballyEnabled ? activePasswords : [] });
+          ? await encode({ emoji: selectedEmoji, text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] })
+          : await decode({ text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] });
 
         setOutputText(result);
 
@@ -84,7 +86,7 @@ export function Base64EncoderDecoderContent() {
 
           if (autoCopy) {
               navigator.clipboard.writeText(result);
-              toast({ title: "تم نسخ الناتج تلقائيًا!"});
+              toast({ title: t('toasts.autoCopySuccess')});
           }
 
           const listKey = defaultTab === 'emoji' ? EMOJI_STORAGE_KEY : ALPHABET_STORAGE_KEY;
@@ -99,30 +101,31 @@ export function Base64EncoderDecoderContent() {
         }
       } catch (e: any) {
         setOutputText("");
-        setErrorText(e.message || `خطأ في ${mode === "encode" ? "التشفير" : "فك التشفير"}`);
+        const modeText = mode === "encode" ? t('encoderDecoder.encodeError') : t('encoderDecoder.decodeError');
+        setErrorText(e.message || t('encoderDecoder.genericError', { mode: modeText }));
       } finally {
         setIsProcessing(false);
       }
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, encryptionType, defaultTab, autoCopy, toast]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, autoCopy, toast, t]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
-      toast({ title: "تم نسخ الناتج بنجاح!" });
+      toast({ title: t('toasts.copySuccess') });
     }, console.error);
   };
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setInputText(text);
-      toast({ title: "تم اللصق بنجاح!" });
+      toast({ title: t('toasts.pasteSuccess') });
     } catch (error) {
-      toast({ variant: "destructive", title: "فشل اللصق" });
+      toast({ variant: "destructive", title: t('toasts.pasteFailed') });
     }
   };
   const handleClear = () => setInputText("");
@@ -130,27 +133,26 @@ export function Base64EncoderDecoderContent() {
     if (!outputText) return;
     setInputText(outputText);
     handleModeToggle(mode !== 'encode');
-    toast({ title: "تم التبديل!" });
+    toast({ title: t('toasts.swapped') });
   };
 
   return (
     <Card className="w-full max-w-2xl mx-auto animate-in">
         <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">التشفير وفك التشفير</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">{t('encoderDecoder.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
         <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
-            <Label htmlFor="mode-toggle">فك التشفير</Label>
+            <Label htmlFor="mode-toggle">{t('encoderDecoder.decodeLabel')}</Label>
             <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-            <Label htmlFor="mode-toggle">تشفير النص</Label>
+            <Label htmlFor="mode-toggle">{t('encoderDecoder.encodeLabel')}</Label>
         </div>
 
         {isPasswordGloballyEnabled && (
             <div className="space-y-2 p-3 border rounded-lg animate-in">
             <div className="flex items-center justify-between">
-                <Label>كلمة السر مفعلة</Label>
-                {encryptionType === 'aes256' && <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>}
-                {encryptionType === 'simple' && <div className="flex items-center gap-1 text-xs text-amber-500"><ShieldAlert className="h-4 w-4"/><span>Salt</span></div>}
+                <Label>{t('encoderDecoder.passwordEnabledLabel')}</Label>
+                <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>
             </div>
             <div className="space-y-2 pt-2">
               {passwords.map((p, index) => (
@@ -159,7 +161,7 @@ export function Base64EncoderDecoderContent() {
                     <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="password"
-                      placeholder={`كلمة السر للطبقة ${index + 1}`}
+                      placeholder={t('encoderDecoder.passwordLayerPlaceholder', { layer: index + 1 })}
                       value={p.value}
                       onChange={(e) => {
                         const newPasswords = [...passwords];
@@ -177,14 +179,14 @@ export function Base64EncoderDecoderContent() {
                 </div>
               ))}
               <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
-                إضافة طبقة تشفير
+                {t('encoderDecoder.addEncryptionLayer')}
               </Button>
             </div>
         </div>
         )}
 
         <div>
-            <Textarea placeholder="اكتب النص المراد تشفيره" value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
+            <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handlePaste}><ClipboardPaste className="h-5 w-5" /></Button>
                 <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500"><X className="h-5 w-5" /></Button>
@@ -194,8 +196,8 @@ export function Base64EncoderDecoderContent() {
         {isEncoding && (
             <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full animate-in">
                 <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="emoji" disabled={!isEncoding}>الايقونات</TabsTrigger>
-                <TabsTrigger value="alphabet" disabled={!isEncoding}>الحروف</TabsTrigger>
+                <TabsTrigger value="emoji" disabled={!isEncoding}>{t('encoderDecoder.iconsTab')}</TabsTrigger>
+                <TabsTrigger value="alphabet" disabled={!isEncoding}>{t('encoderDecoder.alphabetsTab')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
                 <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
@@ -203,7 +205,7 @@ export function Base64EncoderDecoderContent() {
         )}
 
         <div>
-            <Textarea placeholder={isProcessing ? "جاري المعالجة..." : "الناتج..."} value={outputText} readOnly className="min-h-[120px]" />
+            <Textarea placeholder={isProcessing ? t('encoderDecoder.processingPlaceholder') : t('encoderDecoder.outputTextPlaceholder')} value={outputText} readOnly className="min-h-[120px]" />
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText}><Share className="h-5 w-5" /></Button>}
@@ -212,7 +214,7 @@ export function Base64EncoderDecoderContent() {
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-amber-500"><Star className="h-5 w-5" /></Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>حفظ في الخزنة</p></TooltipContent>
+                        <TooltipContent><p>{t('encoderDecoder.saveToVault')}</p></TooltipContent>
                     </Tooltip>
                 </AddToVaultDialog>
                 <Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText}><ArrowRightLeft className="h-5 w-5" /></Button>
