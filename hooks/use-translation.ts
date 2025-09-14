@@ -10,37 +10,36 @@ function getNestedValue(obj: any, key: string): string | undefined {
     return key.split('.').reduce((acc, part) => acc && acc[part], obj);
 }
 
+const createTranslator = (locale: 'ar' | 'en') => {
+    return (key: string, options?: Record<string, string | number>): string => {
+        const languageJson = translations[locale] || translations.en;
+        let translation = getNestedValue(languageJson, key);
+
+        if (!translation) {
+            console.warn(`Translation not found for key: ${key} in locale: ${locale}`);
+            const fallbackJson = translations.en;
+            translation = getNestedValue(fallbackJson, key);
+            if (!translation) {
+                return key;
+            }
+        }
+
+        if (options) {
+            Object.keys(options).forEach(optionKey => {
+                translation = translation!.replace(`{${optionKey}}`, String(options[optionKey]));
+            });
+        }
+
+        return translation!;
+    };
+};
+
 export function useTranslation() {
     const { locale } = useAppContext();
-    const [t, setT] = useState<(key: string, options?: Record<string, string | number>) => string>(() => () => '');
 
-    useEffect(() => {
-        const translate = (key: string, options?: Record<string, string | number>): string => {
-            const languageJson = translations[locale] || translations.en;
-            let translation = getNestedValue(languageJson, key);
-
-            if (!translation) {
-                console.warn(`Translation not found for key: ${key} in locale: ${locale}`);
-                // Fallback to English
-                const fallbackJson = translations.en;
-                translation = getNestedValue(fallbackJson, key);
-                if (!translation) {
-                    return key; // Return the key itself if not found in English either
-                }
-            }
-
-            if (options) {
-                Object.keys(options).forEach(optionKey => {
-                    translation = translation!.replace(`{${optionKey}}`, String(options[optionKey]));
-                });
-            }
-
-            return translation!;
-        };
-
-        setT(() => translate);
-
-    }, [locale]);
+    // The translator function is now derived directly from the locale.
+    // This avoids the useEffect and useState, simplifying the hook and removing timing issues.
+    const t = createTranslator(locale);
 
     return { t, locale };
 }
