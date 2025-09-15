@@ -52,7 +52,21 @@ const pwaConfig = {
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development", // Disable PWA in dev mode
+  fallbacks: {
+    document: "/offline",
+  },
   runtimeCaching: [
+    {
+      urlPattern: '/',
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'start-url',
+        expiration: {
+          maxEntries: 1,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
     {
       urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
       handler: "CacheFirst",
@@ -91,17 +105,6 @@ const pwaConfig = {
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "static-style-assets",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /.*/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "others",
         expiration: {
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
