@@ -2,7 +2,7 @@
   "name": "شفريشن",
   "short_name": "شفريشن",
   "description": "تطبيق تشفير احترافي لإخفاء النصوص والرسائل.",
-  "start_url": "/",
+  "start_url": "/?standalone=true",
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#09090b",

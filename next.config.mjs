@@ -57,10 +57,10 @@ const pwaConfig = {
   },
   runtimeCaching: [
     {
-      urlPattern: '/',
+      urlPattern: '/?standalone=true',
       handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'start-url',
+        cacheName: 'start-url-standalone',
         expiration: {
           maxEntries: 1,
           maxAgeSeconds: 24 * 60 * 60 // 24 hours
