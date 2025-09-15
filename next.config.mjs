@@ -91,7 +91,7 @@ const pwaConfig = {
     },
     {
       urlPattern: /\.(?:js)$/i,
-      handler: "StaleWhileRevalidate",
+      handler: "CacheFirst",
       options: {
         cacheName: "static-js-assets",
         expiration: {
