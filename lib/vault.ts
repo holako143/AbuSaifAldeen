@@ -1,4 +1,5 @@
 import { encryptAES, decryptAES } from "./crypto";
+import { db } from './db';
 
 export interface VaultEntry {
   id: string;
@@ -7,9 +8,6 @@ export interface VaultEntry {
   createdAt: number;
   tags?: string[];
 }
-
-const VAULT_STORAGE_KEY = "shifrishan-vault-encrypted";
-const VAULT_HASH_KEY = "shifrishan-vault-hash";
 
 // Helper to create a SHA-256 hash of the master password for verification
 const hashPassword = async (password: string): Promise<string> => {
@@ -21,31 +19,29 @@ const hashPassword = async (password: string): Promise<string> => {
 }
 
 /**
- * Retrieves and decrypts all vault items from localStorage.
+ * Retrieves and decrypts all vault items from IndexedDB.
  * @param masterPassword The password to decrypt the vault.
  * @returns An array of VaultEntry objects.
  */
 export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[]> => {
   if (typeof window === "undefined") return [];
 
-  const encryptedBlob = localStorage.getItem(VAULT_STORAGE_KEY);
-  const storedHash = localStorage.getItem(VAULT_HASH_KEY);
+  const encryptedBlobRecord = await db.vault.get('main');
+  const storedHashRecord = await db.vault.get('hash');
+  const encryptedBlob = encryptedBlobRecord?.data;
+  const storedHash = storedHashRecord?.data;
 
   if (!storedHash) {
-    // No hash means this is a completely new vault.
-    // If there's also no data, return empty. If there's data, it's an old vault version.
     return encryptedBlob ? JSON.parse(await decryptAES(encryptedBlob, masterPassword)) : [];
   }
 
-  // Verify password against hash
   const providedHash = await hashPassword(masterPassword);
   if (providedHash !== storedHash) {
     throw new Error("كلمة المرور خاطئة.");
   }
 
-  // If we are here, password is correct. Now get data.
   if (!encryptedBlob) {
-    return []; // Correct password, but vault is empty.
+    return [];
   }
 
   const itemsJson = await decryptAES(encryptedBlob, masterPassword);
@@ -53,7 +49,7 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
 };
 
 /**
- * Encrypts and saves the entire list of vault items to localStorage.
+ * Encrypts and saves the entire list of vault items to IndexedDB.
  * @param items The array of VaultEntry objects to save.
  * @param masterPassword The password to encrypt the vault.
  */
@@ -62,11 +58,12 @@ const saveVaultItems = async (items: VaultEntry[], masterPassword: string): Prom
 
   const itemsJson = JSON.stringify(items);
   const encryptedBlob = await encryptAES(itemsJson, masterPassword);
-  localStorage.setItem(VAULT_STORAGE_KEY, encryptedBlob);
-
-  // Also save the hash of the new password for verification
   const passwordHash = await hashPassword(masterPassword);
-  localStorage.setItem(VAULT_HASH_KEY, passwordHash);
+
+  await db.transaction('rw', db.vault, async () => {
+    await db.vault.put({ id: 'main', data: encryptedBlob });
+    await db.vault.put({ id: 'hash', data: passwordHash });
+  });
 };
 
 /**
@@ -137,22 +134,19 @@ export const changeMasterPassword = async (oldPassword: string, newPassword: str
     if (!newPassword) {
         throw new Error("لا يمكن أن تكون كلمة المرور الجديدة فارغة.");
     }
-    // This step implicitly verifies the old password.
-    // If it's wrong, getVaultItems will throw an error.
     const items = await getVaultItems(oldPassword);
-
-    // Re-encrypt and save with the new password.
-    // This will also update the password hash.
     await saveVaultItems(items, newPassword);
 }
 
 /**
  * Exports the raw encrypted vault blob to a file.
  */
-export const exportEncryptedVault = (): { success: boolean, messageKey?: string } => {
+export const exportEncryptedVault = async (): Promise<{ success: boolean, messageKey?: string }> => {
     if (typeof window === "undefined") return { success: false, messageKey: 'common.errors.notInBrowser' };
 
-    const encryptedBlob = localStorage.getItem(VAULT_STORAGE_KEY);
+    const encryptedBlobRecord = await db.vault.get('main');
+    const encryptedBlob = encryptedBlobRecord?.data;
+
     if (!encryptedBlob) {
         return { success: false, messageKey: 'vaultPage.toasts.exportErrorEmpty' };
     }
@@ -174,19 +168,17 @@ export const exportEncryptedVault = (): { success: boolean, messageKey?: string 
  * @param vaultContent The raw encrypted string from the backup file.
  * @returns An object indicating success or failure.
  */
-export const importEncryptedVault = (vaultContent: string): { success: boolean, message?: string } => {
+export const importEncryptedVault = async (vaultContent: string): Promise<{ success: boolean, message?: string }> => {
     if (typeof window === "undefined") return { success: false, message: 'Not in browser' };
 
     if (!vaultContent || typeof vaultContent !== 'string' || !vaultContent.startsWith('{"iv"')) {
-        // Basic sanity check to see if it looks like our encrypted JSON object
         return { success: false, message: "الملف غير صالح أو تالف." };
     }
 
-    // This is a destructive action. Overwrite the vault.
-    localStorage.setItem(VAULT_STORAGE_KEY, vaultContent);
-    // Remove the old password hash. The user will need to unlock with the new vault's password.
-    // A new hash will be generated on the next save operation.
-    localStorage.removeItem(VAULT_HASH_KEY);
+    await db.transaction('rw', db.vault, async () => {
+        await db.vault.put({ id: 'main', data: vaultContent });
+        await db.vault.delete('hash');
+    });
 
     return { success: true };
 };

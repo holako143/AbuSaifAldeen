@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { db } from '@/lib/db';
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { View } from '@/components/sidebar';
@@ -87,6 +88,71 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [backgroundColorStart, setBackgroundColorStart] = useState('#ffffff');
     const [backgroundColorEnd, setBackgroundColorEnd] = useState('#e2e8f0');
     const [textColor, setTextColor] = useState('#0a0a0a');
+
+    // Data migration from localStorage to IndexedDB
+    useEffect(() => {
+        const runMigration = async () => {
+            const migrationKey = 'shifrishan-migration-v1-complete';
+            const isMigrated = localStorage.getItem(migrationKey);
+
+            if (isMigrated) {
+                return;
+            }
+
+            console.log("Running data migration from localStorage to IndexedDB...");
+
+            try {
+                // History migration
+                const historyJson = localStorage.getItem("shifrishan-history");
+                if (historyJson) {
+                    const historyData = JSON.parse(historyJson);
+                    if (Array.isArray(historyData) && historyData.length > 0) {
+                        // The old ID was a string, new one is a number. We need to strip the old id.
+                        const newHistory = historyData.map(({ id, ...rest }) => rest);
+                        await db.history.bulkAdd(newHistory);
+                        console.log(`Migrated ${historyData.length} history items.`);
+                    }
+                }
+
+                // Vault migration
+                const vaultBlob = localStorage.getItem("shifrishan-vault-encrypted");
+                if (vaultBlob) {
+                    await db.vault.put({ id: 'main', data: vaultBlob });
+                    console.log("Migrated vault data.");
+                }
+                const vaultHash = localStorage.getItem("shifrishan-vault-hash");
+                if (vaultHash) {
+                    await db.vault.put({ id: 'hash', data: vaultHash });
+                    console.log("Migrated vault hash.");
+                }
+
+                // Emoji list migration
+                const emojiJson = localStorage.getItem("shifrishan-emoji-list");
+                if (emojiJson) {
+                    const emojiList = JSON.parse(emojiJson);
+                    await db.appState.put({ key: 'emoji-list', value: emojiList });
+                    console.log("Migrated emoji list.");
+                }
+
+                // Alphabet list migration
+                const alphabetJson = localStorage.getItem("shifrishan-alphabet-list");
+                if (alphabetJson) {
+                    const alphabetList = JSON.parse(alphabetJson);
+                    await db.appState.put({ key: 'alphabet-list', value: alphabetList });
+                    console.log("Migrated alphabet list.");
+                }
+
+                // Mark migration as complete
+                localStorage.setItem(migrationKey, 'true');
+                console.log("Data migration complete.");
+
+            } catch (error) {
+                console.error("Data migration failed:", error);
+            }
+        };
+
+        runMigration();
+    }, []);
 
     // Load settings from localStorage
     useEffect(() => {

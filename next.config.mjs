@@ -58,7 +58,7 @@ const pwaConfig = {
   runtimeCaching: [
     {
       urlPattern: '/?standalone=true',
-      handler: 'StaleWhileRevalidate',
+      handler: 'CacheFirst',
       options: {
         cacheName: 'start-url-standalone',
         expiration: {
@@ -91,7 +91,7 @@ const pwaConfig = {
     },
     {
       urlPattern: /\.(?:js)$/i,
-      handler: "StaleWhileRevalidate",
+      handler: "CacheFirst",
       options: {
         cacheName: "static-js-assets",
         expiration: {
@@ -102,7 +102,7 @@ const pwaConfig = {
     },
     {
       urlPattern: /\.(?:css|less)$/i,
-      handler: "StaleWhileRevalidate",
+      handler: "CacheFirst",
       options: {
         cacheName: "static-style-assets",
         expiration: {

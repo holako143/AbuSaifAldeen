@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Plus, Save, RotateCcw, GripVertical } from "lucide-react";
+import { Trash2, Plus, Save, RotateCcw, GripVertical, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCustomEmojiList, saveCustomEmojiList, resetEmojiList, getCustomAlphabetList, saveCustomAlphabetList, resetAlphabetList } from "@/lib/emoji-storage";
@@ -12,10 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-function ListManager({ list, setList, onSave, onReset }: { list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, onSave: () => void, onReset: () => void }) {
+function ListManager({ list, setList, onSave, onReset }: { list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, onSave: () => Promise<void>, onReset: () => Promise<void> }) {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
   const [dragIndicator, setDragIndicator] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
     dragItem.current = position;
@@ -53,6 +55,18 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
     setList(newList);
   };
 
+  const handleSave = async () => {
+      setIsSaving(true);
+      await onSave();
+      setIsSaving(false);
+  }
+
+  const handleReset = async () => {
+      setIsResetting(true);
+      await onReset();
+      setIsResetting(false);
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-2 max-h-96 overflow-y-auto pr-4">
@@ -89,12 +103,12 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
             إضافة عنصر
           </Button>
           <div className="flex gap-2">
-            <Button size="sm" onClick={onSave}>
-                <Save className="ml-2 h-4 w-4" />
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
                 حفظ القائمة
             </Button>
-            <Button variant="secondary" size="sm" onClick={onReset}>
-                <RotateCcw className="ml-2 h-4 w-4" />
+            <Button variant="secondary" size="sm" onClick={handleReset} disabled={isResetting}>
+                {isResetting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <RotateCcw className="ml-2 h-4 w-4" />}
                 إعادة تعيين
             </Button>
           </div>
@@ -106,13 +120,21 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
 
 export function EmojiManagementView() {
   const { toast } = useToast();
-  const [emojiList, setEmojiList] = useState<string[]>([]);
-  const [alphabetList, setAlphabetList] = useState<string[]>([]);
+  const [emojiList, setEmojiList] = useState<string[] | null>(null);
+  const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
   const [useEmojiDefault, setUseEmojiDefault] = useState(true);
 
   useEffect(() => {
-    setEmojiList(getCustomEmojiList());
-    setAlphabetList(getCustomAlphabetList());
+    const fetchLists = async () => {
+        const [emojis, alphabets] = await Promise.all([
+            getCustomEmojiList(),
+            getCustomAlphabetList()
+        ]);
+        setEmojiList(emojis);
+        setAlphabetList(alphabets);
+    };
+    fetchLists();
+
     const storedPreference = localStorage.getItem("shifrishan-default-mode");
     if (storedPreference) {
       setUseEmojiDefault(storedPreference === "emoji");
@@ -128,32 +150,43 @@ export function EmojiManagementView() {
     });
   }
 
-  const handleSaveEmojis = () => {
+  const handleSaveEmojis = async () => {
+    if (!emojiList) return;
     const cleanedList = [...new Set(emojiList.filter(item => item.trim() !== ''))];
-    saveCustomEmojiList(cleanedList);
+    await saveCustomEmojiList(cleanedList);
     setEmojiList(cleanedList);
     toast({ title: "تم الحفظ!", description: "تم حفظ قائمة الإيموجي المخصصة." });
   };
 
-  const handleResetEmojis = () => {
-    resetEmojiList();
-    setEmojiList(getCustomEmojiList());
+  const handleResetEmojis = async () => {
+    await resetEmojiList();
+    const defaultList = await getCustomEmojiList(); // Refetch default list
+    setEmojiList(defaultList);
     toast({ title: "تمت إعادة التعيين!", description: "تمت استعادة قائمة الإيموجي الافتراضية." });
   };
 
-  const handleSaveAlphabets = () => {
+  const handleSaveAlphabets = async () => {
+    if (!alphabetList) return;
     const cleanedList = [...new Set(alphabetList.filter(item => item.trim() !== ''))];
-    saveCustomAlphabetList(cleanedList);
+    await saveCustomAlphabetList(cleanedList);
     setAlphabetList(cleanedList);
     toast({ title: "تم الحفظ!", description: "تم حفظ قائمة الحروف المخصصة." });
   };
 
-  const handleResetAlphabets = () => {
-    resetAlphabetList();
-    setAlphabetList(getCustomAlphabetList());
+  const handleResetAlphabets = async () => {
+    await resetAlphabetList();
+    const defaultList = await getCustomAlphabetList(); // Refetch default list
+    setAlphabetList(defaultList);
     toast({ title: "تمت إعادة التعيين!", description: "تمت استعادة قائمة الحروف الافتراضية." });
   };
 
+  if (emojiList === null || alphabetList === null) {
+    return (
+        <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
 
   return (
     <Card className="w-full max-w-3xl mx-auto animate-in">

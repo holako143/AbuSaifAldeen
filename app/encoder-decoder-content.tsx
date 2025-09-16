@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star } from "lucide-react";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -24,8 +24,6 @@ export function Base64EncoderDecoderContent() {
     isPasswordEnabled: isPasswordGloballyEnabled,
     textToDecode,
     setTextToDecode,
-    setActiveView,
-    setIsVaultVisible,
     autoCopy
   } = useAppContext();
   const { t } = useTranslation();
@@ -40,18 +38,27 @@ export function Base64EncoderDecoderContent() {
   const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const [emojiList, setEmojiList] = useState(getCustomEmojiList());
-  const [alphabetList, setAlphabetList] = useState(getCustomAlphabetList());
+  const [emojiList, setEmojiList] = useState<string[] | null>(null);
+  const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
 
   const isEncoding = mode === "encode";
 
   useEffect(() => {
+    const fetchLists = async () => {
+        const [emojis, alphabets] = await Promise.all([
+            getCustomEmojiList(),
+            getCustomAlphabetList()
+        ]);
+        setEmojiList(emojis);
+        setAlphabetList(alphabets);
+        setSelectedEmoji(emojis[0] || "😀");
+    };
+    fetchLists();
+
     const storedPref = localStorage.getItem("shifrishan-default-mode");
     if (storedPref) setDefaultTab(storedPref);
-    setSelectedEmoji(emojiList[0] || "😀");
-  }, [emojiList]);
+  }, []);
 
   useEffect(() => {
     if (textToDecode) {
@@ -82,25 +89,14 @@ export function Base64EncoderDecoderContent() {
         setOutputText(result);
 
         if (result && isEncoding) {
-          addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
+          await addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
 
           if (autoCopy) {
               navigator.clipboard.writeText(result);
               toast({ title: t('toasts.autoCopySuccess')});
           }
-
-          // The promotion logic was causing the emoji list to re-render and lose scroll position.
-          // This is disabled to fix the bug. A better implementation would be to only promote
-          // on explicit user action, not on every text change.
-          // const listKey = defaultTab === 'emoji' ? EMOJI_STORAGE_KEY : ALPHABET_STORAGE_KEY;
-          // promoteListItem(listKey, selectedEmoji);
-          // if (defaultTab === 'emoji') {
-          //   setEmojiList(getCustomEmojiList());
-          // } else {
-          //   setAlphabetList(getCustomAlphabetList());
-          // }
         } else if (result) {
-            addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
+            await addToHistory({ inputText, outputText: result, mode: isEncoding ? "encode" : "decode" });
         }
       } catch (e: any) {
         setOutputText("");
@@ -138,6 +134,14 @@ export function Base64EncoderDecoderContent() {
     handleModeToggle(mode !== 'encode');
     toast({ title: t('toasts.swapped') });
   };
+
+  if (!emojiList || !alphabetList) {
+      return (
+          <div className="flex justify-center items-center h-96">
+              <Loader2 className="h-12 w-12 animate-spin" />
+          </div>
+      )
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto animate-in">
