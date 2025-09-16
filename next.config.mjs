@@ -111,6 +111,19 @@ const pwaConfig = {
         },
       },
     },
+    {
+      urlPattern: /^https:\/\/app\.netlify\.com\/access-control\/bb-api\/api\/v1\/cdp\/deploys\//,
+      handler: 'NetworkOnly',
+      method: 'POST',
+      options: {
+        backgroundSync: {
+          name: 'netlify-cdp-queue',
+          options: {
+            maxRetentionTime: 24 * 60,
+          },
+        },
+      },
+    },
   ],
 };
 
