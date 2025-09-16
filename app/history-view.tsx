@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { HistoryEntry, getHistory, deleteFromHistory, clearHistory, importHistory } from "@/lib/history";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Copy, Trash2, Upload, Download, CircleX, Send } from "lucide-react";
+import { Copy, Trash2, Upload, Download, CircleX, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -19,16 +20,15 @@ type FilterType = "all" | "encode" | "decode";
 export function HistoryView() {
   const { setActiveView, setTextToDecode, locale } = useAppContext();
   const { t } = useTranslation();
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setHistory(getHistory());
-  }, []);
+  // Use useLiveQuery to get real-time updates from the database
+  const history = useLiveQuery(() => getHistory(), []);
 
   const filteredHistory = useMemo(() => {
+    if (!history) return [];
     if (filter === "all") return history;
     return history.filter((item) => item.mode === filter);
   }, [history, filter]);
@@ -43,19 +43,18 @@ export function HistoryView() {
     toast({ title: t('history.toasts.copied'), description: t('history.toasts.copiedDescription') });
   };
 
-  const handleDelete = (id: string) => {
-    deleteFromHistory(id);
-    setHistory(getHistory());
+  const handleDelete = async (id: number) => {
+    await deleteFromHistory(id);
     toast({ title: t('history.toasts.deleted'), description: t('history.toasts.deletedDescription') });
   };
 
-  const handleClearAll = () => {
-    clearHistory();
-    setHistory([]);
+  const handleClearAll = async () => {
+    await clearHistory();
     toast({ title: t('history.toasts.cleared'), description: t('history.toasts.clearedDescription') });
   };
 
   const handleExport = () => {
+    if (!history) return;
     const historyJson = JSON.stringify(history, null, 2);
     const blob = new Blob([historyJson], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -75,12 +74,11 @@ export function HistoryView() {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
         const importedData = JSON.parse(text);
-        if (importHistory(importedData)) {
-          setHistory(getHistory());
+        if (await importHistory(importedData)) {
           toast({ title: t('history.toasts.imported') });
         } else { throw new Error("Invalid history file format"); }
       } catch (error) {
@@ -93,6 +91,14 @@ export function HistoryView() {
 
   const truncateText = (text: string, length = 30) => text.length > length ? `${text.substring(0, length)}...` : text;
   const localeString = locale === 'ar' ? 'ar-EG' : 'en-US';
+
+  if (!history) {
+    return (
+        <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
 
   return (
     <Card className="animate-in w-full">

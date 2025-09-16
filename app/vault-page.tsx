@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal, Pencil } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal, Pencil, Settings, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -17,13 +17,12 @@ import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatRelativeTime } from "@/lib/utils";
-import { Settings } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { changeMasterPassword } from "@/lib/vault";
 
 function ChangePasswordDialog() {
     const { t } = useTranslation();
-    const { masterPassword, setMasterPassword, setIsVaultUnlocked } = useAppContext();
+    const { masterPassword: globalMasterPassword, setMasterPassword, setIsVaultUnlocked } = useAppContext();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -35,11 +34,11 @@ function ChangePasswordDialog() {
             toast({ variant: "destructive", title: t('settings.vault.errorMismatch') });
             return;
         }
-        if (!masterPassword) return;
+        if (!globalMasterPassword) return;
 
         setIsLoading(true);
         try {
-            await changeMasterPassword(masterPassword, newPassword);
+            await changeMasterPassword(globalMasterPassword, newPassword);
             toast({ title: t('settings.vault.success'), description: t('settings.vault.successDescription') });
             setMasterPassword(null);
             setIsVaultUnlocked(false);
@@ -79,7 +78,7 @@ function ChangePasswordDialog() {
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button></DialogClose>
                     <Button onClick={handlePasswordChange} disabled={isLoading || !newPassword || !confirmPassword}>
-                        {isLoading ? "جاري التغيير..." : t('settings.vault.button')}
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('settings.vault.button')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -88,11 +87,11 @@ function ChangePasswordDialog() {
 }
 
 export function VaultPage() {
-    const { setMasterPassword: setGlobalMasterPassword, setIsVaultUnlocked, locale } = useAppContext();
+    const { masterPassword: globalMasterPassword, setMasterPassword: setGlobalMasterPassword, setIsVaultUnlocked, locale } = useAppContext();
     const { t } = useTranslation();
     const { toast } = useToast();
     const [items, setItems] = useState<VaultEntry[]>([]);
-    const [masterPassword, setMasterPassword] = useState('');
+    const [localMasterPassword, setLocalMasterPassword] = useState('');
     const [isLocked, setIsLocked] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -103,27 +102,36 @@ export function VaultPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
+    useEffect(() => {
+        if (globalMasterPassword && isLocked) {
+            setLocalMasterPassword(globalMasterPassword);
+            handleUnlock(globalMasterPassword);
+        }
+    }, [globalMasterPassword, isLocked]);
+
     const filteredItems = useMemo(() => {
         if (!searchQuery) return items;
         return items.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [items, searchQuery]);
 
-    const handleUnlock = async () => {
-        if (!masterPassword) {
+    const handleUnlock = async (password: string) => {
+        if (!password) {
             setError(t('vaultPage.unlockError'));
             return;
         }
         setIsLoading(true);
         setError('');
         try {
-            const vaultItems = await getVaultItems(masterPassword);
+            const vaultItems = await getVaultItems(password);
             setItems(vaultItems);
-            setGlobalMasterPassword(masterPassword);
+            setGlobalMasterPassword(password);
             setIsVaultUnlocked(true);
             setIsLocked(false);
             toast({ title: t('vaultPage.toasts.unlockedSuccess') });
         } catch (e: any) {
             setError(e.message);
+            setGlobalMasterPassword(null);
+            setIsVaultUnlocked(false);
         } finally {
             setIsLoading(false);
         }
@@ -131,7 +139,7 @@ export function VaultPage() {
 
     const handleLock = () => {
         setIsLocked(true);
-        setMasterPassword('');
+        setLocalMasterPassword('');
         setGlobalMasterPassword(null);
         setIsVaultUnlocked(false);
         setItems([]);
@@ -139,9 +147,10 @@ export function VaultPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!globalMasterPassword) return;
         try {
-            await removeFromVault(id, masterPassword);
-            setItems(items.filter(item => item.id !== id));
+            await removeFromVault(id, globalMasterPassword);
+            setItems(prevItems => prevItems.filter(item => item.id !== id));
             toast({ title: t('vaultPage.toasts.deleteSuccess') });
         } catch (e: any) {
             toast({ variant: "destructive", title: t('vaultPage.toasts.deleteFailed'), description: e.message });
@@ -149,27 +158,28 @@ export function VaultPage() {
     };
 
     const handleSaveItem = async (item: { id?: string; title: string; text: string }) => {
+        if (!globalMasterPassword) return false;
         try {
-            if (editingItem && editingItem.id) { // Update existing
+            if (editingItem && editingItem.id) {
                 const updatedEntry = { ...editingItem, title: item.title, text: item.text };
-                await updateVaultItem(updatedEntry, masterPassword);
+                await updateVaultItem(updatedEntry, globalMasterPassword);
                 setItems(items.map(i => i.id === updatedEntry.id ? updatedEntry : i));
                 toast({ title: t('vaultPage.toasts.updateSuccess') });
-            } else { // Add new
-                const newEntry = await addToVault(item.title, item.text, masterPassword);
+            } else {
+                const newEntry = await addToVault(item.title, item.text, globalMasterPassword);
                 setItems([newEntry, ...items]);
                 toast({ title: t('vaultPage.toasts.addSuccess') });
             }
             setEditingItem(null);
-            return true; // Indicate success for closing dialog
+            return true;
         } catch (e: any) {
             toast({ variant: "destructive", title: t('vaultPage.toasts.saveFailed'), description: e.message });
             return false;
         }
     };
 
-    const handleExport = () => {
-        const result = exportEncryptedVault();
+    const handleExport = async () => {
+        const result = await exportEncryptedVault();
         if (result.success) {
             toast({ title: t('vaultPage.toasts.exportSuccess') });
         } else if (result.messageKey) {
@@ -183,12 +193,12 @@ export function VaultPage() {
         const file = event.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const text = e.target?.result as string;
-                const result = importEncryptedVault(text);
+                const result = await importEncryptedVault(text);
                 if (result.success) {
-                    handleLock(); // Lock the vault to force re-authentication with new password
+                    handleLock();
                     toast({ title: t('vaultPage.toasts.importSuccess') });
                 } else if (result.message) {
                     toast({ variant: "destructive", title: t('vaultPage.toasts.importError'), description: result.message });
@@ -212,13 +222,13 @@ export function VaultPage() {
                     <Input
                         type="password"
                         placeholder={t('vaultPage.masterPasswordPlaceholder')}
-                        value={masterPassword}
-                        onChange={(e) => setMasterPassword(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                        value={localMasterPassword}
+                        onChange={(e) => setLocalMasterPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleUnlock(localMasterPassword)}
                     />
                     {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <Button onClick={handleUnlock} disabled={isLoading} className="w-full">
-                        {isLoading ? t('vaultPage.unlocking') : t('vaultPage.unlockButton')}
+                    <Button onClick={() => handleUnlock(localMasterPassword)} disabled={isLoading} className="w-full">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('vaultPage.unlockButton')}
                     </Button>
                 </CardContent>
             </Card>
@@ -271,7 +281,7 @@ export function VaultPage() {
                                                     <TableCell>{formatRelativeTime(item.createdAt, locale)}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
-                                                        <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                                        <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); setEditingItem(item);}} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
                                                         <Button onClick={(e) => {e.stopPropagation(); setItemToDelete(item)}} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -300,7 +310,7 @@ export function VaultPage() {
                                         <div className="flex items-center flex-shrink-0">
                                             <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
                                             <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
-                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={() => setEditingItem(item)} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
                                             <Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                                         </div>
                                     </div>
@@ -337,7 +347,22 @@ function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: 
     const [isOpen, setIsOpen] = useState(false);
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
-    const title = item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd');
+    const [title, setTitle] = useState(item?.title || '');
+    const [text, setText] = useState(item?.text || '');
+
+    useEffect(() => {
+        if (isOpen) {
+            setTitle(item?.title || '');
+            setText(item?.text || '');
+        }
+    }, [isOpen, item]);
+
+    const handleSubmit = async () => {
+        const success = await onSave({ id: item?.id, title, text });
+        if(success) setIsOpen(false);
+    }
+
+    const titleText = item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd');
     const description = t('vaultPage.editDialog.description');
 
     if (isDesktop) {
@@ -346,10 +371,10 @@ function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: 
                 <DialogTrigger asChild>{triggerButton}</DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>{title}</DialogTitle>
+                        <DialogTitle>{titleText}</DialogTitle>
                         <DialogDescription>{description}</DialogDescription>
                     </DialogHeader>
-                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} />
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} title={title} text={text} setTitle={setTitle} setText={setText} />
                 </DialogContent>
             </Dialog>
         );
@@ -360,31 +385,32 @@ function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: 
             <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader className="text-left">
-                    <DrawerTitle>{item ? t('vaultPage.editDialog.titleEdit') : t('vaultPage.editDialog.titleAdd')}</DrawerTitle>
-                    <DrawerDescription>{t('vaultPage.editDialog.description')}</DrawerDescription>
+                    <DrawerTitle>{titleText}</DrawerTitle>
+                    <DrawerDescription>{description}</DrawerDescription>
                 </DrawerHeader>
                 <div className="p-4">
-                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} />
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} title={title} text={text} setTitle={setTitle} setText={setText} />
                 </div>
+                <DrawerFooter className="pt-2">
+                    <DrawerClose asChild>
+                        <Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button>
+                    </DrawerClose>
+                </DrawerFooter>
             </DrawerContent>
         </Drawer>
     );
 }
 
-function EditItemForm({ item, onSave, setIsOpen }: { item?: VaultEntry, onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, setIsOpen: (isOpen: boolean) => void }) {
+function EditItemForm({ item, onSave, setIsOpen, title, text, setTitle, setText }: { item?: VaultEntry, onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, setIsOpen: (isOpen: boolean) => void, title: string, text: string, setTitle: (title: string) => void, setText: (text: string) => void }) {
     const { t } = useTranslation();
-    const [title, setTitle] = useState(item?.title || '');
-    const [text, setText] = useState(item?.text || '');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async () => {
+        setIsLoading(true);
         const success = await onSave({ id: item?.id, title, text });
+        setIsLoading(false);
         if(success) setIsOpen(false);
     }
-
-    useEffect(() => {
-        setTitle(item?.title || '');
-        setText(item?.text || '');
-    }, [item]);
 
     return (
         <>
@@ -392,12 +418,11 @@ function EditItemForm({ item, onSave, setIsOpen }: { item?: VaultEntry, onSave: 
                 <Input placeholder={t('vaultPage.editDialog.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
                 <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px]" />
             </div>
-            <DialogFooter className="pt-2 sm:justify-between gap-2 flex-col-reverse sm:flex-row">
-                 <DialogClose asChild>
-                    <Button variant="outline" className="w-full">{t('vaultPage.editDialog.cancel')}</Button>
-                 </DialogClose>
-                 <Button onClick={handleSubmit} className="w-full">{t('vaultPage.editDialog.save')}</Button>
-            </DialogFooter>
+            <div className="pt-2">
+                <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('vaultPage.editDialog.save')}
+                </Button>
+            </div>
         </>
     );
 }

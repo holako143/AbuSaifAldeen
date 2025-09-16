@@ -1,52 +1,53 @@
+import { db } from './db';
 import { EMOJI_LIST, ALPHABET_LIST } from "@/app/emoji";
 
-export const EMOJI_STORAGE_KEY = "shifrishan-emoji-list";
-export const ALPHABET_STORAGE_KEY = "shifrishan-alphabet-list";
+export const EMOJI_STORAGE_KEY = "emoji-list";
+export const ALPHABET_STORAGE_KEY = "alphabet-list";
 
-const getList = (key: string, defaultList: string[]): string[] => {
+const getList = async (key: string, defaultList: string[]): Promise<string[]> => {
     if (typeof window === "undefined") return defaultList;
     try {
-        const storedList = localStorage.getItem(key);
-        return storedList ? JSON.parse(storedList) : defaultList;
+        const record = await db.appState.get(key);
+        return record ? record.value : defaultList;
     } catch (error) {
-        console.error(`Failed to parse list for key ${key}`, error);
+        console.error(`Failed to get list for key ${key}`, error);
         return defaultList;
     }
 }
 
-export const getCustomEmojiList = (): string[] => getList(EMOJI_STORAGE_KEY, EMOJI_LIST);
-export const getCustomAlphabetList = (): string[] => getList(ALPHABET_STORAGE_KEY, ALPHABET_LIST);
+export const getCustomEmojiList = async (): Promise<string[]> => getList(EMOJI_STORAGE_KEY, EMOJI_LIST);
+export const getCustomAlphabetList = async (): Promise<string[]> => getList(ALPHABET_STORAGE_KEY, ALPHABET_LIST);
 
-const saveList = (key: string, list: string[]): void => {
+const saveList = async (key: string, list: string[]): Promise<void> => {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(key, JSON.stringify(list));
+    await db.appState.put({ key, value: list });
   } catch (error) {
     console.error(`Failed to save list to ${key}`, error);
   }
 };
 
-export const saveCustomEmojiList = (list: string[]): void => saveList(EMOJI_STORAGE_KEY, list);
-export const saveCustomAlphabetList = (list: string[]): void => saveList(ALPHABET_STORAGE_KEY, list);
+export const saveCustomEmojiList = async (list: string[]): Promise<void> => saveList(EMOJI_STORAGE_KEY, list);
+export const saveCustomAlphabetList = async (list: string[]): Promise<void> => saveList(ALPHABET_STORAGE_KEY, list);
 
-export const resetEmojiList = (): void => {
+export const resetEmojiList = async (): Promise<void> => {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(EMOJI_STORAGE_KEY);
+  await db.appState.delete(EMOJI_STORAGE_KEY);
 };
 
-export const resetAlphabetList = (): void => {
+export const resetAlphabetList = async (): Promise<void> => {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(ALPHABET_STORAGE_KEY);
+  await db.appState.delete(ALPHABET_STORAGE_KEY);
 };
 
 /**
  * Moves a given item to the front of its list to mark it as recently used.
- * @param listKey The localStorage key for the list.
+ * @param listKey The key for the list in the appState table.
  * @param item The item to promote.
  */
-export const promoteListItem = (listKey: string, item: string): void => {
+export const promoteListItem = async (listKey: string, item: string): Promise<void> => {
     const defaultList = listKey === EMOJI_STORAGE_KEY ? EMOJI_LIST : ALPHABET_LIST;
-    const currentList = getList(listKey, defaultList);
+    const currentList = await getList(listKey, defaultList);
 
     const itemIndex = currentList.indexOf(item);
 
@@ -61,5 +62,5 @@ export const promoteListItem = (listKey: string, item: string): void => {
     // Add it to the beginning
     newList.unshift(item);
 
-    saveList(listKey, newList);
+    await saveList(listKey, newList);
 }
