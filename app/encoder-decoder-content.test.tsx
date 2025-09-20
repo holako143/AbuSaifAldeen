@@ -32,19 +32,19 @@ const WithEnglishLocale: React.FC<{children: React.ReactNode}> = ({ children }) 
 }
 
 describe('Base64EncoderDecoderContent', () => {
-  it('renders the component and main title in English', () => {
+  it('renders the component and main title in English', async () => {
     render(
         <WithEnglishLocale>
             <Base64EncoderDecoderContent />
         </WithEnglishLocale>
     );
 
-    // Check for the title in English
-    expect(screen.getByText('تشفير & فك التشفير')).toBeInTheDocument();
+    // Check for the title in English - use findByText to wait for async operations
+    expect(await screen.findByText('Encoder & Decoder')).toBeInTheDocument();
 
     // Check for text areas by their English placeholders
-    expect(screen.getByPlaceholderText('Enter the text to be processed')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Output...')).toBeInTheDocument();
+    expect(await screen.findByPlaceholderText('Enter the text to be processed')).toBeInTheDocument();
+    expect(await screen.findByPlaceholderText('Output...')).toBeInTheDocument();
   });
 
   it('calls the mocked encode function when user types', async () => {
@@ -54,8 +54,8 @@ describe('Base64EncoderDecoderContent', () => {
         </WithEnglishLocale>
     );
 
-    const inputArea = screen.getByPlaceholderText('Enter the text to be processed');
-    const outputArea = screen.getByPlaceholderText('Output...');
+    const inputArea = await screen.findByPlaceholderText('Enter the text to be processed');
+    const outputArea = await screen.findByPlaceholderText('Output...');
 
     // Type into the input
     await userEvent.type(inputArea, 'Hello World');

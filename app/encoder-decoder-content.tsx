@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -38,6 +39,7 @@ export function Base64EncoderDecoderContent() {
   const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const [emojiList, setEmojiList] = useState<string[] | null>(null);
   const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
@@ -116,6 +118,8 @@ export function Base64EncoderDecoderContent() {
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
       toast({ title: t('toasts.copySuccess') });
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
     }, console.error);
   };
   const handlePaste = async () => {
@@ -148,89 +152,156 @@ export function Base64EncoderDecoderContent() {
         <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">{t('encoderDecoder.title')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
         <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
-            <Label htmlFor="mode-toggle">{t('encoderDecoder.decodeLabel')}</Label>
-            <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} />
-            <Label htmlFor="mode-toggle">{t('encoderDecoder.encodeLabel')}</Label>
+            <Label htmlFor="mode-toggle" className="text-muted-foreground">{t('encoderDecoder.decodeLabel')}</Label>
+            <Switch id="mode-toggle" checked={isEncoding} onCheckedChange={handleModeToggle} aria-label={isEncoding ? t('encoderDecoder.encodeLabel') : t('encoderDecoder.decodeLabel')} />
+            <Label htmlFor="mode-toggle" className="text-muted-foreground">{t('encoderDecoder.encodeLabel')}</Label>
         </div>
 
+        <AnimatePresence>
         {isPasswordGloballyEnabled && (
-            <div className="space-y-2 p-3 border rounded-lg animate-in">
-            <div className="flex items-center justify-between">
-                <Label className="font-semibold">{t('encoderDecoder.layers.title')}</Label>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{t('encoderDecoder.layers.count', { count: passwords.filter(p => p.value).length })}</span>
-                    <div className="flex items-center gap-1 text-xs text-blue-500"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>
-                </div>
-            </div>
-            <div className="space-y-2 pt-2">
-              {passwords.map((p, index) => (
-                <div key={p.id} className="flex items-center gap-2">
-                  <div className="relative flex-grow">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      placeholder={t('encoderDecoder.passwordLayerPlaceholder', { layer: index + 1 })}
-                      value={p.value}
-                      onChange={(e) => {
-                        const newPasswords = [...passwords];
-                        newPasswords[index].value = e.target.value;
-                        setPasswords(newPasswords);
-                      }}
-                      className="pl-10"
-                    />
+            <motion.div
+              layout
+              initial={{ opacity: 0, y: -20, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -20, height: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="space-y-4 p-4 border rounded-lg overflow-hidden"
+            >
+              <div className="flex items-center justify-between">
+                  <Label className="font-semibold text-lg">{t('encoderDecoder.layers.title')}</Label>
+                  <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{t('encoderDecoder.layers.count', { count: passwords.filter(p => p.value).length })}</span>
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-500 bg-blue-500/10 px-2 py-1 rounded-full"><ShieldCheck className="h-4 w-4"/><span>AES-256</span></div>
                   </div>
-                  {passwords.length > 1 && (
-                    <Button variant="ghost" size="icon" onClick={() => setPasswords(passwords.filter(item => item.id !== p.id))} aria-label={t('encoderDecoder.a11y.removeLayer')}>
-                      <X className="h-4 w-4 text-red-500"/>
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
-                {t('encoderDecoder.addEncryptionLayer')}
-              </Button>
-            </div>
-        </div>
+              </div>
+              <div className="space-y-3 pt-2">
+                {passwords.map((p, index) => (
+                  <motion.div
+                    key={p.id}
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="relative flex-grow">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        type="password"
+                        placeholder={t('encoderDecoder.passwordLayerPlaceholder', { layer: index + 1 })}
+                        value={p.value}
+                        onChange={(e) => {
+                          const newPasswords = [...passwords];
+                          newPasswords[index].value = e.target.value;
+                          setPasswords(newPasswords);
+                        }}
+                        className="pl-10 h-11"
+                      />
+                    </div>
+                    {passwords.length > 1 && (
+                      <Button variant="ghost" size="icon" onClick={() => setPasswords(passwords.filter(item => item.id !== p.id))} aria-label={t('encoderDecoder.a11y.removeLayer')}>
+                        <X className="h-5 w-5 text-red-500/80 hover:text-red-500 transition-colors"/>
+                      </Button>
+                    )}
+                  </motion.div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
+                  {t('encoderDecoder.addEncryptionLayer')}
+                </Button>
+              </div>
+            </motion.div>
         )}
+        </AnimatePresence>
 
-        <div>
-            <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
-            <div className="flex justify-center items-center gap-2 mt-2">
-                <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')}><ClipboardPaste className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
+        <div className="space-y-2">
+            <Label className="text-sm font-medium">{isEncoding ? t('encoderDecoder.textToEncode') : t('encoderDecoder.textToDecode')}</Label>
+            <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[140px] focus:border-primary"/>
+            <div className="flex justify-center items-center gap-1 mt-1">
+                <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')} className="transition-transform hover:scale-110 active:scale-95"><ClipboardPaste className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500 transition-transform hover:scale-110 active:scale-95" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
             </div>
         </div>
 
+        <AnimatePresence>
         {isEncoding && (
-            <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full animate-in">
-                <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="emoji" disabled={!isEncoding}>{t('encoderDecoder.iconsTab')}</TabsTrigger>
-                <TabsTrigger value="alphabet" disabled={!isEncoding}>{t('encoderDecoder.alphabetsTab')}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
-                <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
-            </Tabs>
+            <motion.div
+              layout
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="w-full overflow-hidden"
+            >
+              <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="emoji">{t('encoderDecoder.iconsTab')}</TabsTrigger>
+                  <TabsTrigger value="alphabet">{t('encoderDecoder.alphabetsTab')}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="emoji" className="pt-4"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} /></TabsContent>
+                  <TabsContent value="alphabet" className="pt-4"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} /></TabsContent>
+              </Tabs>
+            </motion.div>
         )}
+        </AnimatePresence>
 
-        <div>
-            <Textarea placeholder={isProcessing ? t('encoderDecoder.processingPlaceholder') : t('encoderDecoder.outputTextPlaceholder')} value={outputText} readOnly className="min-h-[120px]" />
-            <div className="flex justify-center items-center gap-2 mt-2">
-                <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
-                {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}
+        <div className="space-y-2">
+            <Label className="text-sm font-medium">{t('encoderDecoder.outputTextLabel')}</Label>
+            <div className="relative">
+                <Textarea
+                    placeholder={t('encoderDecoder.outputTextPlaceholder')}
+                    value={outputText}
+                    readOnly
+                    className="min-h-[140px] bg-muted/40"
+                />
+                {isProcessing && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                )}
+            </div>
+            <div className="flex justify-center items-center gap-1 mt-1">
+                <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')} className="transition-transform hover:scale-110 active:scale-95 w-9 h-9">
+                    <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                            key={isCopied ? "check" : "copy"}
+                            initial={{ opacity: 0, scale: 0.5, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.5, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {isCopied ? <Check className="h-5 w-5 text-green-500" /> : <Copy className="h-5 w-5" />}
+                        </motion.div>
+                    </AnimatePresence>
+                </Button>
+                {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')} className="transition-transform hover:scale-110 active:scale-95"><Share className="h-5 w-5" /></Button>}
                 <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-amber-500" aria-label={t('encoderDecoder.a11y.saveToVault')}><Star className="h-5 w-5" /></Button>
+                            <Button variant="ghost" size="icon" disabled={!outputText} className="text-amber-500 disabled:text-muted-foreground transition-transform hover:scale-110 active:scale-95" aria-label={t('encoderDecoder.a11y.saveToVault')}><Star className="h-5 w-5" /></Button>
                         </TooltipTrigger>
                         <TooltipContent><p>{t('encoderDecoder.saveToVault')}</p></TooltipContent>
                     </Tooltip>
                 </AddToVaultDialog>
-                <Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText} aria-label={t('encoderDecoder.a11y.swap')}><ArrowRightLeft className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText} aria-label={t('encoderDecoder.a11y.swap')} className="transition-transform hover:scale-110 active:scale-95"><ArrowRightLeft className="h-5 w-5" /></Button>
             </div>
         </div>
-        {errorText && <div className="text-red-500 text-center py-2">{errorText}</div>}
+
+        <AnimatePresence>
+            {errorText && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="text-red-500 text-center p-3 bg-red-500/10 rounded-lg flex items-center justify-center gap-2"
+                >
+                    <ShieldAlert className="h-5 w-5" />
+                    <span>{errorText}</span>
+                </motion.div>
+            )}
+        </AnimatePresence>
         </CardContent>
     </Card>
   );
