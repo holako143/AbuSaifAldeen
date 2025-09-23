@@ -261,8 +261,8 @@ export function Base64EncoderDecoderContent() {
                 {isEncoding && (
                     <Tabs defaultValue="emoji" className="w-full animate-in">
                         <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="emoji">{t('encoderDecoder.iconsTab')}</TabsTrigger><TabsTrigger value="alphabet">{t('encoderDecoder.alphabetsTab')}</TabsTrigger></TabsList>
-                        <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} /></TabsContent>
-                        <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} /></TabsContent>
+                        <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
+                        <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
                     </Tabs>
                 )}
 
