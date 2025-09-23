@@ -4,8 +4,8 @@ import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Check } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Check, Palette, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { useAppContext } from "@/components/app-provider";
@@ -20,8 +20,7 @@ function LanguageSwitcher() {
     const { locale, setLocale } = useAppContext();
 
     return (
-        <div className="space-y-2">
-            <h3 className="text-lg font-medium">{t('settings.language')}</h3>
+        <div className="space-y-2 pt-2">
             <ToggleGroup
                 type="single"
                 value={locale}
@@ -68,11 +67,7 @@ function ThemeCustomizer() {
     );
 
     return (
-        <div className="space-y-4">
-             <div>
-                <h3 className="text-lg font-medium">{t('settings.theme.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('settings.theme.description')}</p>
-            </div>
+        <div className="space-y-4 pt-2">
             <ToggleGroup
                 type="single"
                 value={themeMode}
@@ -107,10 +102,32 @@ export function SettingsView() {
           {t('settings.description')}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6 pt-6">
-        <LanguageSwitcher />
-        <Separator />
-        <ThemeCustomizer />
+      <CardContent className="pt-6">
+        <Accordion type="single" collapsible className="w-full" defaultValue="language">
+            <AccordionItem value="language">
+                <AccordionTrigger>
+                    <div className="flex items-center gap-3">
+                        <Languages className="h-5 w-5" />
+                        <span className="font-semibold">{t('settings.language')}</span>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                    <LanguageSwitcher />
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="theme">
+                <AccordionTrigger>
+                    <div className="flex items-center gap-3">
+                        <Palette className="h-5 w-5" />
+                        <span className="font-semibold">{t('settings.theme.title')}</span>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                    <p className="text-sm text-muted-foreground pb-4">{t('settings.theme.description')}</p>
+                    <ThemeCustomizer />
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
       </CardContent>
     </Card>
   );
