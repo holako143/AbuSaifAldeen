@@ -1,6 +1,6 @@
 import { encrypt, decrypt, encryptMultiple, decryptMultiple } from "../lib/crypto";
 
-export type EncryptionType = 'aes';
+export type EncryptionType = 'aes256';
 
 // --- Variation Selector (Emoji Hiding) Logic ---
 
@@ -71,7 +71,7 @@ interface EncodeParams {
 }
 
 export async function encode({ emoji, text, type, passwords, algorithm, keySize }: EncodeParams): Promise<string> {
-    if (type !== 'aes') {
+    if (type !== 'aes256') {
         throw new Error(`Unsupported encryption type: ${type}`);
     }
     if (!passwords || passwords.length === 0) {
@@ -119,7 +119,7 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
         try {
             const hiddenText = decodeFromEmoji(message);
 
-            if (type !== 'aes') {
+            if (type !== 'aes256') {
                 throw new Error(`Unsupported encryption type: ${type}`);
             }
 

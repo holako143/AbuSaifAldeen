@@ -121,11 +121,14 @@ export const decryptAES = async (encryptedPayload: string, password: string): Pr
 /**
  * Encrypts a plaintext string using a hybrid AES-256-GCM + ChaCha20-Poly1305 scheme.
  * @param plaintext The text to encrypt.
- * @param passwords An array of passwords. Expects two: [aes_password, chacha_password].
- * @returns A base64 string representing the final hybrid encrypted layer.
+ * @param passwords An array of passwords. Expects two for hybrid mode: [aes_password, chacha_password].
+ * @returns A base64 string representing the final encrypted layer.
  */
 export const encryptMultiple = async (plaintext: string, passwords: string[]): Promise<string> => {
-  if (passwords.length < 2) {
+  if (passwords.length === 0) {
+    throw new Error("Password array cannot be empty.");
+  }
+  if (passwords.length === 1) {
     // If only one password, fall back to standard AES encryption for single-layer mode.
     return encryptAES(plaintext, passwords[0]);
   }
