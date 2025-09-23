@@ -138,8 +138,8 @@ export function Base64EncoderDecoderContent() {
     const [activeTab, setActiveTab] = useState("text");
 
     // Other State
-    const [emojiList, setEmojiList] = useState<string[] | null>(null);
-    const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
+    const [emojiList, setEmojiList] = useState<string[]>([]);
+    const [alphabetList, setAlphabetList] = useState<string[]>([]);
     const [showShare, setShowShare] = useState(false);
     const [decryptedFileUrl, setDecryptedFileUrl] = useState<string | null>(null);
 
