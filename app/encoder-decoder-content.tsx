@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2, QrCode, Camera, File as FileIcon, Download } from "lucide-react";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { Html5QrcodeScanner, Html5QrcodeScannerState } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +56,7 @@ function QrCodeDisplay({ text }: { text: string }) {
     return (
         <Dialog>
             <DialogTrigger asChild><Button variant="ghost" size="icon" aria-label={t('encoderDecoder.a11y.showQrCode')}><QrCode className="h-5 w-5" /></Button></DialogTrigger>
-            <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{t('encoderDecoder.qrCodeTitle')}</DialogTitle></DialogHeader><div className="flex items-center justify-center p-4 bg-white"><QRCode value={text} size={256} /></div></DialogContent>
+            <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{t('encoderDecoder.qrCodeTitle')}</DialogTitle></DialogHeader><div className="flex items-center justify-center p-4 bg-white"><QRCodeSVG value={text} size={256} /></div></DialogContent>
         </Dialog>
     );
 }
