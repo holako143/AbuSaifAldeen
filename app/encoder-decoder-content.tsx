@@ -191,6 +191,9 @@ export function Base64EncoderDecoderContent() {
               <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
                 {t('encoderDecoder.addEncryptionLayer')}
               </Button>
+              {passwords.length > 0 && (
+                <p className="text-xs text-muted-foreground pt-2">{t('encoderDecoder.layers.hybridHint')}</p>
+              )}
             </div>
         </div>
         )}

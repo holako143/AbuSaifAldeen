@@ -1,6 +1,6 @@
-import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib/crypto";
+import { encrypt, decrypt, encryptMultiple, decryptMultiple } from "../lib/crypto";
 
-export type EncryptionType = 'aes256';
+export type EncryptionType = 'aes';
 
 // --- Variation Selector (Emoji Hiding) Logic ---
 
@@ -66,10 +66,12 @@ interface EncodeParams {
     text: string;
     type: EncryptionType;
     passwords?: string[];
+    algorithm?: string;
+    keySize?: number;
 }
 
-export async function encode({ emoji, text, type, passwords }: EncodeParams): Promise<string> {
-    if (type !== 'aes256') {
+export async function encode({ emoji, text, type, passwords, algorithm, keySize }: EncodeParams): Promise<string> {
+    if (type !== 'aes') {
         throw new Error(`Unsupported encryption type: ${type}`);
     }
     if (!passwords || passwords.length === 0) {
@@ -80,7 +82,7 @@ export async function encode({ emoji, text, type, passwords }: EncodeParams): Pr
     // Use multiple encryption if more than one password is provided, otherwise use single encryption
     const encryptedText = passwords.length > 1
         ? await encryptMultiple(text, passwords)
-        : await encryptAES(text, passwords[0]);
+        : await encrypt(text, passwords[0], { algorithm, keySize });
     return encodeToEmoji(emoji, encryptedText);
 }
 
@@ -117,7 +119,7 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
         try {
             const hiddenText = decodeFromEmoji(message);
 
-            if (type !== 'aes256') {
+            if (type !== 'aes') {
                 throw new Error(`Unsupported encryption type: ${type}`);
             }
 
@@ -126,7 +128,7 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
             } else {
                 const decryptedText = passwords.length > 1
                     ? await decryptMultiple(hiddenText, passwords)
-                    : await decryptAES(hiddenText, passwords[0]);
+                    : await decrypt(hiddenText, passwords[0]);
                 decodedLines.push(decryptedText);
             }
         } catch (e) {

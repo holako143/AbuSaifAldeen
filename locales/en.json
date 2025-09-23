@@ -27,7 +27,8 @@
     },
     "layers": {
       "title": "Encryption Layers",
-      "count": "{count} active layers"
+      "count": "{count} active layers",
+      "hybridHint": "For AES+ChaCha20 hybrid encryption, provide 2 passwords. Otherwise, standard AES is used."
     },
     "decryptionErrorLine": "Error decrypting this line"
   },

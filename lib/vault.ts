@@ -1,4 +1,4 @@
-import { encryptAES, decryptAES } from "./crypto";
+import { encrypt, decrypt } from "./crypto";
 import { db } from './db';
 
 export interface VaultEntry {
@@ -32,7 +32,8 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
   const storedHash = storedHashRecord?.data;
 
   if (!storedHash) {
-    return encryptedBlob ? JSON.parse(await decryptAES(encryptedBlob, masterPassword)) : [];
+    // Legacy vault without password verification hash
+    return encryptedBlob ? JSON.parse(await decrypt(encryptedBlob, masterPassword)) : [];
   }
 
   const providedHash = await hashPassword(masterPassword);
@@ -44,7 +45,7 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
     return [];
   }
 
-  const itemsJson = await decryptAES(encryptedBlob, masterPassword);
+  const itemsJson = await decrypt(encryptedBlob, masterPassword);
   return JSON.parse(itemsJson);
 };
 
@@ -56,8 +57,12 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
 const saveVaultItems = async (items: VaultEntry[], masterPassword: string): Promise<void> => {
   if (typeof window === "undefined") return;
 
+  // Read encryption settings from localStorage, with sensible defaults.
+  const algorithm = localStorage.getItem("shifrishan-vault-algo") || 'AES-GCM';
+  const keySize = Number(localStorage.getItem("shifrishan-vault-keysize")) || 256;
+
   const itemsJson = JSON.stringify(items);
-  const encryptedBlob = await encryptAES(itemsJson, masterPassword);
+  const encryptedBlob = await encrypt(itemsJson, masterPassword, { algorithm, keySize });
   const passwordHash = await hashPassword(masterPassword);
 
   await db.transaction('rw', db.vault, async () => {
@@ -171,7 +176,13 @@ export const exportEncryptedVault = async (): Promise<{ success: boolean, messag
 export const importEncryptedVault = async (vaultContent: string): Promise<{ success: boolean, message?: string }> => {
     if (typeof window === "undefined") return { success: false, message: 'Not in browser' };
 
-    if (!vaultContent || typeof vaultContent !== 'string' || !vaultContent.startsWith('{"iv"')) {
+    try {
+        // Basic validation to see if it's a JSON object string before proceeding.
+        const parsed = JSON.parse(atob(vaultContent));
+        if (typeof parsed !== 'object' || !parsed.ct) {
+            return { success: false, message: "الملف غير صالح أو تالف." };
+        }
+    } catch (e) {
         return { success: false, message: "الملف غير صالح أو تالف." };
     }
 
