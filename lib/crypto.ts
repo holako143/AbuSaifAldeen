@@ -116,18 +116,24 @@ export const decryptAES = async (encryptedPayload: string, password: string): Pr
 };
 
 /**
- * Encrypts a plaintext string using a hybrid AES-256-GCM + ChaCha20-Poly1305 scheme.
+ * Encrypts a plaintext string using a flexible multi-layer scheme.
+ * - 1 password: Standard AES-256
+ * - 2 passwords: Hybrid AES-256 + ChaCha20
+ * - 3+ passwords: Hybrid + additional AES-256 layers
  * @param plaintext The text to encrypt.
- * @param passwords An array of passwords. Expects two for hybrid mode: [aes_password, chacha_password].
+ * @param passwords An array of passwords.
  * @returns A base64 string representing the final encrypted layer.
  */
 export const encryptMultiple = async (plaintext: string, passwords: string[]): Promise<string> => {
   if (passwords.length === 0) {
     throw new Error("Password array cannot be empty.");
   }
+
   if (passwords.length === 1) {
     return encryptAES(plaintext, passwords[0]);
   }
+
+  // 2 passwords: Perform hybrid encryption
   const aesPassword = passwords[0];
   const chachaPassword = passwords[1];
   const enc = new TextEncoder();
@@ -140,14 +146,22 @@ export const encryptMultiple = async (plaintext: string, passwords: string[]): P
   const chachaCipher = chacha20poly1305(key, nonce);
   const chachaEncrypted = chachaCipher.encrypt(enc.encode(aesEncryptedB64));
 
-  const packed = JSON.stringify({
+  let finalPayload = JSON.stringify({
     hybrid: true,
     ct: bufferToBase64(chachaEncrypted),
     s: bufferToBase64(salt),
     n: bufferToBase64(nonce),
   });
 
-  return btoa(packed);
+  // 3+ passwords: Add additional AES layers
+  if (passwords.length > 2) {
+    const additionalPasswords = passwords.slice(2);
+    for (const password of additionalPasswords) {
+      finalPayload = await encryptAES(finalPayload, password);
+    }
+  }
+
+  return btoa(finalPayload);
 };
 
 /**
@@ -161,17 +175,33 @@ export const decryptMultiple = async (ciphertext: string, passwords: string[]): 
         throw new Error("Password array cannot be empty.");
     }
 
-    let packed;
-    try {
-      packed = JSON.parse(atob(ciphertext));
-    } catch (e) {
-      return decryptAES(ciphertext, passwords.slice().reverse()[0]);
+    if (passwords.length === 1) {
+        return decryptAES(ciphertext, passwords[0]);
     }
 
-    if (packed.hybrid) {
-        if (passwords.length < 2) {
-            throw new Error("Hybrid decryption requires two passwords.");
+    let currentCiphertext = atob(ciphertext);
+
+    // 3+ passwords: Decrypt outer AES layers first
+    if (passwords.length > 2) {
+        const additionalPasswords = passwords.slice(2).reverse();
+        for (const password of additionalPasswords) {
+            currentCiphertext = await decryptAES(currentCiphertext, password);
         }
+    }
+
+    // Now, we should have the hybrid payload
+    let packed;
+    try {
+      packed = JSON.parse(currentCiphertext);
+    } catch (e) {
+      // This could happen if a 2-layer non-hybrid password is used on a hybrid payload.
+      // Or if it's a legacy payload. Let's try legacy decryption.
+      const firstDecryption = await decryptAES(atob(ciphertext), passwords[1]);
+      return await decryptAES(firstDecryption, passwords[0]);
+    }
+
+    // Check if it's a hybrid payload
+    if (packed.hybrid) {
         const aesPassword = passwords[0];
         const chachaPassword = passwords[1];
         const dec = new TextDecoder();
@@ -187,10 +217,8 @@ export const decryptMultiple = async (ciphertext: string, passwords: string[]): 
 
         return decryptAES(aesEncryptedB64, aesPassword);
     } else {
-        let currentCiphertext = ciphertext;
-        for (const password of passwords.slice().reverse()) {
-            currentCiphertext = await decryptAES(currentCiphertext, password);
-        }
-        return currentCiphertext;
+        // Fallback for legacy 2-password AES encryption (or other non-hybrid JSON)
+        const firstDecryption = await decryptAES(atob(ciphertext), passwords[1]);
+        return await decryptAES(firstDecryption, passwords[0]);
     }
 };
