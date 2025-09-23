@@ -111,7 +111,7 @@ export function Base64EncoderDecoderContent() {
   }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, autoCopy, toast, t]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
-  useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
+  useEffect(() => { if (typeof navigator !== "undefined" && typeof navigator.share === 'function') setShowShare(true); }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {
@@ -144,9 +144,9 @@ export function Base64EncoderDecoderContent() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto animate-in">
+    <Card className="w-full sm:max-w-2xl mx-auto animate-in">
         <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">{t('encoderDecoder.title')}</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">{t('encoderDecoder.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
         <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse">
@@ -191,12 +191,15 @@ export function Base64EncoderDecoderContent() {
               <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
                 {t('encoderDecoder.addEncryptionLayer')}
               </Button>
+              {passwords.length > 0 && (
+                <p className="text-xs text-muted-foreground pt-2">{t('encoderDecoder.layers.hybridHint')}</p>
+              )}
             </div>
         </div>
         )}
 
         <div>
-            <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[120px]"/>
+            <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[100px] sm:min-h-[120px]"/>
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')}><ClipboardPaste className="h-5 w-5" /></Button>
                 <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
@@ -215,7 +218,7 @@ export function Base64EncoderDecoderContent() {
         )}
 
         <div>
-            <Textarea placeholder={isProcessing ? t('encoderDecoder.processingPlaceholder') : t('encoderDecoder.outputTextPlaceholder')} value={outputText} readOnly className="min-h-[120px]" />
+            <Textarea placeholder={isProcessing ? t('encoderDecoder.processingPlaceholder') : t('encoderDecoder.outputTextPlaceholder')} value={outputText} readOnly className="min-h-[100px] sm:min-h-[120px]" />
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}

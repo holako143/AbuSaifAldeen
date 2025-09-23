@@ -100,7 +100,7 @@ export function SettingsView() {
     const { t } = useTranslation();
     const { isVaultUnlocked } = useAppContext();
   return (
-    <Card className="w-full max-w-4xl mx-auto animate-in">
+    <Card className="w-full sm:max-w-4xl mx-auto animate-in">
       <CardHeader>
         <CardTitle>{t('settings.title')}</CardTitle>
         <CardDescription>

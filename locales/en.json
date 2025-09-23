@@ -27,7 +27,8 @@
     },
     "layers": {
       "title": "Encryption Layers",
-      "count": "{count} active layers"
+      "count": "{count} active layers",
+      "hybridHint": "For AES+ChaCha20 hybrid encryption, provide 2 passwords. Otherwise, standard AES is used."
     },
     "decryptionErrorLine": "Error decrypting this line"
   },
@@ -88,8 +89,7 @@
       "light": "Light",
       "dark": "Dark",
       "custom": "Custom"
-    },
-    "language": "Language"
+    }
   },
   "app": {
     "loading": "Loading..."
@@ -230,8 +230,17 @@
       "description": "Fill in the details for the secret item below.",
       "titlePlaceholder": "Item title (e.g., Some Website's Password)",
       "contentPlaceholder": "Secret content...",
+      "tagsPlaceholder": "Tags (comma-separated)",
       "cancel": "Cancel",
       "save": "Save"
+    },
+    "generator": {
+      "title": "Generate Password",
+      "length": "Length",
+      "uppercase": "Include Uppercase",
+      "numbers": "Include Numbers",
+      "symbols": "Include Symbols",
+      "generate": "Generate"
     }
   }
 }

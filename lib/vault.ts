@@ -32,6 +32,7 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
   const storedHash = storedHashRecord?.data;
 
   if (!storedHash) {
+    // Legacy vault without password verification hash
     return encryptedBlob ? JSON.parse(await decryptAES(encryptedBlob, masterPassword)) : [];
   }
 
@@ -70,9 +71,10 @@ const saveVaultItems = async (items: VaultEntry[], masterPassword: string): Prom
  * Adds a new item to the vault.
  * @param title The title of the new item.
  * @param text The text content of the item to add.
+ * @param tags The tags for the new item.
  * @param masterPassword The password to access the vault.
  */
-export const addToVault = async (title: string, text: string, masterPassword: string): Promise<VaultEntry> => {
+export const addToVault = async (title: string, text: string, tags: string[], masterPassword: string): Promise<VaultEntry> => {
   if (!text || !title || !masterPassword) throw new Error("العنوان، النص، وكلمة المرور الرئيسية مطلوبة.");
 
   const items = await getVaultItems(masterPassword);
@@ -82,6 +84,7 @@ export const addToVault = async (title: string, text: string, masterPassword: st
     title,
     text,
     createdAt: Date.now(),
+    tags: tags.filter(Boolean), // Ensure no empty tags are saved
   };
 
   const updatedItems = [newEntry, ...items];
@@ -171,7 +174,13 @@ export const exportEncryptedVault = async (): Promise<{ success: boolean, messag
 export const importEncryptedVault = async (vaultContent: string): Promise<{ success: boolean, message?: string }> => {
     if (typeof window === "undefined") return { success: false, message: 'Not in browser' };
 
-    if (!vaultContent || typeof vaultContent !== 'string' || !vaultContent.startsWith('{"iv"')) {
+    try {
+        // Basic validation to see if it's a JSON object string before proceeding.
+        const parsed = JSON.parse(atob(vaultContent));
+        if (typeof parsed !== 'object' || !parsed.ct) {
+            return { success: false, message: "الملف غير صالح أو تالف." };
+        }
+    } catch (e) {
         return { success: false, message: "الملف غير صالح أو تالف." };
     }
 
