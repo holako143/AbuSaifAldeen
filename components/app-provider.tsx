@@ -45,6 +45,11 @@ interface AppContextType {
     // Settings
     autoCopy: boolean;
     setAutoCopy: Dispatch<SetStateAction<boolean>>;
+    isHistoryEnabled: boolean;
+    setIsHistoryEnabled: Dispatch<SetStateAction<boolean>>;
+    // PWA
+    installPrompt: Event | null;
+    setInstallPrompt: Dispatch<SetStateAction<Event | null>>;
 }
 
 // CONTEXT CREATION
@@ -83,11 +88,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [masterPassword, setMasterPassword] = useState<string | null>(null);
     const [textToDecode, setTextToDecode] = useState<string | null>(null);
     const [autoCopy, setAutoCopy] = useState(true);
+    const [isHistoryEnabled, setIsHistoryEnabled] = useState(true);
     const [themeMode, setThemeMode] = useState<ThemeMode>('light');
     const [primaryColor, setPrimaryColor] = useState('#3b82f6');
     const [backgroundColorStart, setBackgroundColorStart] = useState('#ffffff');
     const [backgroundColorEnd, setBackgroundColorEnd] = useState('#e2e8f0');
     const [textColor, setTextColor] = useState('#0a0a0a');
+    const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
 
     // Data migration from localStorage to IndexedDB
     useEffect(() => {
@@ -158,6 +176,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const storedAutoCopy = localStorage.getItem("shifrishan-auto-copy");
         if (storedAutoCopy) setAutoCopy(JSON.parse(storedAutoCopy));
+        const storedHistoryEnabled = localStorage.getItem("shifrishan-history-enabled");
+        if (storedHistoryEnabled) setIsHistoryEnabled(JSON.parse(storedHistoryEnabled));
         const storedLocale = localStorage.getItem("shifrishan-locale") as Locale;
         if (storedLocale) setLocale(storedLocale);
         const storedThemeMode = localStorage.getItem("shifrishan-theme-mode") as ThemeMode;
@@ -174,6 +194,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Persist settings to localStorage
     useEffect(() => { localStorage.setItem("shifrishan-auto-copy", JSON.stringify(autoCopy)); }, [autoCopy]);
+    useEffect(() => { localStorage.setItem("shifrishan-history-enabled", JSON.stringify(isHistoryEnabled)); }, [isHistoryEnabled]);
     useEffect(() => { localStorage.setItem("shifrishan-locale", locale); }, [locale]);
     useEffect(() => { localStorage.setItem("shifrishan-theme-mode", themeMode); }, [themeMode]);
     useEffect(() => { localStorage.setItem("shifrishan-color-primary", primaryColor); }, [primaryColor]);
@@ -208,6 +229,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         themeMode, setThemeMode, primaryColor, setPrimaryColor, backgroundColorStart, setBackgroundColorStart, backgroundColorEnd, setBackgroundColorEnd, textColor, setTextColor,
         locale, setLocale, activeView, setActiveView, isPasswordEnabled, setIsPasswordEnabled, isVaultVisible, setIsVaultVisible,
         isVaultUnlocked, setIsVaultUnlocked, masterPassword, setMasterPassword, textToDecode, setTextToDecode, autoCopy, setAutoCopy,
+        isHistoryEnabled, setIsHistoryEnabled, installPrompt, setInstallPrompt,
     };
 
     return (
