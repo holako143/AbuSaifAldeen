@@ -127,7 +127,7 @@ export function Base64EncoderDecoderContent() {
     const { toast } = useToast();
 
     // Shared State
-    const [mode, setModeState] = useState("encode");
+    const [mode, setModeState] = useState<'encode' | 'decode'>("encode");
     const [inputText, setInputText] = useState("");
     const [fileInputName, setFileInputName] = useState("");
     const [outputText, setOutputText] = useState("");
