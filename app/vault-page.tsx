@@ -4,19 +4,23 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { VaultEntry, getVaultItems, removeFromVault, updateVaultOrder, addToVault, updateVaultItem, exportEncryptedVault, importEncryptedVault } from "@/lib/vault";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal, Pencil, Settings, Loader2 } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, PlusCircle, Eye, EyeOff, Search, Upload, Download, MoreHorizontal, Pencil, Settings, Loader2, Wand2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime, generatePassword } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { changeMasterPassword } from "@/lib/vault";
 
@@ -111,7 +115,11 @@ export function VaultPage() {
 
     const filteredItems = useMemo(() => {
         if (!searchQuery) return items;
-        return items.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        const lowercasedQuery = searchQuery.toLowerCase();
+        return items.filter(item =>
+            item.title.toLowerCase().includes(lowercasedQuery) ||
+            (item.tags && item.tags.some(tag => tag.toLowerCase().includes(lowercasedQuery)))
+        );
     }, [items, searchQuery]);
 
     const handleUnlock = async (password: string) => {
@@ -157,16 +165,16 @@ export function VaultPage() {
         }
     };
 
-    const handleSaveItem = async (item: { id?: string; title: string; text: string }) => {
+    const handleSaveItem = async (item: { id?: string; title: string; text: string; tags: string[] }) => {
         if (!globalMasterPassword) return false;
         try {
             if (editingItem && editingItem.id) {
-                const updatedEntry = { ...editingItem, title: item.title, text: item.text };
+                const updatedEntry = { ...editingItem, title: item.title, text: item.text, tags: item.tags };
                 await updateVaultItem(updatedEntry, globalMasterPassword);
                 setItems(items.map(i => i.id === updatedEntry.id ? updatedEntry : i));
                 toast({ title: t('vaultPage.toasts.updateSuccess') });
             } else {
-                const newEntry = await addToVault(item.title, item.text, globalMasterPassword);
+                const newEntry = await addToVault(item.title, item.text, item.tags, globalMasterPassword);
                 setItems([newEntry, ...items]);
                 toast({ title: t('vaultPage.toasts.addSuccess') });
             }
@@ -277,7 +285,12 @@ export function VaultPage() {
                                         <>
                                             <CollapsibleTrigger asChild>
                                                 <TableRow className="cursor-pointer">
-                                                    <TableCell className="font-semibold">{item.title}</TableCell>
+                                                    <TableCell className="font-semibold">
+                                                        {item.title}
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {item.tags?.map(tag => <Badge key={tag} variant="secondary" onClick={(e) => {e.stopPropagation(); setSearchQuery(tag)}} className="cursor-pointer">{tag}</Badge>)}
+                                                        </div>
+                                                    </TableCell>
                                                     <TableCell>{formatRelativeTime(item.createdAt, locale)}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
@@ -303,8 +316,11 @@ export function VaultPage() {
                             {filteredItems.map(item => (
                                 <div key={item.id} className="flex flex-col p-3 border rounded-lg gap-2">
                                     <div className="flex justify-between items-start gap-2">
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col gap-1">
                                             <h3 className="font-semibold">{item.title}</h3>
+                                            <div className="flex flex-wrap gap-1">
+                                                {item.tags?.map(tag => <Badge key={tag} variant="secondary" onClick={(e) => {e.stopPropagation(); setSearchQuery(tag)}} className="cursor-pointer">{tag}</Badge>)}
+                                            </div>
                                             <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
                                         </div>
                                         <div className="flex items-center flex-shrink-0">
@@ -342,23 +358,26 @@ export function VaultPage() {
     );
 }
 
-function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, item?: VaultEntry, triggerButton: React.ReactElement }) {
+function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: string, title: string, text: string, tags: string[]}) => Promise<boolean>, item?: VaultEntry, triggerButton: React.ReactElement }) {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
     const [title, setTitle] = useState(item?.title || '');
     const [text, setText] = useState(item?.text || '');
+    const [tags, setTags] = useState(item?.tags?.join(', ') || '');
 
     useEffect(() => {
         if (isOpen) {
             setTitle(item?.title || '');
             setText(item?.text || '');
+            setTags(item?.tags?.join(', ') || '');
         }
     }, [isOpen, item]);
 
     const handleSubmit = async () => {
-        const success = await onSave({ id: item?.id, title, text });
+        const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+        const success = await onSave({ id: item?.id, title, text, tags: tagsArray });
         if(success) setIsOpen(false);
     }
 
@@ -374,7 +393,7 @@ function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: 
                         <DialogTitle>{titleText}</DialogTitle>
                         <DialogDescription>{description}</DialogDescription>
                     </DialogHeader>
-                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} title={title} text={text} setTitle={setTitle} setText={setText} />
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} title={title} text={text} tags={tags} setTitle={setTitle} setText={setText} setTags={setTags} />
                 </DialogContent>
             </Dialog>
         );
@@ -389,7 +408,7 @@ function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: 
                     <DrawerDescription>{description}</DrawerDescription>
                 </DrawerHeader>
                 <div className="p-4">
-                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} title={title} text={text} setTitle={setTitle} setText={setText} />
+                    <EditItemForm item={item} onSave={onSave} setIsOpen={setIsOpen} title={title} text={text} tags={tags} setTitle={setTitle} setText={setText} setTags={setTags} />
                 </div>
                 <DrawerFooter className="pt-2">
                     <DrawerClose asChild>
@@ -401,13 +420,68 @@ function ItemEditDialog({ onSave, item, triggerButton }: { onSave: (item: {id?: 
     );
 }
 
-function EditItemForm({ item, onSave, setIsOpen, title, text, setTitle, setText }: { item?: VaultEntry, onSave: (item: {id?: string, title: string, text: string}) => Promise<boolean>, setIsOpen: (isOpen: boolean) => void, title: string, text: string, setTitle: (title: string) => void, setText: (text: string) => void }) {
+function PasswordGenerator({ onGenerate }: { onGenerate: (password: string) => void }) {
+    const { t } = useTranslation();
+    const [length, setLength] = useState(16);
+    const [includeNumbers, setIncludeNumbers] = useState(true);
+    const [includeSymbols, setIncludeSymbols] = useState(true);
+    const [includeUppercase, setIncludeUppercase] = useState(true);
+
+    const handleGenerate = () => {
+        const password = generatePassword({
+            length,
+            includeNumbers,
+            includeSymbols,
+            includeUppercase,
+            includeLowercase: true // Always include lowercase
+        });
+        onGenerate(password);
+    };
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="absolute bottom-2 right-2" aria-label={t('vaultPage.generator.title')}>
+                    <Wand2 className="h-4 w-4" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 space-y-4">
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                        <Label>{t('vaultPage.generator.length')}</Label>
+                        <span className="text-sm font-bold">{length}</span>
+                    </div>
+                    <Slider defaultValue={[16]} value={[length]} min={8} max={64} step={1} onValueChange={(value) => setLength(value[0])} />
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="include-uppercase" checked={includeUppercase} onCheckedChange={(checked) => setIncludeUppercase(Boolean(checked))} />
+                        <label htmlFor="include-uppercase" className="text-sm font-medium leading-none">{t('vaultPage.generator.uppercase')}</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="include-numbers" checked={includeNumbers} onCheckedChange={(checked) => setIncludeNumbers(Boolean(checked))} />
+                        <label htmlFor="include-numbers" className="text-sm font-medium leading-none">{t('vaultPage.generator.numbers')}</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="include-symbols" checked={includeSymbols} onCheckedChange={(checked) => setIncludeSymbols(Boolean(checked))} />
+                        <label htmlFor="include-symbols" className="text-sm font-medium leading-none">{t('vaultPage.generator.symbols')}</label>
+                    </div>
+                </div>
+                <Button onClick={handleGenerate} className="w-full">{t('vaultPage.generator.generate')}</Button>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+
+function EditItemForm({ item, onSave, setIsOpen, title, text, tags, setTitle, setText, setTags }: { item?: VaultEntry, onSave: (item: {id?: string, title: string, text: string, tags: string[]}) => Promise<boolean>, setIsOpen: (isOpen: boolean) => void, title: string, text: string, tags: string, setTitle: (title: string) => void, setText: (text: string) => void, setTags: (tags: string) => void }) {
     const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async () => {
         setIsLoading(true);
-        const success = await onSave({ id: item?.id, title, text });
+        const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+        const success = await onSave({ id: item?.id, title, text, tags: tagsArray });
         setIsLoading(false);
         if(success) setIsOpen(false);
     }
@@ -416,10 +490,14 @@ function EditItemForm({ item, onSave, setIsOpen, title, text, setTitle, setText 
         <>
             <div className="grid gap-4 py-4">
                 <Input placeholder={t('vaultPage.editDialog.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
-                <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px]" />
+                <div className="relative">
+                    <Textarea placeholder={t('vaultPage.editDialog.contentPlaceholder')} value={text} onChange={(e) => setText(e.target.value)} className="min-h-[100px] pr-12" />
+                    <PasswordGenerator onGenerate={setText} />
+                </div>
+                <Input placeholder={t('vaultPage.editDialog.tagsPlaceholder')} value={tags} onChange={(e) => setTags(e.target.value)} />
             </div>
             <div className="pt-2">
-                <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
+                <Button onClick={handleSubmit} disabled={isLoading || !title || !text} className="w-full">
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('vaultPage.editDialog.save')}
                 </Button>
             </div>

@@ -1,4 +1,4 @@
-import { encrypt, decrypt } from "./crypto";
+import { encryptAES, decryptAES } from "./crypto";
 import { db } from './db';
 
 export interface VaultEntry {
@@ -33,7 +33,7 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
 
   if (!storedHash) {
     // Legacy vault without password verification hash
-    return encryptedBlob ? JSON.parse(await decrypt(encryptedBlob, masterPassword)) : [];
+    return encryptedBlob ? JSON.parse(await decryptAES(encryptedBlob, masterPassword)) : [];
   }
 
   const providedHash = await hashPassword(masterPassword);
@@ -45,7 +45,7 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
     return [];
   }
 
-  const itemsJson = await decrypt(encryptedBlob, masterPassword);
+  const itemsJson = await decryptAES(encryptedBlob, masterPassword);
   return JSON.parse(itemsJson);
 };
 
@@ -57,12 +57,8 @@ export const getVaultItems = async (masterPassword: string): Promise<VaultEntry[
 const saveVaultItems = async (items: VaultEntry[], masterPassword: string): Promise<void> => {
   if (typeof window === "undefined") return;
 
-  // Read encryption settings from localStorage, with sensible defaults.
-  const algorithm = localStorage.getItem("shifrishan-vault-algo") || 'AES-GCM';
-  const keySize = Number(localStorage.getItem("shifrishan-vault-keysize")) || 256;
-
   const itemsJson = JSON.stringify(items);
-  const encryptedBlob = await encrypt(itemsJson, masterPassword, { algorithm, keySize });
+  const encryptedBlob = await encryptAES(itemsJson, masterPassword);
   const passwordHash = await hashPassword(masterPassword);
 
   await db.transaction('rw', db.vault, async () => {
@@ -75,9 +71,10 @@ const saveVaultItems = async (items: VaultEntry[], masterPassword: string): Prom
  * Adds a new item to the vault.
  * @param title The title of the new item.
  * @param text The text content of the item to add.
+ * @param tags The tags for the new item.
  * @param masterPassword The password to access the vault.
  */
-export const addToVault = async (title: string, text: string, masterPassword: string): Promise<VaultEntry> => {
+export const addToVault = async (title: string, text: string, tags: string[], masterPassword: string): Promise<VaultEntry> => {
   if (!text || !title || !masterPassword) throw new Error("العنوان، النص، وكلمة المرور الرئيسية مطلوبة.");
 
   const items = await getVaultItems(masterPassword);
@@ -87,6 +84,7 @@ export const addToVault = async (title: string, text: string, masterPassword: st
     title,
     text,
     createdAt: Date.now(),
+    tags: tags.filter(Boolean), // Ensure no empty tags are saved
   };
 
   const updatedItems = [newEntry, ...items];

@@ -230,8 +230,17 @@
       "description": "املأ تفاصيل العنصر السري أدناه.",
       "titlePlaceholder": "عنوان العنصر (مثال: كلمة سر الموقع الفلاني)",
       "contentPlaceholder": "المحتوى السري...",
+      "tagsPlaceholder": "الوسوم (مفصولة بفاصلة)",
       "cancel": "إلغاء",
       "save": "حفظ"
+    },
+    "generator": {
+      "title": "إنشاء كلمة مرور",
+      "length": "الطول",
+      "uppercase": "تضمين أحرف كبيرة",
+      "numbers": "تضمين أرقام",
+      "symbols": "تضمين رموز",
+      "generate": "إنشاء"
     }
   }
 }

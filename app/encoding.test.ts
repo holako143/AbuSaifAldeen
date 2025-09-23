@@ -18,12 +18,12 @@ describe('emoji encoder/decoder', () => {
                 const encoded = await encode({
                     emoji: emoji,
                     text: str,
-                    type: 'aes' // No password, should just encode
+                    type: 'aes256' // No password, should just encode
                 });
 
                 const decoded = await decode({
                     text: encoded,
-                    type: 'aes' // No password, should just decode
+                    type: 'aes256' // No password, should just decode
                 });
 
                 expect(decoded).toBe(str)
@@ -38,15 +38,13 @@ describe('emoji encoder/decoder', () => {
         const encoded = await encode({
             emoji: '🤫',
             text: text,
-            type: 'aes',
-            passwords: [password],
-            algorithm: 'AES-GCM', // Test with default
-            keySize: 256
+            type: 'aes256',
+            passwords: [password]
         });
 
         const decoded = await decode({
             text: encoded,
-            type: 'aes',
+            type: 'aes256',
             passwords: [password]
         });
 

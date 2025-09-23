@@ -38,3 +38,48 @@ export function formatRelativeTime(date: Date | string, locale: 'ar' | 'en'): st
   const diffInYears = Math.floor(diffInDays / 365);
   return rtf.format(-diffInYears, 'year');
 }
+
+interface PasswordOptions {
+  length: number;
+  includeNumbers: boolean;
+  includeSymbols: boolean;
+  includeUppercase: boolean;
+  includeLowercase: boolean;
+}
+
+export function generatePassword(options: PasswordOptions): string {
+  const {
+    length,
+    includeNumbers,
+    includeSymbols,
+    includeUppercase,
+    includeLowercase,
+  } = options;
+
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*()_+~`|}{[]:;?><,./-=';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  let characterPool = '';
+  if (includeNumbers) characterPool += numbers;
+  if (includeSymbols) characterPool += symbols;
+  if (includeUppercase) characterPool += uppercase;
+  if (includeLowercase) characterPool += lowercase;
+
+  if (characterPool === '') {
+    // Fallback to lowercase if no options are selected
+    characterPool = lowercase;
+  }
+
+  let password = '';
+  // Use crypto.getRandomValues for cryptographically secure random numbers
+  const randomValues = new Uint32Array(length);
+  crypto.getRandomValues(randomValues);
+
+  for (let i = 0; i < length; i++) {
+    password += characterPool[randomValues[i] % characterPool.length];
+  }
+
+  return password;
+}

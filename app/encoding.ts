@@ -1,4 +1,4 @@
-import { encrypt, decrypt, encryptMultiple, decryptMultiple } from "../lib/crypto";
+import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib/crypto";
 
 export type EncryptionType = 'aes256';
 
@@ -66,11 +66,9 @@ interface EncodeParams {
     text: string;
     type: EncryptionType;
     passwords?: string[];
-    algorithm?: string;
-    keySize?: number;
 }
 
-export async function encode({ emoji, text, type, passwords, algorithm, keySize }: EncodeParams): Promise<string> {
+export async function encode({ emoji, text, type, passwords }: EncodeParams): Promise<string> {
     if (type !== 'aes256') {
         throw new Error(`Unsupported encryption type: ${type}`);
     }
@@ -82,7 +80,7 @@ export async function encode({ emoji, text, type, passwords, algorithm, keySize 
     // Use multiple encryption if more than one password is provided, otherwise use single encryption
     const encryptedText = passwords.length > 1
         ? await encryptMultiple(text, passwords)
-        : await encrypt(text, passwords[0], { algorithm, keySize });
+        : await encryptAES(text, passwords[0]);
     return encodeToEmoji(emoji, encryptedText);
 }
 
@@ -128,7 +126,7 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
             } else {
                 const decryptedText = passwords.length > 1
                     ? await decryptMultiple(hiddenText, passwords)
-                    : await decrypt(hiddenText, passwords[0]);
+                    : await decryptAES(hiddenText, passwords[0]);
                 decodedLines.push(decryptedText);
             }
         } catch (e) {
