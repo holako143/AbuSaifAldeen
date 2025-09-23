@@ -15,7 +15,9 @@ export interface HistoryEntry {
 export const getHistory = async (): Promise<HistoryEntry[]> => {
   if (typeof window === "undefined") return [];
   // orderBy('timestamp').reverse() is how you sort in descending order with Dexie
-  return db.history.orderBy('timestamp').reverse().toArray();
+  const history = await db.history.orderBy('timestamp').reverse().toArray();
+  // Filter out any potential undefined IDs and cast to the strict HistoryEntry type
+  return history.filter(item => item.id !== undefined) as HistoryEntry[];
 };
 
 /**

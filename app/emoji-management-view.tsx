@@ -120,8 +120,8 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
 
 export function EmojiManagementView() {
   const { toast } = useToast();
-  const [emojiList, setEmojiList] = useState<string[] | null>(null);
-  const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
+  const [emojiList, setEmojiList] = useState<string[]>([]);
+  const [alphabetList, setAlphabetList] = useState<string[]>([]);
   const [useEmojiDefault, setUseEmojiDefault] = useState(true);
 
   useEffect(() => {
@@ -179,14 +179,6 @@ export function EmojiManagementView() {
     setAlphabetList(defaultList);
     toast({ title: "تمت إعادة التعيين!", description: "تمت استعادة قائمة الحروف الافتراضية." });
   };
-
-  if (emojiList === null || alphabetList === null) {
-    return (
-        <div className="flex justify-center items-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-    )
-  }
 
   return (
     <Card className="w-full max-w-3xl mx-auto animate-in">

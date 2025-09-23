@@ -111,7 +111,7 @@ export function Base64EncoderDecoderContent() {
   }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, autoCopy, toast, t]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
-  useEffect(() => { if (typeof navigator !== "undefined" && navigator.share) setShowShare(true); }, []);
+  useEffect(() => { if (typeof navigator !== "undefined" && typeof navigator.share === 'function') setShowShare(true); }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText).then(() => {

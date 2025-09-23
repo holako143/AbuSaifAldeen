@@ -216,7 +216,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 attribute="class"
                 defaultTheme="system"
                 enableSystem
-                theme={themeMode === 'custom' ? 'light' : themeMode}
+            forcedTheme={themeMode === 'custom' ? 'light' : undefined}
             >
                 <TooltipProvider>
                     {children}

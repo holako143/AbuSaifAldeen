@@ -51,7 +51,7 @@ export function AddToVaultDialog({ outputText, children, mode, inputText }: AddT
         return;
     }
     try {
-        await addToVault(title, outputText, masterPassword);
+        await addToVault(title, outputText, [], masterPassword);
         toast({ title: t('vaultDialog.toasts.saveSuccess') });
         setIsOpen(false);
         setTitle('');

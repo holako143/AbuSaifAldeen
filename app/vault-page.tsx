@@ -291,7 +291,7 @@ export function VaultPage() {
                                                             {item.tags?.map(tag => <Badge key={tag} variant="secondary" onClick={(e) => {e.stopPropagation(); setSearchQuery(tag)}} className="cursor-pointer">{tag}</Badge>)}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell>{formatRelativeTime(item.createdAt, locale)}</TableCell>
+                                                    <TableCell>{formatRelativeTime(new Date(item.createdAt), locale)}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
                                                         <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); setEditingItem(item);}} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
@@ -321,7 +321,7 @@ export function VaultPage() {
                                             <div className="flex flex-wrap gap-1">
                                                 {item.tags?.map(tag => <Badge key={tag} variant="secondary" onClick={(e) => {e.stopPropagation(); setSearchQuery(tag)}} className="cursor-pointer">{tag}</Badge>)}
                                             </div>
-                                            <span className="text-xs text-muted-foreground">{formatRelativeTime(item.createdAt, locale)}</span>
+                                            <span className="text-xs text-muted-foreground">{formatRelativeTime(new Date(item.createdAt), locale)}</span>
                                         </div>
                                         <div className="flex items-center flex-shrink-0">
                                             <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
