@@ -16,7 +16,14 @@ function QrCodeDisplayDialog({ text, trigger }: { text: string, trigger: React.R
     const { t } = useTranslation();
     const qrRef = useRef<HTMLDivElement>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [showShare, setShowShare] = useState(false);
     const isDesktop = useMediaQuery("(min-width: 768px)");
+
+    useEffect(() => {
+        if (typeof navigator !== "undefined" && typeof navigator.share === 'function') {
+            setShowShare(true);
+        }
+    }, []);
 
     const handleDownload = () => {
         if (!qrRef.current) return;
@@ -84,7 +91,7 @@ function QrCodeDisplayDialog({ text, trigger }: { text: string, trigger: React.R
             </div>
             <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={handleDownload}><Download className="ml-2 h-4 w-4" />{t('fileEncoder.downloadButton')}</Button>
-                {navigator.share && <Button onClick={handleShare}><Share className="ml-2 h-4 w-4" />{t('encoderDecoder.a11y.shareOutput')}</Button>}
+                {showShare && <Button onClick={handleShare}><Share className="ml-2 h-4 w-4" />{t('encoderDecoder.a11y.shareOutput')}</Button>}
             </div>
         </>
     );
