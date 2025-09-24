@@ -250,7 +250,7 @@ export function VaultPage() {
                     <CardTitle className="text-2xl flex items-center gap-2"><Unlock /> {t('vaultPage.unlockedTitle')}</CardTitle>
                     <CardDescription>{t('vaultPage.unlockedDescription')}</CardDescription>
                 </div>
-                <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2">
+                <div className="flex w-full md:w-auto gap-2">
                      <div className="relative flex-grow">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -260,16 +260,12 @@ export function VaultPage() {
                             className="pl-10 w-full"
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button className="w-full"><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" onClick={handleExport} aria-label={t('vaultPage.exportButton')}><Download className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon" onClick={handleImportClick} aria-label={t('vaultPage.importButton')}><Upload className="h-4 w-4" /></Button>
-                            <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
-                            <ChangePasswordDialog />
-                            <Button variant="secondary" size="icon" onClick={handleLock} aria-label={t('vaultPage.lockButton')}><Lock className="h-4 w-4" /></Button>
-                        </div>
-                    </div>
+                    <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
+                    <Button variant="outline" size="icon" onClick={handleExport} aria-label={t('vaultPage.exportButton')}><Download className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={handleImportClick} aria-label={t('vaultPage.importButton')}><Upload className="h-4 w-4" /></Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
+                    <ChangePasswordDialog />
+                    <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
                 </div>
             </CardHeader>
             <CardContent>
