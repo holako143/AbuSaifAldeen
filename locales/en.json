@@ -30,7 +30,17 @@
       "count": "{count} active layers",
       "hybridHint": "For AES+ChaCha20 hybrid encryption, provide 2 passwords. Otherwise, standard AES is used."
     },
-    "decryptionErrorLine": "Error decrypting this line"
+    "decryptionErrorLine": "Error decrypting this line",
+    "qrCodeTitle": "QR Code",
+    "qrScanTitle": "Scan QR Code",
+    "fileEncoder": {
+      "selectFile": "Select a File",
+      "downloadButton": "Download Decrypted File",
+      "errors": {
+        "tooLarge": "File is too large (max 5MB).",
+        "decodeFailed": "Failed to decode the file. The data may be corrupt or not a valid Base64 string."
+      }
+    }
   },
   "toasts": {
     "autoCopySuccess": "Output copied to clipboard automatically!",
@@ -89,6 +99,36 @@
       "light": "Light",
       "dark": "Dark",
       "custom": "Custom"
+    },
+    "history": {
+      "title": "History & Privacy",
+      "enable": "Enable History Logging",
+      "description": "Automatically save encoding/decoding operations to your local history."
+    },
+    "autocopy": {
+      "enable": "Enable Auto-Copy",
+      "description": "Automatically copy the output of any successful encoding operation."
+    },
+    "backup": {
+      "title": "Backup & Restore",
+      "description": "Export all your data, including settings, history, and the vault, into a single file. You can import this file on another device or browser.",
+      "exportButton": "Export All Data",
+      "importButton": "Import from Backup",
+      "exportSuccess": "Data exported successfully!",
+      "exportError": "Export Failed",
+      "importSuccess": "Data imported successfully!",
+      "importSuccessDesc": "The application will now reload to apply the changes.",
+      "importError": "Import Failed",
+      "importConfirmTitle": "Are you sure?",
+      "importConfirmDesc": "This will overwrite all current data in the application. This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Yes, Overwrite"
+    },
+    "pwa": {
+      "title": "Application",
+      "installTitle": "Install App",
+      "installDescription": "Install this application on your device for easy, offline access.",
+      "installButton": "Install"
     }
   },
   "app": {
@@ -242,5 +282,9 @@
       "symbols": "Include Symbols",
       "generate": "Generate"
     }
+  },
+  "mainTabs": {
+    "text": "Text",
+    "file": "File"
   }
 }
