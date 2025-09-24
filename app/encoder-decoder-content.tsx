@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, Star, Loader2, Download } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, Star, Loader2, Download, QrCode, Camera } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -9,102 +9,48 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { decode, encode } from "./encoding";
 import { EmojiSelector } from "@/components/emoji-selector";
-import { addToHistory } from "@/lib/history";
-import { getCustomAlphabetList, getCustomEmojiList } from "@/lib/emoji-storage";
-import { useToast } from "@/components/ui/use-toast";
 import { useAppContext } from "@/components/app-provider";
 import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { QrCodeDisplayDialog, QrCodeScannerDialog } from "@/components/qr-components";
 import { FileInputArea } from "@/components/file-input-area";
-import { isBase64, base64ToBlob } from "@/lib/utils";
+import { useEncoder } from "@/hooks/use-encoder";
+import { useAppLists } from "@/hooks/use-app-lists";
 
 export function Base64EncoderDecoderContent() {
     const { t } = useTranslation();
-    const { isPasswordEnabled: isPasswordGloballyEnabled, textToDecode, setTextToDecode, autoCopy, isHistoryEnabled } = useAppContext();
-    const { toast } = useToast();
+    const { isPasswordEnabled: isPasswordGloballyEnabled, textToDecode, setTextToDecode } = useAppContext();
 
-    // Shared State
-    const [mode, setModeState] = useState<'encode' | 'decode'>("encode");
-    const [inputText, setInputText] = useState("");
-    const [fileInputName, setFileInputName] = useState("");
-    const [outputText, setOutputText] = useState("");
-    const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
-    const [selectedEmoji, setSelectedEmoji] = useState("😀");
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [errorText, setErrorText] = useState("");
+    const { emojiList, alphabetList, isLoading: areListsLoading } = useAppLists();
+    const {
+        mode, setModeState,
+        inputText, setInputText,
+        fileInputName, setFileInputName,
+        outputText,
+        passwords, setPasswords,
+        selectedEmoji, setSelectedEmoji,
+        isProcessing,
+        errorText,
+        decryptedFileUrl, setDecryptedFileUrl,
+        runEncoder,
+    } = useEncoder(textToDecode, setTextToDecode);
+
     const [activeTab, setActiveTab] = useState("text");
-
-    // Other State
-    const [emojiList, setEmojiList] = useState<string[]>([]);
-    const [alphabetList, setAlphabetList] = useState<string[]>([]);
     const [showShare, setShowShare] = useState(false);
-    const [decryptedFileUrl, setDecryptedFileUrl] = useState<string | null>(null);
 
     const isEncoding = mode === "encode";
 
     useEffect(() => {
-        const fetchLists = async () => {
-            const [emojis, alphabets] = await Promise.all([getCustomEmojiList(), getCustomAlphabetList()]);
-            setEmojiList(emojis);
-            setAlphabetList(alphabets);
-            setSelectedEmoji(emojis[0] || "😀");
-        };
-        fetchLists();
         if (typeof navigator !== "undefined" && typeof navigator.share === 'function') setShowShare(true);
     }, []);
 
     useEffect(() => {
-        if (textToDecode) {
-            setInputText(textToDecode);
-            setActiveTab("text");
-            setModeState("decode");
-            setTextToDecode(null);
-        }
-    }, [textToDecode, setTextToDecode]);
-
-    useEffect(() => {
-        const process = async () => {
-            if (inputText.trim() === "") { setOutputText(""); setErrorText(""); return; }
-            const activePasswords = passwords.map(p => p.value).filter(Boolean);
-            if (isPasswordGloballyEnabled && activePasswords.length === 0) {
-                setErrorText(t('encoderDecoder.passwordRequiredError')); setOutputText(""); return;
-            }
-            setIsProcessing(true); setErrorText(""); setDecryptedFileUrl(null);
-            try {
-                const result = isEncoding
-                    ? await encode({ emoji: selectedEmoji, text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] })
-                    : await decode({ text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] });
-                setOutputText(result);
-                if (activeTab === 'file' && !isEncoding && result) {
-                    if (isBase64(result)) {
-                        try {
-                            const blob = base64ToBlob(result);
-                            setDecryptedFileUrl(URL.createObjectURL(blob));
-                        } catch (e) {
-                             toast({ variant: "destructive", title: t('fileEncoder.errors.decodeFailed') });
-                        }
-                    } else {
-                        setErrorText(t('fileEncoder.errors.decodeFailed'));
-                    }
-                }
-                if (isHistoryEnabled && result) {
-                    const historyInput = activeTab === 'file' ? `file: ${fileInputName}` : inputText;
-                    await addToHistory({ inputText: historyInput, outputText: result, mode: isEncoding ? "encode" : "decode" });
-                }
-                if (result && isEncoding && autoCopy) { navigator.clipboard.writeText(result); toast({ title: t('toasts.autoCopySuccess') }); }
-            } catch (e: any) {
-                setOutputText("");
-                const modeText = mode === "encode" ? t('encoderDecoder.encodeError') : t('encoderDecoder.decodeError');
-                setErrorText(e.message || t('encoderDecoder.genericError', { mode: modeText }));
-            } finally { setIsProcessing(false); }
-        };
-        const debounceTimeout = setTimeout(process, 500);
+        // Debounced call to the encoder logic from the hook
+        const debounceTimeout = setTimeout(() => runEncoder(inputText, activeTab as 'text' | 'file'), 500);
         return () => clearTimeout(debounceTimeout);
-    }, [inputText, mode, selectedEmoji, passwords, isPasswordGloballyEnabled, autoCopy, toast, t, isHistoryEnabled, activeTab, fileInputName]);
+    }, [inputText, runEncoder, activeTab]);
 
     const handleFileContentRead = (content: string, name: string) => {
         setInputText(content);
@@ -113,12 +59,15 @@ export function Base64EncoderDecoderContent() {
 
     const handleClear = () => {
         setInputText("");
-        setOutputText("");
         setFileInputName("");
         if (decryptedFileUrl) {
             URL.revokeObjectURL(decryptedFileUrl);
             setDecryptedFileUrl(null);
         }
+    }
+
+    if (areListsLoading) {
+        return <div className="flex justify-center items-center h-96"><Loader2 className="h-12 w-12 animate-spin" /></div>
     }
 
     return (
