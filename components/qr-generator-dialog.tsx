@@ -21,9 +21,10 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { Download, QrCode, Loader2 } from "lucide-react";
+import { Download, QrCode, Loader2, Share2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useToast } from "./ui/use-toast";
 
 interface QrGeneratorDialogProps {
   text: string;
@@ -31,7 +32,7 @@ interface QrGeneratorDialogProps {
   isTextTooLong?: boolean;
 }
 
-function QrCodeContent({ qrDataUrl, isLoading, onDownload }: { qrDataUrl: string | null, isLoading: boolean, onDownload: () => void }) {
+function QrCodeContent({ qrDataUrl, isLoading, onDownload, onShare, showShare }: { qrDataUrl: string | null, isLoading: boolean, onDownload: () => void, onShare: () => void, showShare: boolean }) {
   const { t } = useTranslation();
   return (
     <>
@@ -42,10 +43,18 @@ function QrCodeContent({ qrDataUrl, isLoading, onDownload }: { qrDataUrl: string
           )}
         </div>
         <DrawerFooter className="pt-2 sm:pt-0">
-          <Button onClick={onDownload} className="w-full" disabled={!qrDataUrl}>
-            <Download className="mr-2 h-4 w-4" />
-            {t('qrCode.generate.download')}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={onDownload} className="w-full" disabled={!qrDataUrl}>
+                <Download className="mr-2 h-4 w-4" />
+                {t('qrCode.generate.download')}
+            </Button>
+            {showShare && (
+                <Button onClick={onShare} variant="outline" className="w-full" disabled={!qrDataUrl}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    {t('qrCode.generate.share')}
+                </Button>
+            )}
+          </div>
         </DrawerFooter>
     </>
   );
@@ -53,10 +62,18 @@ function QrCodeContent({ qrDataUrl, isLoading, onDownload }: { qrDataUrl: string
 
 export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGeneratorDialogProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && typeof navigator.share === 'function') {
+        setShowShare(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen && text) {
@@ -88,11 +105,40 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
     }
   };
 
+  const handleShare = async () => {
+    if (!qrDataUrl) return;
+    try {
+        const response = await fetch(qrDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'qrcode.png', { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: t('qrCode.generate.shareTitle'),
+            });
+        } else {
+            throw new Error("Cannot share files on this browser.");
+        }
+    } catch (error) {
+        console.error("Share failed:", error);
+        toast({ variant: 'destructive', title: t('qrCode.generate.shareFailed') });
+    }
+  };
+
   const triggerButton = (
     <Button variant="ghost" size="icon" disabled={disabled} aria-label={t('qrCode.generate.ariaLabel')}>
         <QrCode className="h-5 w-5" />
     </Button>
   );
+
+  const contentProps = {
+    qrDataUrl,
+    isLoading,
+    onDownload: handleDownload,
+    onShare: handleShare,
+    showShare
+  };
 
   if (isDesktop) {
     return (
@@ -109,7 +155,7 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
                 <DialogHeader>
                     <DialogTitle>{t('qrCode.generate.title')}</DialogTitle>
                 </DialogHeader>
-                <QrCodeContent qrDataUrl={qrDataUrl} isLoading={isLoading} onDownload={handleDownload} />
+                <QrCodeContent {...contentProps} />
             </DialogContent>
         </Dialog>
     );
@@ -129,7 +175,7 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
             <DrawerHeader className="text-left">
                 <DrawerTitle>{t('qrCode.generate.title')}</DrawerTitle>
             </DrawerHeader>
-            <QrCodeContent qrDataUrl={qrDataUrl} isLoading={isLoading} onDownload={handleDownload} />
+            <QrCodeContent {...contentProps} />
         </DrawerContent>
     </Drawer>
   );

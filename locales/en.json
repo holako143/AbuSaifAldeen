@@ -109,6 +109,7 @@
     "description": "Hide or reveal secret text inside PNG images.",
     "encodeTab": "Hide",
     "decodeTab": "Reveal",
+    "usePassword": "Use password for encryption",
     "dropzoneCover": "Drop the cover image here, or click to select",
     "dropzoneStego": "Drop the stego-image here, or click to select",
     "secretPlaceholder": "Enter the secret text here...",
@@ -118,6 +119,7 @@
     "downloadButton": "Download Image",
     "revealedTitle": "Revealed Text:",
     "toasts": {
+      "passwordRequired": "At least one password is required.",
       "encodeError": "Encoding Error",
       "encodeErrorDesc": "Please select a cover image and enter a secret text.",
       "encodeSuccess": "Text hidden successfully!",
@@ -145,6 +147,9 @@
     "generate": {
       "title": "Your QR Code",
       "download": "Download Code",
+      "share": "Share",
+      "shareTitle": "QR Code",
+      "shareFailed": "Share failed",
       "ariaLabel": "Generate QR Code",
       "tooltip": "Generate QR Code",
       "tooLongTooltip": "Text is too long to generate a reliable QR code"

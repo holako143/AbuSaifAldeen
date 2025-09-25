@@ -109,6 +109,7 @@
     "description": "إخفاء النصوص السرية داخل الصور (PNG) أو الكشف عنها.",
     "encodeTab": "إخفاء",
     "decodeTab": "كشف",
+    "usePassword": "استخدام كلمة مرور للتشفير",
     "dropzoneCover": "اسحب وأفلت صورة الغلاف هنا، أو انقر للاختيار",
     "dropzoneStego": "اسحب وأفلت الصورة المشفرة هنا، أو انقر للاختيار",
     "secretPlaceholder": "أدخل النص السري هنا...",
@@ -118,6 +119,7 @@
     "downloadButton": "تحميل الصورة",
     "revealedTitle": "النص المستخرج:",
     "toasts": {
+      "passwordRequired": "كلمة مرور واحدة على الأقل مطلوبة.",
       "encodeError": "خطأ في الإخفاء",
       "encodeErrorDesc": "الرجاء اختيار صورة غلاف وإدخال نص سري.",
       "encodeSuccess": "تم إخفاء النص بنجاح!",
@@ -145,6 +147,9 @@
     "generate": {
       "title": "رمز الاستجابة السريعة الخاص بك",
       "download": "تحميل الرمز",
+      "share": "مشاركة",
+      "shareTitle": "رمز QR",
+      "shareFailed": "فشلت المشاركة",
       "ariaLabel": "إنشاء رمز الاستجابة السريعة",
       "tooltip": "إنشاء رمز QR",
       "tooLongTooltip": "النص طويل جدًا لإنشاء رمز QR موثوق"

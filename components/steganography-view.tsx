@@ -5,23 +5,67 @@ import { useDropzone } from 'react-dropzone';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from '@/hooks/use-translation';
 import { hideTextInImage, revealTextFromImage } from '@/lib/steganography';
-import { Download, Upload, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Download, Upload, Eye, EyeOff, Loader2, KeyRound, X } from 'lucide-react';
 import { useToast } from './ui/use-toast';
+
+function PasswordFields({ passwords, setPasswords }: { passwords: {id: number, value: string}[], setPasswords: (passwords: {id: number, value: string}[]) => void }) {
+    const { t } = useTranslation();
+    return (
+        <div className="space-y-2 p-3 border rounded-lg animate-in">
+            <Label className="font-semibold">{t('encoderDecoder.layers.title')}</Label>
+            <div className="space-y-2 pt-2">
+                {passwords.map((p, index) => (
+                    <div key={p.id} className="flex items-center gap-2">
+                        <div className="relative flex-grow">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="password"
+                            placeholder={t('encoderDecoder.passwordLayerPlaceholder', { layer: index + 1 })}
+                            value={p.value}
+                            onChange={(e) => {
+                                const newPasswords = [...passwords];
+                                newPasswords[index].value = e.target.value;
+                                setPasswords(newPasswords);
+                            }}
+                            className="pl-10"
+                        />
+                        </div>
+                        {passwords.length > 1 && (
+                        <Button variant="ghost" size="icon" onClick={() => setPasswords(passwords.filter(item => item.id !== p.id))} aria-label={t('encoderDecoder.a11y.removeLayer')}>
+                            <X className="h-4 w-4 text-red-500"/>
+                        </Button>
+                        )}
+                    </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => setPasswords([...passwords, {id: Date.now(), value: ''}])}>
+                    {t('encoderDecoder.addEncryptionLayer')}
+                </Button>
+            </div>
+        </div>
+    )
+}
 
 export function SteganographyView() {
     const { t } = useTranslation();
     const { toast } = useToast();
 
-    // State for encoding
+    // Common state
+    const [usePassword, setUsePassword] = useState(false);
+    const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
+
+    // Encoding state
     const [coverImage, setCoverImage] = useState<File | null>(null);
     const [secretText, setSecretText] = useState('');
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isEncoding, setIsEncoding] = useState(false);
 
-    // State for decoding
+    // Decoding state
     const [stegoImage, setStegoImage] = useState<File | null>(null);
     const [revealedText, setRevealedText] = useState<string | null>(null);
     const [isDecoding, setIsDecoding] = useState(false);
@@ -41,14 +85,20 @@ export function SteganographyView() {
     const { getRootProps: getStegoRootProps, getInputProps: getStegoInputProps, isDragActive: isStegoDragActive } = useDropzone({ onDrop: onDropStego, accept: { 'image/*': ['.png'] }, maxFiles: 1 });
 
     const handleEncode = async () => {
+        const activePasswords = usePassword ? passwords.map(p => p.value).filter(Boolean) : [];
         if (!coverImage || !secretText) {
             toast({ variant: 'destructive', title: t('steganography.toasts.encodeError'), description: t('steganography.toasts.encodeErrorDesc') });
             return;
         }
+        if (usePassword && activePasswords.length === 0) {
+            toast({ variant: 'destructive', title: t('steganography.toasts.passwordRequired') });
+            return;
+        }
+
         setIsEncoding(true);
         setResultImage(null);
         try {
-            const resultDataUrl = await hideTextInImage(coverImage, secretText);
+            const resultDataUrl = await hideTextInImage(coverImage, secretText, activePasswords);
             setResultImage(resultDataUrl);
             toast({ title: t('steganography.toasts.encodeSuccess') });
         } catch (error: any) {
@@ -59,15 +109,17 @@ export function SteganographyView() {
     };
 
     const handleDecode = async () => {
+        const activePasswords = usePassword ? passwords.map(p => p.value).filter(Boolean) : [];
         if (!stegoImage) {
             toast({ variant: 'destructive', title: t('steganography.toasts.decodeError'), description: t('steganography.toasts.decodeErrorDesc') });
             return;
         }
+
         setIsDecoding(true);
         setRevealedText(null);
         setDecodeError(null);
         try {
-            const text = await revealTextFromImage(stegoImage);
+            const text = await revealTextFromImage(stegoImage, activePasswords);
             setRevealedText(text);
             toast({ title: t('steganography.toasts.decodeSuccess') });
         } catch (error: any) {
@@ -104,6 +156,11 @@ export function SteganographyView() {
                             onChange={(e) => setSecretText(e.target.value)}
                             className="min-h-[120px]"
                         />
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            <Checkbox id="use-password-encode" checked={usePassword} onCheckedChange={(checked) => setUsePassword(!!checked)} />
+                            <Label htmlFor="use-password-encode" className="cursor-pointer">{t('steganography.usePassword')}</Label>
+                        </div>
+                        {usePassword && <PasswordFields passwords={passwords} setPasswords={setPasswords} />}
                         <Button onClick={handleEncode} disabled={isEncoding || !coverImage || !secretText} className="w-full">
                             {isEncoding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <EyeOff className="mr-2 h-4 w-4" />}
                             {t('steganography.encodeButton')}
@@ -129,6 +186,11 @@ export function SteganographyView() {
                             <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                             <p className="mt-2">{stegoImage ? stegoImage.name : t('steganography.dropzoneStego')}</p>
                         </div>
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            <Checkbox id="use-password-decode" checked={usePassword} onCheckedChange={(checked) => setUsePassword(!!checked)} />
+                            <Label htmlFor="use-password-decode" className="cursor-pointer">{t('steganography.usePassword')}</Label>
+                        </div>
+                        {usePassword && <PasswordFields passwords={passwords} setPasswords={setPasswords} />}
                         <Button onClick={handleDecode} disabled={isDecoding || !stegoImage} className="w-full">
                              {isDecoding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                             {t('steganography.decodeButton')}

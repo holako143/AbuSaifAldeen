@@ -1,6 +1,7 @@
 "use client";
 
 import pako from 'pako';
+import { encryptMultiple, decryptMultiple } from './crypto';
 
 // --- Helper Functions ---
 
@@ -156,18 +157,33 @@ function extractData(pixels: Uint8ClampedArray): Uint8Array {
 
 // --- Public API ---
 
+const IS_ENCRYPTED_FLAG = new Uint8Array([1]);
+const IS_NOT_ENCRYPTED_FLAG = new Uint8Array([0]);
+
 /**
  * Hides a secret message (string) inside an image file.
  * @param imageFile The cover image.
  * @param secretMessage The message to hide.
+ * @param passwords Optional array of passwords for encryption.
  * @returns A promise that resolves with the data URL of the new image.
  */
-export async function hideTextInImage(imageFile: File, secretMessage: string): Promise<string> {
+export async function hideTextInImage(imageFile: File, secretMessage: string, passwords?: string[]): Promise<string> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
-    const secretData = pako.deflate(secretMessage);
 
-    const newPixelData = embedData(imageData.data, secretData);
+    let dataToHide: Uint8Array;
+    let payload: Uint8Array;
+
+    if (passwords && passwords.length > 0) {
+        const encryptedString = await encryptMultiple(secretMessage, passwords);
+        payload = stringToUint8Array(encryptedString);
+        dataToHide = new Uint8Array([...IS_ENCRYPTED_FLAG, ...pako.deflate(payload)]);
+    } else {
+        payload = stringToUint8Array(secretMessage);
+        dataToHide = new Uint8Array([...IS_NOT_ENCRYPTED_FLAG, ...pako.deflate(payload)]);
+    }
+
+    const newPixelData = embedData(imageData.data, dataToHide);
     imageData.data.set(newPixelData);
 
     const ctx = canvas.getContext('2d');
@@ -180,14 +196,27 @@ export async function hideTextInImage(imageFile: File, secretMessage: string): P
 /**
  * Reveals a secret message from an image file.
  * @param imageFile The image containing the secret message.
+ * @param passwords Optional array of passwords for decryption.
  * @returns A promise that resolves with the revealed message.
  */
-export async function revealTextFromImage(imageFile: File): Promise<string> {
+export async function revealTextFromImage(imageFile: File, passwords?: string[]): Promise<string> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
 
     const extractedData = extractData(imageData.data);
-    const decompressedData = pako.inflate(extractedData, { to: 'string' });
 
-    return decompressedData;
+    const isEncrypted = extractedData[0] === 1;
+    const compressedPayload = extractedData.slice(1);
+
+    const payload = pako.inflate(compressedPayload);
+
+    if (isEncrypted) {
+        if (!passwords || passwords.length === 0) {
+            throw new Error("This image is password-protected. Please provide the password(s) to reveal the message.");
+        }
+        const encryptedString = uint8ArrayToString(payload);
+        return await decryptMultiple(encryptedString, passwords);
+    } else {
+        return uint8ArrayToString(payload);
+    }
 }
