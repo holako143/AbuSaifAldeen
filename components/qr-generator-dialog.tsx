@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { Download, QrCode } from "lucide-react";
+import { Download, QrCode, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface QrGeneratorDialogProps {
@@ -22,32 +22,36 @@ interface QrGeneratorDialogProps {
 
 export function QrGeneratorDialog({ text, disabled }: QrGeneratorDialogProps) {
   const { t } = useTranslation();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && text && canvasRef.current) {
-      // Add a small delay to ensure the canvas is rendered in the DOM
-      setTimeout(() => {
-        if (canvasRef.current) {
-          QRCode.toCanvas(canvasRef.current, text, {
-            width: 256,
-            margin: 2,
-            errorCorrectionLevel: "H",
-          })
-            .catch(err => {
-              console.error("Failed to generate QR code:", err);
-            });
-        }
-      }, 50);
+    if (isOpen && text) {
+      setIsLoading(true);
+      setQrDataUrl(null);
+      QRCode.toDataURL(text, {
+        width: 256,
+        margin: 2,
+        errorCorrectionLevel: "H",
+      })
+        .then(url => {
+          setQrDataUrl(url);
+        })
+        .catch(err => {
+          console.error("Failed to generate QR code:", err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   }, [isOpen, text]);
 
   const handleDownload = () => {
-    if (canvasRef.current) {
+    if (qrDataUrl) {
       const link = document.createElement("a");
       link.download = "qrcode.png";
-      link.href = canvasRef.current.toDataURL("image/png");
+      link.href = qrDataUrl;
       link.click();
     }
   };
@@ -70,11 +74,14 @@ export function QrGeneratorDialog({ text, disabled }: QrGeneratorDialogProps) {
         <DialogHeader>
           <DialogTitle>{t('qrCode.generate.title')}</DialogTitle>
         </DialogHeader>
-        <div className="flex items-center justify-center p-4">
-          <canvas ref={canvasRef} />
+        <div className="flex items-center justify-center p-4 min-h-[256px]">
+          {isLoading && <Loader2 className="h-12 w-12 animate-spin" />}
+          {!isLoading && qrDataUrl && (
+            <img src={qrDataUrl} alt="Generated QR Code" width={256} height={256} />
+          )}
         </div>
         <DialogFooter>
-          <Button onClick={handleDownload} className="w-full">
+          <Button onClick={handleDownload} className="w-full" disabled={!qrDataUrl}>
             <Download className="mr-2 h-4 w-4" />
             {t('qrCode.generate.download')}
           </Button>
