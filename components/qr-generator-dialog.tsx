@@ -27,14 +27,19 @@ export function QrGeneratorDialog({ text, disabled }: QrGeneratorDialogProps) {
 
   useEffect(() => {
     if (isOpen && text && canvasRef.current) {
-      QRCode.toCanvas(canvasRef.current, text, {
-        width: 256,
-        margin: 2,
-        errorCorrectionLevel: "H",
-      })
-        .catch(err => {
-          console.error("Failed to generate QR code:", err);
-        });
+      // Add a small delay to ensure the canvas is rendered in the DOM
+      setTimeout(() => {
+        if (canvasRef.current) {
+          QRCode.toCanvas(canvasRef.current, text, {
+            width: 256,
+            margin: 2,
+            errorCorrectionLevel: "H",
+          })
+            .catch(err => {
+              console.error("Failed to generate QR code:", err);
+            });
+        }
+      }, 50);
     }
   }, [isOpen, text]);
 

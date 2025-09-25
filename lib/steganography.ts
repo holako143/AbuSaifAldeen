@@ -98,12 +98,36 @@ function embedData(originalPixels: Uint8ClampedArray, data: Uint8Array): Uint8Cl
 
 
 /**
+ * Finds the index of a delimiter subarray within a source array.
+ * @param source The source array (haystack).
+ * @param delimiter The delimiter array to find (needle).
+ * @returns The starting index of the delimiter, or -1 if not found.
+ */
+function findDelimiterIndex(source: Uint8Array, delimiter: Uint8Array): number {
+    for (let i = 0; i <= source.length - delimiter.length; i++) {
+        let found = true;
+        for (let j = 0; j < delimiter.length; j++) {
+            if (source[i + j] !== delimiter[j]) {
+                found = false;
+                break;
+            }
+        }
+        if (found) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
  * Extracts data from the pixel data of an image.
  * @param pixels The pixel data to extract from.
  * @returns The extracted data as a Uint8Array.
  */
 function extractData(pixels: Uint8ClampedArray): Uint8Array {
     const extractedBits: number[] = [];
+    // We only need to read enough bits to find the delimiter, not the whole image.
+    // This is an optimization, but for simplicity, we'll read a large chunk.
     for (let i = 0; i < pixels.length; i++) {
         // Skip alpha channel
         if ((i + 1) % 4 === 0) continue;
@@ -117,16 +141,16 @@ function extractData(pixels: Uint8ClampedArray): Uint8Array {
         bytes.push(parseInt(byteString, 2));
     }
 
-    const decodedString = uint8ArrayToString(new Uint8Array(bytes));
-    const eomIndex = decodedString.indexOf(END_OF_MESSAGE_DELIMITER);
-    if (eomIndex === -1) {
+    const bytesArray = new Uint8Array(bytes);
+    const delimiterBytes = stringToUint8Array(END_OF_MESSAGE_DELIMITER);
+
+    const delimiterIndex = findDelimiterIndex(bytesArray, delimiterBytes);
+
+    if (delimiterIndex === -1) {
         throw new Error("End-of-message delimiter not found. The image may be corrupt or not contain a message.");
     }
 
-    // Find the byte index of the delimiter
-    const delimiterByteIndex = new TextEncoder().encode(decodedString.substring(0, eomIndex)).length;
-
-    return new Uint8Array(bytes.slice(0, delimiterByteIndex));
+    return bytesArray.slice(0, delimiterIndex);
 }
 
 
