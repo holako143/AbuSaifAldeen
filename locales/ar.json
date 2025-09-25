@@ -98,10 +98,35 @@
     "title": "القائمة",
     "home": "الرئيسية",
     "history": "سجل التشفير",
+    "steganography": "إخفاء بالصور",
     "vault": "الخزنة السرية",
     "emojiManagement": "إدارة الإيموجي",
     "settings": "الإعدادات",
     "autoCopy": "نسخ تلقائي للناتج"
+  },
+  "steganography": {
+    "title": "إخفاء البيانات في الصور",
+    "description": "إخفاء النصوص السرية داخل الصور (PNG) أو الكشف عنها.",
+    "encodeTab": "إخفاء",
+    "decodeTab": "كشف",
+    "dropzoneCover": "اسحب وأفلت صورة الغلاف هنا، أو انقر للاختيار",
+    "dropzoneStego": "اسحب وأفلت الصورة المشفرة هنا، أو انقر للاختيار",
+    "secretPlaceholder": "أدخل النص السري هنا...",
+    "encodeButton": "إخفاء النص في الصورة",
+    "decodeButton": "كشف النص من الصورة",
+    "resultTitle": "الصورة الناتجة (جاهزة للتنزيل):",
+    "downloadButton": "تحميل الصورة",
+    "revealedTitle": "النص المستخرج:",
+    "toasts": {
+      "encodeError": "خطأ في الإخفاء",
+      "encodeErrorDesc": "الرجاء اختيار صورة غلاف وإدخال نص سري.",
+      "encodeSuccess": "تم إخفاء النص بنجاح!",
+      "encodeFail": "فشل الإخفاء",
+      "decodeError": "خطأ في الكشف",
+      "decodeErrorDesc": "الرجاء اختيار صورة للكشف عنها.",
+      "decodeSuccess": "تم كشف النص بنجاح!",
+      "decodeFail": "فشل الكشف"
+    }
   },
   "topbar": {
     "appName": "شفريشن",
@@ -112,7 +137,27 @@
     "safeModeDisabledDesc": "لن يتم تطبيق أي تشفير.",
     "toggleTheme": "تغيير المظهر",
     "toggleThemeSr": "Toggle theme",
-    "openMenuSr": "Open menu"
+    "openMenuSr": "Open menu",
+    "qrReaderSr": "فتح قارئ رمز الاستجابة السريعة",
+    "qrReaderTooltip": "مسح رمز الاستجابة السريعة"
+  },
+  "qrCode": {
+    "generate": {
+      "title": "رمز الاستجابة السريعة الخاص بك",
+      "download": "تحميل الرمز",
+      "ariaLabel": "إنشاء رمز الاستجابة السريعة",
+      "tooltip": "إنشاء رمز QR"
+    },
+    "reader": {
+      "title": "قارئ رمز الاستجابة السريعة",
+      "prompt": "امسح رمزًا ضوئيًا باستخدام الكاميرا أو قم بتحميل صورة.",
+      "scanWithCamera": "المسح بالكاميرا",
+      "uploadImage": "تحميل صورة",
+      "stopScan": "إيقاف المسح",
+      "noCameras": "لم يتم العثور على كاميرات.",
+      "cameraError": "فشل في الوصول إلى الكاميرا.",
+      "fileScanError": "لا يمكن قراءة رمز الاستجابة السريعة من هذا الملف."
+    }
   },
   "history": {
     "title": "سجل التشفير",

@@ -1,14 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { History, Settings, Smile, Home, Archive } from "lucide-react";
+import { History, Settings, Smile, Home, Archive, ImageIcon } from "lucide-react";
 import { useAppContext } from "@/components/app-provider";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/hooks/use-translation";
 
-export type View = "encoder-decoder" | "history" | "emoji-management" | "settings" | "vault";
+export type View = "encoder-decoder" | "history" | "emoji-management" | "settings" | "vault" | "qr-reader" | "steganography";
 
 interface SidebarProps {
   closeSidebar: () => void;
@@ -37,6 +37,10 @@ export function Sidebar({ closeSidebar }: SidebarProps) {
         <Button variant="ghost" className="w-full justify-start animate-in" style={{ animationDelay: "0.2s" }} onClick={() => handleNavigation("history")}>
           <History className="ml-2 h-4 w-4" />
           <span>{t('sidebar.history')}</span>
+        </Button>
+        <Button variant="ghost" className="w-full justify-start animate-in" style={{ animationDelay: "0.3s" }} onClick={() => handleNavigation("steganography")}>
+          <ImageIcon className="ml-2 h-4 w-4" />
+          <span>{t('sidebar.steganography')}</span>
         </Button>
         {isVaultVisible && (
             <Button variant="ghost" className="w-full justify-start animate-in" style={{ animationDelay: "0.3s" }} onClick={() => handleNavigation("vault")}>

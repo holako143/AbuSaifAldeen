@@ -18,6 +18,7 @@ import { useAppContext } from "@/components/app-provider";
 import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { QrGeneratorDialog } from "@/components/qr-generator-dialog";
 
 export function Base64EncoderDecoderContent() {
   const {
@@ -222,6 +223,7 @@ export function Base64EncoderDecoderContent() {
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}
+                <QrGeneratorDialog text={outputText} disabled={!outputText} />
                 <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
                     <Tooltip>
                         <TooltipTrigger asChild>
