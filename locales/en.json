@@ -122,7 +122,8 @@
     "decodeButton": "Reveal Files from Image",
     "resultTitle": "Resulting Image (Ready for Download):",
     "downloadButton": "Download Image",
-    "revealedTitle": "Revealed Files:",
+    "revealedTitleFiles": "Revealed Files:",
+    "revealedTitleText": "Revealed Text:",
     "downloadAll": "Download All (ZIP)",
     "toasts": {
       "revealedTitle": "New Feature Unlocked!",

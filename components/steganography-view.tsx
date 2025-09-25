@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from '@/hooks/use-translation';
-import { hideFilesInImage, revealFilesFromImage } from '@/lib/steganography';
+import { hideDataInImage, revealDataFromImage } from '@/lib/steganography';
 import { Download, Upload, Eye, EyeOff, Loader2, KeyRound, X, File as FileIcon, Archive, Type } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 import { ScrollArea } from './ui/scroll-area';
@@ -83,6 +83,7 @@ export function SteganographyView() {
     // Decoding state
     const [stegoImage, setStegoImage] = useState<File | null>(null);
     const [revealedFiles, setRevealedFiles] = useState<File[]>([]);
+    const [revealedText, setRevealedText] = useState<string | null>(null);
     const [isDecoding, setIsDecoding] = useState(false);
     const [decodeError, setDecodeError] = useState<string | null>(null);
 
@@ -90,6 +91,7 @@ export function SteganographyView() {
     const onDropStego = useCallback((acceptedFiles: File[]) => {
         setStegoImage(acceptedFiles[0]);
         setRevealedFiles([]);
+        setRevealedText(null);
         setDecodeError(null);
     }, []);
     const onDropSecret = useCallback((acceptedFiles: File[]) => setSecretFiles(acceptedFiles), []);
@@ -100,21 +102,11 @@ export function SteganographyView() {
 
     const handleEncode = async () => {
         const activePasswords = usePassword ? passwords.map(p => p.value).filter(Boolean) : [];
-        let filesToHide: File[] = [];
+        const dataToHide = hideMode === 'text' ? secretText : secretFiles;
 
-        if (hideMode === 'text') {
-            if (!secretText) {
-                toast({ variant: 'destructive', title: t('steganography.toasts.encodeError'), description: t('steganography.toasts.textRequired') });
-                return;
-            }
-            const textFile = new File([secretText], "secret.txt", { type: "text/plain" });
-            filesToHide.push(textFile);
-        } else {
-            if (secretFiles.length === 0) {
-                toast({ variant: 'destructive', title: t('steganography.toasts.encodeError'), description: t('steganography.toasts.filesRequired') });
-                return;
-            }
-            filesToHide = secretFiles;
+        if ((hideMode === 'text' && !secretText) || (hideMode === 'files' && secretFiles.length === 0)) {
+            toast({ variant: 'destructive', title: t('steganography.toasts.encodeError'), description: hideMode === 'text' ? t('steganography.toasts.textRequired') : t('steganography.toasts.filesRequired') });
+            return;
         }
 
         if (!coverImage) {
@@ -130,7 +122,7 @@ export function SteganographyView() {
         setIsEncoding(true);
         setResultImage(null);
         try {
-            const resultDataUrl = await hideFilesInImage(coverImage, filesToHide, activePasswords);
+            const resultDataUrl = await hideDataInImage(coverImage, dataToHide, activePasswords);
             setResultImage(resultDataUrl);
             toast({ title: t('steganography.toasts.encodeSuccess') });
         } catch (error: any) {
@@ -149,10 +141,16 @@ export function SteganographyView() {
 
         setIsDecoding(true);
         setRevealedFiles([]);
+        setRevealedText(null);
         setDecodeError(null);
         try {
-            const files = await revealFilesFromImage(stegoImage, activePasswords);
-            setRevealedFiles(files);
+            const result = await revealDataFromImage(stegoImage, activePasswords);
+            if (result.files) {
+                setRevealedFiles(result.files);
+            }
+            if (result.text) {
+                setRevealedText(result.text);
+            }
             toast({ title: t('steganography.toasts.decodeSuccess') });
         } catch (error: any) {
             setDecodeError(error.message || t('steganography.toasts.decodeFail'));
@@ -266,10 +264,18 @@ export function SteganographyView() {
                              {isDecoding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                             {t('steganography.decodeButton')}
                         </Button>
+
+                        {revealedText && (
+                            <div className="pt-4 space-y-2">
+                                <h3 className="font-semibold">{t('steganography.revealedTitleText')}</h3>
+                                <Textarea value={revealedText} readOnly className="min-h-[120px] bg-muted" />
+                            </div>
+                        )}
+
                         {revealedFiles.length > 0 && (
                             <div className="pt-4 space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="font-semibold">{t('steganography.revealedTitle')}</h3>
+                                    <h3 className="font-semibold">{t('steganography.revealedTitleFiles')}</h3>
                                     <Button variant="outline" size="sm" onClick={handleDownloadAll}><Download className="mr-2 h-4 w-4" /> {t('steganography.downloadAll')}</Button>
                                 </div>
                                 <ScrollArea className="h-40 w-full rounded-md border p-2">

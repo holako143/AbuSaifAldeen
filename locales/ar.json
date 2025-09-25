@@ -122,7 +122,8 @@
     "decodeButton": "كشف الملفات من الصورة",
     "resultTitle": "الصورة الناتجة (جاهزة للتنزيل):",
     "downloadButton": "تحميل الصورة",
-    "revealedTitle": "الملفات المستخرجة:",
+    "revealedTitleFiles": "الملفات المستخرجة:",
+    "revealedTitleText": "النص المستخرج:",
     "downloadAll": "تحميل الكل (ZIP)",
     "toasts": {
       "revealedTitle": "تم كشف ميزة جديدة!",
