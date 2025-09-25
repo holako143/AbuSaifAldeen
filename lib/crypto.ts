@@ -13,7 +13,7 @@ export const bufferToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
   return btoa(binary);
 };
 
-const base64ToBuffer = (base64: string): Uint8Array => {
+export const base64ToBuffer = (base64: string): Uint8Array => {
   const binaryString = atob(base64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
