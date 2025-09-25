@@ -6,6 +6,10 @@ import { encryptMultiple, decryptMultiple } from './crypto';
 
 // --- Helper Functions ---
 
+function stringToUint8Array(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
 function dataURLToBlob(dataURL: string): Blob {
   const parts = dataURL.split(',');
   const contentType = parts[0].split(':')[1];
