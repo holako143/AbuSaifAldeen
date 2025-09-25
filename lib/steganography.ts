@@ -214,7 +214,7 @@ export async function revealFilesFromImage(imageFile: File, passwords?: string[]
     const compressedPayload = extractedData.slice(1);
 
     const payload = pako.inflate(compressedPayload);
-    let finalTarData: Uint8Array;
+    let finalZipData: Uint8Array;
 
     if (isEncrypted) {
         if (!passwords || passwords.length === 0) {
