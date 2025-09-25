@@ -68,7 +68,7 @@ async function archiveFiles(files: File[]): Promise<Uint8Array> {
 
 async function unarchiveFiles(tarData: Uint8Array): Promise<File[]> {
     const reader = await TarReader.load(tarData);
-    return reader.files.map(fileInfo => {
+    return reader.files.map((fileInfo: any) => {
         return new File([fileInfo.data!], fileInfo.name, { type: fileInfo.type });
     });
 }
