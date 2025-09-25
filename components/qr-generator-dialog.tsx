@@ -10,10 +10,20 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+  DrawerClose
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { Download, QrCode, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface QrGeneratorDialogProps {
   text: string;
@@ -21,11 +31,32 @@ interface QrGeneratorDialogProps {
   isTextTooLong?: boolean;
 }
 
+function QrCodeContent({ qrDataUrl, isLoading, onDownload }: { qrDataUrl: string | null, isLoading: boolean, onDownload: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <>
+        <div className="flex items-center justify-center p-4 min-h-[256px]">
+          {isLoading && <Loader2 className="h-12 w-12 animate-spin" />}
+          {!isLoading && qrDataUrl && (
+            <img src={qrDataUrl} alt="Generated QR Code" width={256} height={256} />
+          )}
+        </div>
+        <DrawerFooter className="pt-2 sm:pt-0">
+          <Button onClick={onDownload} className="w-full" disabled={!qrDataUrl}>
+            <Download className="mr-2 h-4 w-4" />
+            {t('qrCode.generate.download')}
+          </Button>
+        </DrawerFooter>
+    </>
+  );
+}
+
 export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGeneratorDialogProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (isOpen && text) {
@@ -57,37 +88,42 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
     }
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip>
+  const triggerButton = (
+    <Tooltip>
         <TooltipTrigger asChild>
-          <DialogTrigger asChild>
             <Button variant="ghost" size="icon" disabled={disabled} aria-label={t('qrCode.generate.ariaLabel')}>
-              <QrCode className="h-5 w-5" />
+                <QrCode className="h-5 w-5" />
             </Button>
-          </DialogTrigger>
         </TooltipTrigger>
         <TooltipContent>
             <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
         </TooltipContent>
-      </Tooltip>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t('qrCode.generate.title')}</DialogTitle>
-        </DialogHeader>
-        <div className="flex items-center justify-center p-4 min-h-[256px]">
-          {isLoading && <Loader2 className="h-12 w-12 animate-spin" />}
-          {!isLoading && qrDataUrl && (
-            <img src={qrDataUrl} alt="Generated QR Code" width={256} height={256} />
-          )}
-        </div>
-        <DialogFooter>
-          <Button onClick={handleDownload} className="w-full" disabled={!qrDataUrl}>
-            <Download className="mr-2 h-4 w-4" />
-            {t('qrCode.generate.download')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Tooltip>
+  );
+
+  if (isDesktop) {
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>{t('qrCode.generate.title')}</DialogTitle>
+                </DialogHeader>
+                <QrCodeContent qrDataUrl={qrDataUrl} isLoading={isLoading} onDownload={handleDownload} />
+            </DialogContent>
+        </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={isOpen} onOpenChange={setIsOpen}>
+        <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+        <DrawerContent>
+            <DrawerHeader className="text-left">
+                <DrawerTitle>{t('qrCode.generate.title')}</DrawerTitle>
+            </DrawerHeader>
+            <QrCodeContent qrDataUrl={qrDataUrl} isLoading={isLoading} onDownload={handleDownload} />
+        </DrawerContent>
+    </Drawer>
   );
 }

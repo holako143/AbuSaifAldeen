@@ -24,6 +24,28 @@ import { formatRelativeTime, generatePassword } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { changeMasterPassword } from "@/lib/vault";
 
+function ChangePasswordForm({ onPasswordChange, isLoading, newPassword, setNewPassword, confirmPassword, setConfirmPassword }: any) {
+    const { t } = useTranslation();
+    return (
+         <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
+                <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
+                <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            </div>
+            <div className="pt-2">
+                 <Button onClick={onPasswordChange} disabled={isLoading || !newPassword || !confirmPassword} className="w-full">
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('settings.vault.button')}
+                </Button>
+            </div>
+        </div>
+    )
+}
+
+
 function ChangePasswordDialog() {
     const { t } = useTranslation();
     const { masterPassword: globalMasterPassword, setMasterPassword, setIsVaultUnlocked } = useAppContext();
@@ -32,6 +54,7 @@ function ChangePasswordDialog() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
+    const isDesktop = useMediaQuery("(min-width: 768px)");
 
     const handlePasswordChange = async () => {
         if (newPassword !== confirmPassword) {
@@ -59,34 +82,48 @@ function ChangePasswordDialog() {
         }
     };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
+    const formProps = {
+        onPasswordChange: handlePasswordChange,
+        isLoading, newPassword, setNewPassword, confirmPassword, setConfirmPassword
+    };
+
+    if (isDesktop) {
+        return (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('settings.vault.title')}</DialogTitle>
+                        <DialogDescription>{t('settings.vault.description')}</DialogDescription>
+                    </DialogHeader>
+                    <ChangePasswordForm {...formProps} />
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+     return (
+        <Drawer open={isOpen} onOpenChange={setIsOpen}>
+            <DrawerTrigger asChild>
                 <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{t('settings.vault.title')}</DialogTitle>
-                    <DialogDescription>{t('settings.vault.description')}</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
-                        <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
-                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                    </div>
+            </DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader className="text-left">
+                    <DrawerTitle>{t('settings.vault.title')}</DrawerTitle>
+                    <DrawerDescription>{t('settings.vault.description')}</DrawerDescription>
+                </DrawerHeader>
+                <div className="p-4">
+                    <ChangePasswordForm {...formProps} />
                 </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button></DialogClose>
-                    <Button onClick={handlePasswordChange} disabled={isLoading || !newPassword || !confirmPassword}>
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('settings.vault.button')}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                 <DrawerFooter className="pt-2">
+                    <DrawerClose asChild>
+                        <Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button>
+                    </DrawerClose>
+                </DrawerFooter>
+            </DrawerContent>
+        </Drawer>
     );
 }
 
