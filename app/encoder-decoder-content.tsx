@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2 } from "lucide-react";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2, QrCode } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -25,7 +25,8 @@ export function Base64EncoderDecoderContent() {
     isPasswordEnabled: isPasswordGloballyEnabled,
     textToDecode,
     setTextToDecode,
-    autoCopy
+    autoCopy,
+    setActiveView
   } = useAppContext();
   const { t } = useTranslation();
 
@@ -205,8 +206,24 @@ export function Base64EncoderDecoderContent() {
         <div>
             <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[100px] sm:min-h-[120px]"/>
             <div className="flex justify-center items-center gap-2 mt-2">
-                <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')}><ClipboardPaste className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')}><ClipboardPaste className="h-5 w-5" /></Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t('topbar.qrReaderTooltip')}</p></TooltipContent>
+                </Tooltip>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => setActiveView('qr-reader')} aria-label={t('topbar.qrReaderSr')}><QrCode className="h-5 w-5" /></Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t('topbar.qrReaderTooltip')}</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
+                    </TooltipTrigger>
+                     <TooltipContent><p>{t('encoderDecoder.a11y.clearInput')}</p></TooltipContent>
+                </Tooltip>
             </div>
         </div>
 

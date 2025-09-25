@@ -58,18 +58,6 @@ export function TopBar() {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2 rtl:space-x-reverse">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={() => setActiveView('qr-reader')} className="animate-in" style={{ animationDelay: "0.2s" }}>
-                <QrCode className="h-6 w-6" />
-                <span className="sr-only">{t('topbar.qrReaderSr')}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('topbar.qrReaderTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="animate-in" style={{ animationDelay: "0.3s" }}>
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />

@@ -89,22 +89,22 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
   };
 
   const triggerButton = (
-    <Tooltip>
-        <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" disabled={disabled} aria-label={t('qrCode.generate.ariaLabel')}>
-                <QrCode className="h-5 w-5" />
-            </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-            <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
-        </TooltipContent>
-    </Tooltip>
+    <Button variant="ghost" size="icon" disabled={disabled} aria-label={t('qrCode.generate.ariaLabel')}>
+        <QrCode className="h-5 w-5" />
+    </Button>
   );
 
   if (isDesktop) {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
+                </TooltipContent>
+            </Tooltip>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{t('qrCode.generate.title')}</DialogTitle>
@@ -117,7 +117,14 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
-        <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
+            </TooltipContent>
+        </Tooltip>
         <DrawerContent>
             <DrawerHeader className="text-left">
                 <DrawerTitle>{t('qrCode.generate.title')}</DrawerTitle>
