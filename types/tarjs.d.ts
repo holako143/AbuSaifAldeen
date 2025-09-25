@@ -1,0 +1,1 @@
+declare module '@gera2ld/tarjs';
