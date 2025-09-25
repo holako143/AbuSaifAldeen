@@ -160,9 +160,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Load settings from localStorage
     useEffect(() => {
-        const storedStegoVisible = localStorage.getItem("shifrishan-stego-visible");
-        if (storedStegoVisible) setIsSteganographyVisible(JSON.parse(storedStegoVisible));
-
         const storedAutoCopy = localStorage.getItem("shifrishan-auto-copy");
         if (storedAutoCopy) setAutoCopy(JSON.parse(storedAutoCopy));
         const storedLocale = localStorage.getItem("shifrishan-locale") as Locale;
@@ -180,7 +177,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     // Persist settings to localStorage
-    useEffect(() => { localStorage.setItem("shifrishan-stego-visible", JSON.stringify(isSteganographyVisible)); }, [isSteganographyVisible]);
     useEffect(() => { localStorage.setItem("shifrishan-auto-copy", JSON.stringify(autoCopy)); }, [autoCopy]);
     useEffect(() => { localStorage.setItem("shifrishan-locale", locale); }, [locale]);
     useEffect(() => { localStorage.setItem("shifrishan-theme-mode", themeMode); }, [themeMode]);
@@ -188,6 +184,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => { localStorage.setItem("shifrishan-color-bg-start", backgroundColorStart); }, [backgroundColorStart]);
     useEffect(() => { localStorage.setItem("shifrishan-color-bg-end", backgroundColorEnd); }, [backgroundColorEnd]);
     useEffect(() => { localStorage.setItem("shifrishan-color-text", textColor); }, [textColor]);
+
+    // Auto-hide steganography tab when navigating away
+    useEffect(() => {
+        if (activeView !== 'steganography') {
+            setIsSteganographyVisible(false);
+        }
+    }, [activeView]);
 
     // Apply theme and language direction
     useEffect(() => {
