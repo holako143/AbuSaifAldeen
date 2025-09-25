@@ -98,10 +98,35 @@
     "title": "Menu",
     "home": "Home",
     "history": "History",
+    "steganography": "Image Steganography",
     "vault": "Secret Vault",
     "emojiManagement": "Emoji Management",
     "settings": "Settings",
     "autoCopy": "Auto-copy output"
+  },
+  "steganography": {
+    "title": "Image Steganography",
+    "description": "Hide or reveal secret text inside PNG images.",
+    "encodeTab": "Hide",
+    "decodeTab": "Reveal",
+    "dropzoneCover": "Drop the cover image here, or click to select",
+    "dropzoneStego": "Drop the stego-image here, or click to select",
+    "secretPlaceholder": "Enter the secret text here...",
+    "encodeButton": "Hide Text in Image",
+    "decodeButton": "Reveal Text from Image",
+    "resultTitle": "Resulting Image (Ready for Download):",
+    "downloadButton": "Download Image",
+    "revealedTitle": "Revealed Text:",
+    "toasts": {
+      "encodeError": "Encoding Error",
+      "encodeErrorDesc": "Please select a cover image and enter a secret text.",
+      "encodeSuccess": "Text hidden successfully!",
+      "encodeFail": "Encoding failed",
+      "decodeError": "Decoding Error",
+      "decodeErrorDesc": "Please select an image to decode.",
+      "decodeSuccess": "Text revealed successfully!",
+      "decodeFail": "Decoding failed"
+    }
   },
   "topbar": {
     "appName": "Shifrishan",
@@ -112,7 +137,28 @@
     "safeModeDisabledDesc": "No encryption will be applied.",
     "toggleTheme": "Toggle theme",
     "toggleThemeSr": "Toggle theme",
-    "openMenuSr": "Open menu"
+    "openMenuSr": "Open menu",
+    "qrReaderSr": "Open QR Code Reader",
+    "qrReaderTooltip": "Scan a QR Code"
+  },
+  "qrCode": {
+    "generate": {
+      "title": "Your QR Code",
+      "download": "Download Code",
+      "ariaLabel": "Generate QR Code",
+      "tooltip": "Generate QR Code",
+      "tooLongTooltip": "Text is too long to generate a reliable QR code"
+    },
+    "reader": {
+      "title": "QR Code Reader",
+      "prompt": "Scan a QR code with your camera or upload an image.",
+      "scanWithCamera": "Scan with Camera",
+      "uploadImage": "Upload Image",
+      "stopScan": "Stop Scan",
+      "noCameras": "No cameras found.",
+      "cameraError": "Failed to access camera.",
+      "fileScanError": "Could not read QR code from this file."
+    }
   },
   "history": {
     "title": "History",

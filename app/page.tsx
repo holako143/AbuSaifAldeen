@@ -7,6 +7,8 @@ import { HistoryView } from "./history-view";
 import { EmojiManagementView } from "./emoji-management-view";
 import { SettingsView } from "./settings-view";
 import { VaultPage } from "./vault-page";
+import { QrReader } from "@/components/qr-reader";
+import { SteganographyView } from "@/components/steganography-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAppContext } from "@/components/app-provider";
 import { useTranslation } from "@/hooks/use-translation";
@@ -28,7 +30,12 @@ const TopBar = dynamic(() => import('@/components/top-bar').then(mod => mod.TopB
 const Base64EncoderDecoderContent = dynamic(() => import('./encoder-decoder-content').then(mod => mod.Base64EncoderDecoderContent), { ssr: false });
 
 function AppContent() {
-  const { activeView } = useAppContext();
+  const { activeView, setActiveView, setTextToDecode } = useAppContext();
+
+  const handleQrScan = (text: string) => {
+    setTextToDecode(text);
+    setActiveView("encoder-decoder");
+  };
 
   const renderContent = () => {
     switch (activeView) {
@@ -40,6 +47,10 @@ function AppContent() {
         return <SettingsView />;
       case "vault":
         return <VaultPage />;
+      case "qr-reader":
+        return <QrReader onScanSuccess={handleQrScan} />;
+      case "steganography":
+        return <SteganographyView />;
       case "encoder-decoder":
       default:
         return (

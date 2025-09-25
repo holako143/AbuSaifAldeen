@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2 } from "lucide-react";
+import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, ShieldAlert, Star, Loader2, QrCode } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -18,13 +18,15 @@ import { useAppContext } from "@/components/app-provider";
 import { AddToVaultDialog } from "@/components/add-to-vault-dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { QrGeneratorDialog } from "@/components/qr-generator-dialog";
 
 export function Base64EncoderDecoderContent() {
   const {
     isPasswordEnabled: isPasswordGloballyEnabled,
     textToDecode,
     setTextToDecode,
-    autoCopy
+    autoCopy,
+    setActiveView
   } = useAppContext();
   const { t } = useTranslation();
 
@@ -38,6 +40,9 @@ export function Base64EncoderDecoderContent() {
   const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
+
+  const QR_CODE_MAX_LENGTH = 2000;
+  const isOutputTooLongForQr = useMemo(() => outputText.length > QR_CODE_MAX_LENGTH, [outputText]);
 
   const [emojiList, setEmojiList] = useState<string[] | null>(null);
   const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
@@ -201,8 +206,24 @@ export function Base64EncoderDecoderContent() {
         <div>
             <Textarea placeholder={t('encoderDecoder.inputTextPlaceholder')} value={inputText} onChange={(e) => setInputText(e.target.value)} className="min-h-[100px] sm:min-h-[120px]"/>
             <div className="flex justify-center items-center gap-2 mt-2">
-                <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')}><ClipboardPaste className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handlePaste} aria-label={t('encoderDecoder.a11y.paste')}><ClipboardPaste className="h-5 w-5" /></Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t('topbar.qrReaderTooltip')}</p></TooltipContent>
+                </Tooltip>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => setActiveView('qr-reader')} aria-label={t('topbar.qrReaderSr')}><QrCode className="h-5 w-5" /></Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t('topbar.qrReaderTooltip')}</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleClear} disabled={!inputText} className="text-red-500" aria-label={t('encoderDecoder.a11y.clearInput')}><X className="h-5 w-5" /></Button>
+                    </TooltipTrigger>
+                     <TooltipContent><p>{t('encoderDecoder.a11y.clearInput')}</p></TooltipContent>
+                </Tooltip>
             </div>
         </div>
 
@@ -222,6 +243,7 @@ export function Base64EncoderDecoderContent() {
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}
+                <QrGeneratorDialog text={outputText} disabled={!outputText || isOutputTooLongForQr} isTextTooLong={isOutputTooLongForQr} />
                 <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
                     <Tooltip>
                         <TooltipTrigger asChild>

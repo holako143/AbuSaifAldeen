@@ -24,6 +24,28 @@ import { formatRelativeTime, generatePassword } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { changeMasterPassword } from "@/lib/vault";
 
+function ChangePasswordForm({ onPasswordChange, isLoading, newPassword, setNewPassword, confirmPassword, setConfirmPassword }: any) {
+    const { t } = useTranslation();
+    return (
+         <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
+                <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
+                <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            </div>
+            <div className="pt-2">
+                 <Button onClick={onPasswordChange} disabled={isLoading || !newPassword || !confirmPassword} className="w-full">
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('settings.vault.button')}
+                </Button>
+            </div>
+        </div>
+    )
+}
+
+
 function ChangePasswordDialog() {
     const { t } = useTranslation();
     const { masterPassword: globalMasterPassword, setMasterPassword, setIsVaultUnlocked } = useAppContext();
@@ -32,6 +54,7 @@ function ChangePasswordDialog() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
+    const isDesktop = useMediaQuery("(min-width: 768px)");
 
     const handlePasswordChange = async () => {
         if (newPassword !== confirmPassword) {
@@ -59,34 +82,48 @@ function ChangePasswordDialog() {
         }
     };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
+    const formProps = {
+        onPasswordChange: handlePasswordChange,
+        isLoading, newPassword, setNewPassword, confirmPassword, setConfirmPassword
+    };
+
+    if (isDesktop) {
+        return (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('settings.vault.title')}</DialogTitle>
+                        <DialogDescription>{t('settings.vault.description')}</DialogDescription>
+                    </DialogHeader>
+                    <ChangePasswordForm {...formProps} />
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+     return (
+        <Drawer open={isOpen} onOpenChange={setIsOpen}>
+            <DrawerTrigger asChild>
                 <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{t('settings.vault.title')}</DialogTitle>
-                    <DialogDescription>{t('settings.vault.description')}</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="new-password">{t('settings.vault.newPassword')}</Label>
-                        <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="confirm-password">{t('settings.vault.confirmPassword')}</Label>
-                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                    </div>
+            </DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader className="text-left">
+                    <DrawerTitle>{t('settings.vault.title')}</DrawerTitle>
+                    <DrawerDescription>{t('settings.vault.description')}</DrawerDescription>
+                </DrawerHeader>
+                <div className="p-4">
+                    <ChangePasswordForm {...formProps} />
                 </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button></DialogClose>
-                    <Button onClick={handlePasswordChange} disabled={isLoading || !newPassword || !confirmPassword}>
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('settings.vault.button')}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                 <DrawerFooter className="pt-2">
+                    <DrawerClose asChild>
+                        <Button variant="outline">{t('vaultPage.editDialog.cancel')}</Button>
+                    </DrawerClose>
+                </DrawerFooter>
+            </DrawerContent>
+        </Drawer>
     );
 }
 
@@ -260,12 +297,20 @@ export function VaultPage() {
                             className="pl-10 w-full"
                         />
                     </div>
-                    <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
+                    <ItemEditDialog onSave={handleSaveItem} triggerButton={
+                        <Button>
+                            <PlusCircle className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">{t('vaultPage.addNewItem')}</span>
+                        </Button>
+                    } />
                     <Button variant="outline" size="icon" onClick={handleExport} aria-label={t('vaultPage.exportButton')}><Download className="h-4 w-4" /></Button>
                     <Button variant="outline" size="icon" onClick={handleImportClick} aria-label={t('vaultPage.importButton')}><Upload className="h-4 w-4" /></Button>
                     <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
                     <ChangePasswordDialog />
-                    <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
+                    <Button variant="secondary" onClick={handleLock}>
+                        <Lock className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">{t('vaultPage.lockButton')}</span>
+                    </Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -293,9 +338,14 @@ export function VaultPage() {
                                                     </TableCell>
                                                     <TableCell>{formatRelativeTime(new Date(item.createdAt), locale)}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
-                                                        <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); setEditingItem(item);}} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
-                                                        <Button onClick={(e) => {e.stopPropagation(); setItemToDelete(item)}} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                        <div className="flex items-center justify-end">
+                                                            <CollapsibleTrigger asChild>
+                                                                <Button variant="ghost" size="icon" aria-label={t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
+                                                            </CollapsibleTrigger>
+                                                            <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
+                                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); setEditingItem(item);}} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                                            <Button onClick={(e) => {e.stopPropagation(); setItemToDelete(item)}} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             </CollapsibleTrigger>
@@ -323,12 +373,19 @@ export function VaultPage() {
                                             </div>
                                             <span className="text-xs text-muted-foreground">{formatRelativeTime(new Date(item.createdAt), locale)}</span>
                                         </div>
-                                        <div className="flex items-center flex-shrink-0">
-                                            <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
-                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={() => setEditingItem(item)} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
-                                            <Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                                        </div>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-1">
+                                                <div className="flex">
+                                                    <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
+                                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={() => setEditingItem(item)} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                                    <Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
                                     {showContent[item.id] && <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2 break-all">{item.text}</p>}
                                 </div>

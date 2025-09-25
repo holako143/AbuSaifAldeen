@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, Moon, Sun, ShieldCheck } from "lucide-react";
+import { Menu, Moon, Sun, ShieldCheck, QrCode } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
