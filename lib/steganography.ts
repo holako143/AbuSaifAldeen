@@ -1,7 +1,7 @@
 "use client";
 
 import pako from 'pako';
-import Tar from 'tar-js';
+import { TarReader, TarWriter } from '@gera2ld/tarjs';
 import { encryptMultiple, decryptMultiple } from './crypto';
 
 // --- Helper Functions ---
@@ -52,32 +52,24 @@ function getPixelData(canvas: HTMLCanvasElement): ImageData {
 }
 
 async function archiveFiles(files: File[]): Promise<Uint8Array> {
-    const tape = new Tar();
-    const filePromises = files.map(async (file) => {
+    const writer = new TarWriter();
+    for (const file of files) {
         const content = await fileToUint8Array(file);
-        tape.append(file.name, content);
-    });
-    await Promise.all(filePromises);
-    return tape.out;
+        writer.add({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: new Date(file.lastModified),
+            data: content,
+        });
+    }
+    return writer.finish();
 }
 
 async function unarchiveFiles(tarData: Uint8Array): Promise<File[]> {
-    const tape = new Tar();
-    const files: File[] = [];
-    return new Promise((resolve) => {
-        tape.on('entry', (header, stream, next) => {
-            const chunks: Uint8Array[] = [];
-            stream.on('data', (chunk) => chunks.push(chunk));
-            stream.on('end', () => {
-                const blob = new Blob(chunks, { type: header.type || 'application/octet-stream' });
-                const file = new File([blob], header.name, { type: header.type || 'application/octet-stream' });
-                files.push(file);
-                next();
-            });
-            stream.resume();
-        });
-        tape.on('end', () => resolve(files));
-        tape.write(tarData);
+    const reader = await TarReader.load(tarData);
+    return reader.files.map(fileInfo => {
+        return new File([fileInfo.data!], fileInfo.name, { type: fileInfo.type });
     });
 }
 

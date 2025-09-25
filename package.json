@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@gera2ld/tarjs": "^0.3.1",
     "@hookform/resolvers": "^3.9.1",
     "@noble/ciphers": "^2.0.1",
     "@noble/hashes": "^2.0.1",
@@ -71,7 +72,6 @@
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "tar-js": "^0.3.0",
     "vaul": "^0.9.6",
     "zod": "^3.24.1"
   },
@@ -83,7 +83,6 @@
     "@types/pako": "^2.0.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@types/tar-js": "^0.3.5",
     "@vitejs/plugin-react": "^5.0.2",
     "jsdom": "^27.0.0",
     "postcss": "^8",
