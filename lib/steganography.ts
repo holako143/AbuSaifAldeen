@@ -1,33 +1,28 @@
 "use client";
 
 import pako from 'pako';
+import Tar from 'tar-js';
 import { encryptMultiple, decryptMultiple } from './crypto';
 
 // --- Helper Functions ---
 
-/**
- * Converts a string to a Uint8Array.
- * @param str The string to convert.
- * @returns The resulting Uint8Array.
- */
-function stringToUint8Array(str: string): Uint8Array {
-  return new TextEncoder().encode(str);
+function dataURLToBlob(dataURL: string): Blob {
+  const parts = dataURL.split(',');
+  const contentType = parts[0].split(':')[1];
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  return new Blob([uInt8Array], { type: contentType });
 }
 
-/**
- * Converts a Uint8Array to a string.
- * @param arr The array to convert.
- * @returns The resulting string.
- */
-function uint8ArrayToString(arr: Uint8Array): string {
-  return new TextDecoder().decode(arr);
+async function fileToUint8Array(file: File): Promise<Uint8Array> {
+    const buffer = await file.arrayBuffer();
+    return new Uint8Array(buffer);
 }
 
-/**
- * Loads an image from a File object and draws it onto a canvas.
- * @param file The image file.
- * @returns A promise that resolves with the canvas element.
- */
 function loadImageToCanvas(file: File): Promise<HTMLCanvasElement> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -37,7 +32,7 @@ function loadImageToCanvas(file: File): Promise<HTMLCanvasElement> {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return reject(new Error("Could not get canvas context"));
         ctx.drawImage(img, 0, 0);
         resolve(canvas);
@@ -50,30 +45,53 @@ function loadImageToCanvas(file: File): Promise<HTMLCanvasElement> {
   });
 }
 
-/**
- * Gets the pixel data from a canvas.
- * @param canvas The canvas element.
- * @returns The ImageData object.
- */
 function getPixelData(canvas: HTMLCanvasElement): ImageData {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error("Could not get canvas context");
     return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
+async function archiveFiles(files: File[]): Promise<Uint8Array> {
+    const tape = new Tar();
+    const filePromises = files.map(async (file) => {
+        const content = await fileToUint8Array(file);
+        tape.append(file.name, content);
+    });
+    await Promise.all(filePromises);
+    return tape.out;
+}
+
+async function unarchiveFiles(tarData: Uint8Array): Promise<File[]> {
+    const tape = new Tar();
+    const files: File[] = [];
+    return new Promise((resolve) => {
+        tape.on('entry', (header, stream, next) => {
+            const chunks: Uint8Array[] = [];
+            stream.on('data', (chunk) => chunks.push(chunk));
+            stream.on('end', () => {
+                const blob = new Blob(chunks, { type: header.type || 'application/octet-stream' });
+                const file = new File([blob], header.name, { type: header.type || 'application/octet-stream' });
+                files.push(file);
+                next();
+            });
+            stream.resume();
+        });
+        tape.on('end', () => resolve(files));
+        tape.write(tarData);
+    });
+}
+
+
 // --- Core Steganography Logic ---
 
-const END_OF_MESSAGE_DELIMITER = "::EOM::";
+const END_OF_MESSAGE_DELIMITER = stringToUint8Array("::EOM::");
 
-/**
- * Embeds data into the pixel data of an image.
- * @param originalPixels The original pixel data (rgba array).
- * @param data The data to embed (as a Uint8Array).
- * @returns The modified pixel data.
- */
 function embedData(originalPixels: Uint8ClampedArray, data: Uint8Array): Uint8ClampedArray {
     const pixels = new Uint8ClampedArray(originalPixels);
-    const dataWithDelimiter = new Uint8Array([...data, ...stringToUint8Array(END_OF_MESSAGE_DELIMITER)]);
+    const dataWithDelimiter = new Uint8Array(data.length + END_OF_MESSAGE_DELIMITER.length);
+    dataWithDelimiter.set(data, 0);
+    dataWithDelimiter.set(END_OF_MESSAGE_DELIMITER, data.length);
+
     const dataBits: number[] = [];
     dataWithDelimiter.forEach(byte => {
         for (let i = 7; i >= 0; i--) {
@@ -81,15 +99,13 @@ function embedData(originalPixels: Uint8ClampedArray, data: Uint8Array): Uint8Cl
         }
     });
 
-    if (dataBits.length > pixels.length) {
+    if (dataBits.length > (pixels.length / 4 * 3)) {
         throw new Error("Data is too large to hide in this image.");
     }
 
     let bitIndex = 0;
     for (let i = 0; i < pixels.length && bitIndex < dataBits.length; i++) {
-        // Skip alpha channel
         if ((i + 1) % 4 === 0) continue;
-
         pixels[i] = (pixels[i] & 0xFE) | dataBits[bitIndex];
         bitIndex++;
     }
@@ -97,13 +113,6 @@ function embedData(originalPixels: Uint8ClampedArray, data: Uint8Array): Uint8Cl
     return pixels;
 }
 
-
-/**
- * Finds the index of a delimiter subarray within a source array.
- * @param source The source array (haystack).
- * @param delimiter The delimiter array to find (needle).
- * @returns The starting index of the delimiter, or -1 if not found.
- */
 function findDelimiterIndex(source: Uint8Array, delimiter: Uint8Array): number {
     for (let i = 0; i <= source.length - delimiter.length; i++) {
         let found = true;
@@ -113,24 +122,14 @@ function findDelimiterIndex(source: Uint8Array, delimiter: Uint8Array): number {
                 break;
             }
         }
-        if (found) {
-            return i;
-        }
+        if (found) return i;
     }
     return -1;
 }
 
-/**
- * Extracts data from the pixel data of an image.
- * @param pixels The pixel data to extract from.
- * @returns The extracted data as a Uint8Array.
- */
 function extractData(pixels: Uint8ClampedArray): Uint8Array {
     const extractedBits: number[] = [];
-    // We only need to read enough bits to find the delimiter, not the whole image.
-    // This is an optimization, but for simplicity, we'll read a large chunk.
     for (let i = 0; i < pixels.length; i++) {
-        // Skip alpha channel
         if ((i + 1) % 4 === 0) continue;
         extractedBits.push(pixels[i] & 1);
     }
@@ -143,9 +142,7 @@ function extractData(pixels: Uint8ClampedArray): Uint8Array {
     }
 
     const bytesArray = new Uint8Array(bytes);
-    const delimiterBytes = stringToUint8Array(END_OF_MESSAGE_DELIMITER);
-
-    const delimiterIndex = findDelimiterIndex(bytesArray, delimiterBytes);
+    const delimiterIndex = findDelimiterIndex(bytesArray, END_OF_MESSAGE_DELIMITER);
 
     if (delimiterIndex === -1) {
         throw new Error("End-of-message delimiter not found. The image may be corrupt or not contain a message.");
@@ -160,26 +157,26 @@ function extractData(pixels: Uint8ClampedArray): Uint8Array {
 const IS_ENCRYPTED_FLAG = new Uint8Array([1]);
 const IS_NOT_ENCRYPTED_FLAG = new Uint8Array([0]);
 
-/**
- * Hides a secret message (string) inside an image file.
- * @param imageFile The cover image.
- * @param secretMessage The message to hide.
- * @param passwords Optional array of passwords for encryption.
- * @returns A promise that resolves with the data URL of the new image.
- */
-export async function hideTextInImage(imageFile: File, secretMessage: string, passwords?: string[]): Promise<string> {
+export async function hideFilesInImage(imageFile: File, secretFiles: File[], passwords?: string[]): Promise<string> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
+
+    const capacity = (imageData.data.length / 4 * 3) / 8; // in bytes
+    const archivedData = await archiveFiles(secretFiles);
+
+    if (archivedData.length > capacity * 0.8) { // Leave some headroom
+        throw new Error(`Files are too large for this image. Max capacity: ~${(capacity/1024/1024).toFixed(2)}MB`);
+    }
 
     let dataToHide: Uint8Array;
     let payload: Uint8Array;
 
     if (passwords && passwords.length > 0) {
-        const encryptedString = await encryptMultiple(secretMessage, passwords);
+        const encryptedString = await encryptMultiple(uint8ArrayToString(archivedData), passwords);
         payload = stringToUint8Array(encryptedString);
         dataToHide = new Uint8Array([...IS_ENCRYPTED_FLAG, ...pako.deflate(payload)]);
     } else {
-        payload = stringToUint8Array(secretMessage);
+        payload = archivedData;
         dataToHide = new Uint8Array([...IS_NOT_ENCRYPTED_FLAG, ...pako.deflate(payload)]);
     }
 
@@ -193,13 +190,7 @@ export async function hideTextInImage(imageFile: File, secretMessage: string, pa
     return canvas.toDataURL('image/png');
 }
 
-/**
- * Reveals a secret message from an image file.
- * @param imageFile The image containing the secret message.
- * @param passwords Optional array of passwords for decryption.
- * @returns A promise that resolves with the revealed message.
- */
-export async function revealTextFromImage(imageFile: File, passwords?: string[]): Promise<string> {
+export async function revealFilesFromImage(imageFile: File, passwords?: string[]): Promise<File[]> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
 
@@ -209,14 +200,26 @@ export async function revealTextFromImage(imageFile: File, passwords?: string[])
     const compressedPayload = extractedData.slice(1);
 
     const payload = pako.inflate(compressedPayload);
+    let finalTarData: Uint8Array;
 
     if (isEncrypted) {
         if (!passwords || passwords.length === 0) {
             throw new Error("This image is password-protected. Please provide the password(s) to reveal the message.");
         }
-        const encryptedString = uint8ArrayToString(payload);
-        return await decryptMultiple(encryptedString, passwords);
+        const encryptedString = new TextDecoder().decode(payload);
+        const decryptedString = await decryptMultiple(encryptedString, passwords);
+        finalTarData = new TextEncoder().encode(decryptedString);
     } else {
-        return uint8ArrayToString(payload);
+        finalTarData = payload;
     }
+
+    return await unarchiveFiles(finalTarData);
+}
+
+function uint8ArrayToString(arr: Uint8Array): string {
+    let str = '';
+    for(let i = 0; i < arr.length; i++){
+       str += String.fromCharCode(arr[i]);
+    }
+    return str;
 }
