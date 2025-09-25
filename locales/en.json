@@ -119,6 +119,8 @@
     "downloadButton": "Download Image",
     "revealedTitle": "Revealed Text:",
     "toasts": {
+      "revealedTitle": "New Feature Unlocked!",
+      "revealedDescription": "You can now access 'Image Steganography' from the sidebar.",
       "passwordRequired": "At least one password is required.",
       "encodeError": "Encoding Error",
       "encodeErrorDesc": "Please select a cover image and enter a secret text.",

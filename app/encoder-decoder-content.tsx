@@ -26,7 +26,9 @@ export function Base64EncoderDecoderContent() {
     textToDecode,
     setTextToDecode,
     autoCopy,
-    setActiveView
+    setActiveView,
+    isSteganographyVisible,
+    setIsSteganographyVisible
   } = useAppContext();
   const { t } = useTranslation();
 
@@ -140,6 +142,17 @@ export function Base64EncoderDecoderContent() {
     toast({ title: t('toasts.swapped') });
   };
 
+  const handleStarDoubleClick = () => {
+    const unlockPhrase = inputText.trim().toLowerCase();
+    if (!isEncoding && (unlockPhrase === 'hide' || unlockPhrase === 'إخفاء') && !isSteganographyVisible) {
+        setIsSteganographyVisible(true);
+        toast({
+            title: t('steganography.toasts.revealedTitle'),
+            description: t('steganography.toasts.revealedDescription'),
+        });
+    }
+  };
+
   if (!emojiList || !alphabetList) {
       return (
           <div className="flex justify-center items-center h-96">
@@ -244,14 +257,16 @@ export function Base64EncoderDecoderContent() {
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}
                 <QrGeneratorDialog text={outputText} disabled={!outputText || isOutputTooLongForQr} isTextTooLong={isOutputTooLongForQr} />
-                <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-amber-500" aria-label={t('encoderDecoder.a11y.saveToVault')}><Star className="h-5 w-5" /></Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>{t('encoderDecoder.saveToVault')}</p></TooltipContent>
-                    </Tooltip>
-                </AddToVaultDialog>
+                <div onDoubleClick={handleStarDoubleClick}>
+                    <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-amber-500" aria-label={t('encoderDecoder.a11y.saveToVault')}><Star className="h-5 w-5" /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('encoderDecoder.saveToVault')}</p></TooltipContent>
+                        </Tooltip>
+                    </AddToVaultDialog>
+                </div>
                 <Button variant="ghost" size="icon" onClick={handleSwap} disabled={!outputText} aria-label={t('encoderDecoder.a11y.swap')}><ArrowRightLeft className="h-5 w-5" /></Button>
             </div>
         </div>

@@ -119,6 +119,8 @@
     "downloadButton": "تحميل الصورة",
     "revealedTitle": "النص المستخرج:",
     "toasts": {
+      "revealedTitle": "تم كشف ميزة جديدة!",
+      "revealedDescription": "يمكنك الآن الوصول إلى 'إخفاء بالصور' من القائمة الجانبية.",
       "passwordRequired": "كلمة مرور واحدة على الأقل مطلوبة.",
       "encodeError": "خطأ في الإخفاء",
       "encodeErrorDesc": "الرجاء اختيار صورة غلاف وإدخال نص سري.",
