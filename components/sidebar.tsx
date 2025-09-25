@@ -15,7 +15,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ closeSidebar }: SidebarProps) {
-  const { setActiveView, isVaultVisible, setIsVaultVisible, autoCopy, setAutoCopy } = useAppContext();
+  const { setActiveView, isVaultVisible, setIsVaultVisible, autoCopy, setAutoCopy, isSteganographyVisible } = useAppContext();
   const { t } = useTranslation();
 
   const handleNavigation = (view: View) => {
@@ -38,10 +38,12 @@ export function Sidebar({ closeSidebar }: SidebarProps) {
           <History className="ml-2 h-4 w-4" />
           <span>{t('sidebar.history')}</span>
         </Button>
-        <Button variant="ghost" className="w-full justify-start animate-in" style={{ animationDelay: "0.3s" }} onClick={() => handleNavigation("steganography")}>
-          <ImageIcon className="ml-2 h-4 w-4" />
-          <span>{t('sidebar.steganography')}</span>
-        </Button>
+        {isSteganographyVisible && (
+            <Button variant="ghost" className="w-full justify-start animate-in" style={{ animationDelay: "0.3s" }} onClick={() => handleNavigation("steganography")}>
+                <ImageIcon className="ml-2 h-4 w-4" />
+                <span>{t('sidebar.steganography')}</span>
+            </Button>
+        )}
         {isVaultVisible && (
             <Button variant="ghost" className="w-full justify-start animate-in" style={{ animationDelay: "0.3s" }} onClick={() => handleNavigation("vault")}>
                 <Archive className="ml-2 h-4 w-4" />

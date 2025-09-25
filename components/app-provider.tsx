@@ -45,6 +45,9 @@ interface AppContextType {
     // Settings
     autoCopy: boolean;
     setAutoCopy: Dispatch<SetStateAction<boolean>>;
+    // Easter Eggs
+    isSteganographyVisible: boolean;
+    setIsSteganographyVisible: Dispatch<SetStateAction<boolean>>;
 }
 
 // CONTEXT CREATION
@@ -83,6 +86,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [masterPassword, setMasterPassword] = useState<string | null>(null);
     const [textToDecode, setTextToDecode] = useState<string | null>(null);
     const [autoCopy, setAutoCopy] = useState(true);
+    const [isSteganographyVisible, setIsSteganographyVisible] = useState(false);
     const [themeMode, setThemeMode] = useState<ThemeMode>('light');
     const [primaryColor, setPrimaryColor] = useState('#3b82f6');
     const [backgroundColorStart, setBackgroundColorStart] = useState('#ffffff');
@@ -181,6 +185,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => { localStorage.setItem("shifrishan-color-bg-end", backgroundColorEnd); }, [backgroundColorEnd]);
     useEffect(() => { localStorage.setItem("shifrishan-color-text", textColor); }, [textColor]);
 
+    // Auto-hide steganography tab when navigating away
+    useEffect(() => {
+        if (activeView !== 'steganography') {
+            setIsSteganographyVisible(false);
+        }
+    }, [activeView]);
+
     // Apply theme and language direction
     useEffect(() => {
         const root = document.documentElement;
@@ -208,6 +219,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         themeMode, setThemeMode, primaryColor, setPrimaryColor, backgroundColorStart, setBackgroundColorStart, backgroundColorEnd, setBackgroundColorEnd, textColor, setTextColor,
         locale, setLocale, activeView, setActiveView, isPasswordEnabled, setIsPasswordEnabled, isVaultVisible, setIsVaultVisible,
         isVaultUnlocked, setIsVaultUnlocked, masterPassword, setMasterPassword, textToDecode, setTextToDecode, autoCopy, setAutoCopy,
+        isSteganographyVisible, setIsSteganographyVisible,
     };
 
     return (
