@@ -1,8 +1,8 @@
 "use client";
 
 import pako from 'pako';
-import { TarReader, TarWriter } from '@gera2ld/tarjs';
-import { encryptMultiple, decryptMultiple } from './crypto';
+import JSZip from 'jszip';
+import { encryptMultiple, decryptMultiple, bufferToBase64, base64ToBuffer } from './crypto';
 
 // --- Helper Functions ---
 
@@ -56,25 +56,23 @@ function getPixelData(canvas: HTMLCanvasElement): ImageData {
 }
 
 async function archiveFiles(files: File[]): Promise<Uint8Array> {
-    const writer = new TarWriter();
-    for (const file of files) {
-        const content = await fileToUint8Array(file);
-        writer.add({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            lastModified: new Date(file.lastModified),
-            data: content,
-        });
-    }
-    return writer.finish();
+    const zip = new JSZip();
+    files.forEach(file => {
+        zip.file(file.name, file);
+    });
+    return zip.generateAsync({ type: "uint8array" });
 }
 
-async function unarchiveFiles(tarData: Uint8Array): Promise<File[]> {
-    const reader = await TarReader.load(tarData);
-    return reader.files.map((fileInfo: any) => {
-        return new File([fileInfo.data!], fileInfo.name, { type: fileInfo.type });
+async function unarchiveFiles(zipData: Uint8Array): Promise<File[]> {
+    const zip = await JSZip.loadAsync(zipData);
+    const files: Promise<File>[] = [];
+    zip.forEach((relativePath, zipEntry) => {
+        const filePromise = zipEntry.async('blob').then(blob => {
+            return new File([blob], zipEntry.name, { type: blob.type });
+        });
+        files.push(filePromise);
     });
+    return Promise.all(files);
 }
 
 
@@ -150,33 +148,63 @@ function extractData(pixels: Uint8ClampedArray): Uint8Array {
 
 // --- Public API ---
 
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary_string = window.atob(base64);
+  const len = binary_string.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary_string.charCodeAt(i);
+  }
+  return bytes;
+}
+
 const IS_ENCRYPTED_FLAG = new Uint8Array([1]);
 const IS_NOT_ENCRYPTED_FLAG = new Uint8Array([0]);
 
-export async function hideFilesInImage(imageFile: File, secretFiles: File[], passwords?: string[]): Promise<string> {
+export async function hideDataInImage(imageFile: File, data: string | File[], passwords?: string[]): Promise<string> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
-
     const capacity = (imageData.data.length / 4 * 3) / 8; // in bytes
-    const archivedData = await archiveFiles(secretFiles);
 
-    if (archivedData.length > capacity * 0.8) { // Leave some headroom
-        throw new Error(`Files are too large for this image. Max capacity: ~${(capacity/1024/1024).toFixed(2)}MB`);
-    }
+    let dataToProcess: string | Uint8Array;
+    let isBinary = false;
 
-    let dataToHide: Uint8Array;
-    let payload: Uint8Array;
-
-    if (passwords && passwords.length > 0) {
-        const encryptedString = await encryptMultiple(uint8ArrayToString(archivedData), passwords);
-        payload = stringToUint8Array(encryptedString);
-        dataToHide = new Uint8Array([...IS_ENCRYPTED_FLAG, ...pako.deflate(payload)]);
+    if (typeof data === 'string') {
+        dataToProcess = data;
     } else {
-        payload = archivedData;
-        dataToHide = new Uint8Array([...IS_NOT_ENCRYPTED_FLAG, ...pako.deflate(payload)]);
+        dataToProcess = await archiveFiles(data);
+        isBinary = true;
     }
 
-    const newPixelData = embedData(imageData.data, dataToHide);
+    let dataToEncrypt: string | Uint8Array = isBinary
+        ? dataToProcess
+        : pako.deflate(dataToProcess as string);
+
+    let encryptedDataB64: string;
+    if (passwords && passwords.length > 0) {
+        encryptedDataB64 = await encryptMultiple(dataToEncrypt, passwords);
+    } else {
+        const dataToEncode = dataToEncrypt instanceof Uint8Array ? dataToEncrypt : new TextEncoder().encode(dataToEncrypt);
+        encryptedDataB64 = bufferToBase64(dataToEncode);
+    }
+
+    const flag = (passwords && passwords.length > 0) ? IS_ENCRYPTED_FLAG : IS_NOT_ENCRYPTED_FLAG;
+    const finalPayload = new Uint8Array([...flag, ...stringToUint8Array(encryptedDataB64)]);
+
+    if (finalPayload.length > capacity * 0.9) {
+         throw new Error(`Data is too large for this image. Max capacity: ~${(capacity/1024/1024).toFixed(2)}MB`);
+    }
+
+    const newPixelData = embedData(imageData.data, finalPayload);
     imageData.data.set(newPixelData);
 
     const ctx = canvas.getContext('2d');
@@ -186,36 +214,43 @@ export async function hideFilesInImage(imageFile: File, secretFiles: File[], pas
     return canvas.toDataURL('image/png');
 }
 
-export async function revealFilesFromImage(imageFile: File, passwords?: string[]): Promise<File[]> {
+export async function revealDataFromImage(imageFile: File, passwords?: string[]): Promise<{ files: File[] | null, text: string | null }> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
 
     const extractedData = extractData(imageData.data);
-
     const isEncrypted = extractedData[0] === 1;
-    const compressedPayload = extractedData.slice(1);
+    const b64Payload = new TextDecoder().decode(extractedData.slice(1));
 
-    const payload = pako.inflate(compressedPayload);
-    let finalTarData: Uint8Array;
+    let decryptedData: string | Uint8Array;
 
     if (isEncrypted) {
         if (!passwords || passwords.length === 0) {
             throw new Error("This image is password-protected. Please provide the password(s) to reveal the message.");
         }
-        const encryptedString = new TextDecoder().decode(payload);
-        const decryptedString = await decryptMultiple(encryptedString, passwords);
-        finalTarData = new TextEncoder().encode(decryptedString);
+        // We try to decrypt as binary first, as it's the more likely case for files.
+        try {
+            decryptedData = await decryptMultiple(b64Payload, passwords, 'binary');
+        } catch (e) {
+            // If binary fails, try as string.
+            decryptedData = await decryptMultiple(b64Payload, passwords, 'string');
+        }
     } else {
-        finalTarData = payload;
+        decryptedData = base64ToBuffer(b64Payload);
     }
 
-    return await unarchiveFiles(finalTarData);
-}
-
-function uint8ArrayToString(arr: Uint8Array): string {
-    let str = '';
-    for(let i = 0; i < arr.length; i++){
-       str += String.fromCharCode(arr[i]);
+    // Attempt to unarchive. If it fails, assume it's text.
+    try {
+        const files = await unarchiveFiles(decryptedData as Uint8Array);
+        // Check if the only file is secret.txt, which means it was originally text
+        if (files.length === 1 && files[0].name === 'secret.txt') {
+            const text = await files[0].text();
+            return { files: null, text: text };
+        }
+        return { files: files, text: null };
+    } catch(e) {
+        // If unarchiving fails, it's likely plain text (or encrypted text).
+        const decompressedText = pako.inflate(decryptedData as Uint8Array, { to: 'string' });
+        return { files: null, text: decompressedText };
     }
-    return str;
 }
