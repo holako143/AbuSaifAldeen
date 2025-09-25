@@ -4,7 +4,7 @@ import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 
 // --- Utility Functions ---
-const bufferToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
+export const bufferToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
   const uint8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < uint8Array.length; i++) {

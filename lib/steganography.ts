@@ -2,7 +2,7 @@
 
 import pako from 'pako';
 import JSZip from 'jszip';
-import { encryptMultiple, decryptMultiple } from './crypto';
+import { encryptMultiple, decryptMultiple, bufferToBase64 } from './crypto';
 
 // --- Helper Functions ---
 
