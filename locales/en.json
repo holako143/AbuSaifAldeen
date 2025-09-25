@@ -146,7 +146,8 @@
       "title": "Your QR Code",
       "download": "Download Code",
       "ariaLabel": "Generate QR Code",
-      "tooltip": "Generate QR Code"
+      "tooltip": "Generate QR Code",
+      "tooLongTooltip": "Text is too long to generate a reliable QR code"
     },
     "reader": {
       "title": "QR Code Reader",

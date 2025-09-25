@@ -260,12 +260,20 @@ export function VaultPage() {
                             className="pl-10 w-full"
                         />
                     </div>
-                    <ItemEditDialog onSave={handleSaveItem} triggerButton={<Button><PlusCircle className="ml-2 h-4 w-4" /> {t('vaultPage.addNewItem')}</Button>} />
+                    <ItemEditDialog onSave={handleSaveItem} triggerButton={
+                        <Button>
+                            <PlusCircle className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">{t('vaultPage.addNewItem')}</span>
+                        </Button>
+                    } />
                     <Button variant="outline" size="icon" onClick={handleExport} aria-label={t('vaultPage.exportButton')}><Download className="h-4 w-4" /></Button>
                     <Button variant="outline" size="icon" onClick={handleImportClick} aria-label={t('vaultPage.importButton')}><Upload className="h-4 w-4" /></Button>
                     <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".txt" className="hidden" />
                     <ChangePasswordDialog />
-                    <Button variant="secondary" onClick={handleLock}>{t('vaultPage.lockButton')}</Button>
+                    <Button variant="secondary" onClick={handleLock}>
+                        <Lock className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">{t('vaultPage.lockButton')}</span>
+                    </Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -293,9 +301,14 @@ export function VaultPage() {
                                                     </TableCell>
                                                     <TableCell>{formatRelativeTime(new Date(item.createdAt), locale)}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
-                                                        <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); setEditingItem(item);}} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
-                                                        <Button onClick={(e) => {e.stopPropagation(); setItemToDelete(item)}} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                        <div className="flex items-center justify-end">
+                                                            <CollapsibleTrigger asChild>
+                                                                <Button variant="ghost" size="icon" aria-label={t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
+                                                            </CollapsibleTrigger>
+                                                            <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))}} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
+                                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); setEditingItem(item);}} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                                            <Button onClick={(e) => {e.stopPropagation(); setItemToDelete(item)}} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             </CollapsibleTrigger>
@@ -323,12 +336,19 @@ export function VaultPage() {
                                             </div>
                                             <span className="text-xs text-muted-foreground">{formatRelativeTime(new Date(item.createdAt), locale)}</span>
                                         </div>
-                                        <div className="flex items-center flex-shrink-0">
-                                            <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
-                                            <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={() => setEditingItem(item)} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
-                                            <Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                                        </div>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-1">
+                                                <div className="flex">
+                                                    <Button variant="ghost" size="icon" onClick={() => setShowContent(prev => ({...prev, [item.id]: !prev[item.id]}))} aria-label={showContent[item.id] ? t('vaultPage.mobile.hide') : t('vaultPage.mobile.show')}><Eye className="h-4 w-4"/></Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(item.text).then(() => toast({title: t('vaultPage.toasts.copySuccess')}))} aria-label={t('vaultPage.mobile.copy')}><Copy className="h-4 w-4" /></Button>
+                                                    <ItemEditDialog onSave={handleSaveItem} item={item} triggerButton={<Button variant="ghost" size="icon" onClick={() => setEditingItem(item)} aria-label={t('vaultPage.editButton')}><Pencil className="h-4 w-4" /></Button>} />
+                                                    <Button onClick={() => setItemToDelete(item)} variant="ghost" size="icon" aria-label={t('vaultPage.mobile.delete')}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
                                     {showContent[item.id] && <p className="text-sm text-muted-foreground bg-muted p-2 rounded animate-in mt-2 break-all">{item.text}</p>}
                                 </div>

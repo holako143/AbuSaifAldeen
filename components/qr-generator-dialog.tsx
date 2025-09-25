@@ -18,9 +18,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 interface QrGeneratorDialogProps {
   text: string;
   disabled?: boolean;
+  isTextTooLong?: boolean;
 }
 
-export function QrGeneratorDialog({ text, disabled }: QrGeneratorDialogProps) {
+export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGeneratorDialogProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export function QrGeneratorDialog({ text, disabled }: QrGeneratorDialogProps) {
           </DialogTrigger>
         </TooltipTrigger>
         <TooltipContent>
-            <p>{t('qrCode.generate.tooltip')}</p>
+            <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
         </TooltipContent>
       </Tooltip>
       <DialogContent className="sm:max-w-md">

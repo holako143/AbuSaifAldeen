@@ -40,6 +40,9 @@ export function Base64EncoderDecoderContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
+  const QR_CODE_MAX_LENGTH = 2000;
+  const isOutputTooLongForQr = useMemo(() => outputText.length > QR_CODE_MAX_LENGTH, [outputText]);
+
   const [emojiList, setEmojiList] = useState<string[] | null>(null);
   const [alphabetList, setAlphabetList] = useState<string[] | null>(null);
 
@@ -223,7 +226,7 @@ export function Base64EncoderDecoderContent() {
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}
-                <QrGeneratorDialog text={outputText} disabled={!outputText} />
+                <QrGeneratorDialog text={outputText} disabled={!outputText || isOutputTooLongForQr} isTextTooLong={isOutputTooLongForQr} />
                 <AddToVaultDialog outputText={outputText} mode={isEncoding ? 'encode' : 'decode'} inputText={inputText}>
                     <Tooltip>
                         <TooltipTrigger asChild>
