@@ -1,4 +1,3 @@
-import pako from 'pako';
 import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -41,18 +40,14 @@ const deriveKey = async (password: string, salt: Uint8Array): Promise<CryptoKey>
   );
 };
 
-// --- Text Encryption ---
-export const encryptAES = async (plaintext: string, password: string): Promise<string> => {
-    const compressed = pako.deflate(plaintext);
-    return encryptBinary(compressed, password);
-};
+// --- Core Encryption Functions ---
 
-export const decryptAES = async (encryptedPayload: string, password: string): Promise<string> => {
-    const decrypted = await decryptBinary(encryptedPayload, password);
-    return pako.inflate(decrypted, { to: 'string' });
-};
-
-// --- Binary Data Encryption ---
+/**
+ * Encrypts a Uint8Array using AES-GCM.
+ * @param data The binary data to encrypt.
+ * @param password The password to use for key derivation.
+ * @returns A base64 string representing the encrypted data package.
+ */
 export const encryptBinary = async (data: Uint8Array, password: string): Promise<string> => {
     try {
         const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -71,6 +66,12 @@ export const encryptBinary = async (data: Uint8Array, password: string): Promise
     }
 };
 
+/**
+ * Decrypts a base64 string into a Uint8Array.
+ * @param encryptedPayload The base64 string containing the encrypted data package.
+ * @param password The password to use for key derivation.
+ * @returns The original Uint8Array data.
+ */
 export const decryptBinary = async (encryptedPayload: string, password: string): Promise<Uint8Array> => {
     try {
         const packed = atob(encryptedPayload);
@@ -87,45 +88,53 @@ export const decryptBinary = async (encryptedPayload: string, password: string):
     }
 };
 
+// --- Wrappers for Text ---
+export const encryptAES = async (plaintext: string, password: string): Promise<string> => {
+    const data = new TextEncoder().encode(plaintext);
+    return encryptBinary(data, password);
+};
+
+export const decryptAES = async (encryptedPayload: string, password: string): Promise<string> => {
+    const decrypted = await decryptBinary(encryptedPayload, password);
+    return new TextDecoder().decode(decrypted);
+};
+
 
 // --- Multi-layer Encryption ---
 export const encryptMultiple = async (data: string | Uint8Array, passwords: string[]): Promise<string> => {
-  if (passwords.length === 0) {
-      return typeof data === 'string' ? data : bufferToBase64(data);
-  }
+    if (!passwords || passwords.length === 0) {
+        throw new Error("Password array cannot be empty for encryption.");
+    }
 
-  const isBinary = data instanceof Uint8Array;
-
-  if (passwords.length === 1) {
-    return isBinary ? encryptBinary(data, passwords[0]) : encryptAES(data, passwords[0]);
-  }
-
-  const firstLayerEncrypted = isBinary
-    ? await encryptBinary(data, passwords[0])
-    : await encryptAES(data, passwords[0]);
-
-  // For subsequent layers, the data is always a string (base64 encoded ciphertext)
-  let currentData = firstLayerEncrypted;
-  for (let i = 1; i < passwords.length; i++) {
-      currentData = await encryptAES(currentData, passwords[i]);
-  }
-
-  return currentData;
+    let currentData = data;
+    for (const password of passwords) {
+        if (typeof currentData === 'string') {
+            currentData = await encryptAES(currentData, password);
+        } else {
+            currentData = await encryptBinary(currentData, password);
+        }
+    }
+    return currentData as string;
 };
 
-export const decryptMultiple = async (ciphertext: string, passwords: string[], outputType: 'string' | 'binary' = 'string'): Promise<string | Uint8Array> => {
-    if (passwords.length === 0) {
-        return outputType === 'string' ? ciphertext : base64ToBuffer(ciphertext);
+export const decryptMultiple = async (ciphertext: string, passwords: string[], outputType: 'string' | 'binary'): Promise<string | Uint8Array> => {
+    if (!passwords || passwords.length === 0) {
+        throw new Error("Password array cannot be empty for decryption.");
     }
 
     let currentData = ciphertext;
-    for (let i = passwords.length - 1; i > 0; i--) {
-        currentData = await decryptAES(currentData, passwords[i]);
+    const reversedPasswords = passwords.slice().reverse();
+
+    for (let i = 0; i < reversedPasswords.length; i++) {
+        const password = reversedPasswords[i];
+        const isLastLayer = i === reversedPasswords.length - 1;
+
+        if (isLastLayer && outputType === 'binary') {
+            return await decryptBinary(currentData, password);
+        } else {
+            currentData = await decryptAES(currentData, password);
+        }
     }
 
-    if (outputType === 'string') {
-        return await decryptAES(currentData, passwords[0]);
-    } else {
-        return await decryptBinary(currentData, passwords[0]);
-    }
+    return currentData;
 };
