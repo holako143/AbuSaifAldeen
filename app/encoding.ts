@@ -124,9 +124,9 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
             if (!passwords || passwords.length === 0) {
                 decodedLines.push(hiddenText);
             } else {
-                const decryptedText = passwords.length > 1
-                    ? await decryptMultiple(hiddenText, passwords)
-                    : await decryptAES(hiddenText, passwords[0]);
+                const decryptedText = (passwords.length > 1
+                    ? await decryptMultiple(hiddenText, passwords, 'string')
+                    : await decryptAES(hiddenText, passwords[0])) as string;
                 decodedLines.push(decryptedText);
             }
         } catch (e) {
