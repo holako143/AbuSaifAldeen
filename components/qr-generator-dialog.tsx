@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import pako from 'pako';
+import { bufferToBase64 } from "@/lib/crypto";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +31,6 @@ import { useToast } from "./ui/use-toast";
 interface QrGeneratorDialogProps {
   text: string;
   disabled?: boolean;
-  isTextTooLong?: boolean;
 }
 
 function QrCodeContent({ qrDataUrl, isLoading, onDownload, onShare, showShare }: { qrDataUrl: string | null, isLoading: boolean, onDownload: () => void, onShare: () => void, showShare: boolean }) {
@@ -60,7 +61,7 @@ function QrCodeContent({ qrDataUrl, isLoading, onDownload, onShare, showShare }:
   );
 }
 
-export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGeneratorDialogProps) {
+export function QrGeneratorDialog({ text, disabled }: QrGeneratorDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -79,20 +80,29 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
     if (isOpen && text) {
       setIsLoading(true);
       setQrDataUrl(null);
-      QRCode.toDataURL(text, {
-        width: 256,
-        margin: 2,
-        errorCorrectionLevel: "H",
-      })
+      try {
+        const prefixedText = `shfr://${text}`;
+        const compressed = pako.deflate(prefixedText);
+        const base64Data = bufferToBase64(compressed);
+
+        QRCode.toDataURL(base64Data, {
+            width: 256,
+            margin: 2,
+            errorCorrectionLevel: "H",
+        })
         .then(url => {
-          setQrDataUrl(url);
+            setQrDataUrl(url);
         })
         .catch(err => {
-          console.error("Failed to generate QR code:", err);
+            console.error("Failed to generate QR code:", err);
         })
         .finally(() => {
-          setIsLoading(false);
+            setIsLoading(false);
         });
+      } catch (error) {
+        console.error("Failed to process and generate QR code:", error);
+        setIsLoading(false);
+      }
     }
   }, [isOpen, text]);
 
@@ -148,7 +158,7 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
                     <DialogTrigger asChild>{triggerButton}</DialogTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
+                    <p>{t('qrCode.generate.tooltip')}</p>
                 </TooltipContent>
             </Tooltip>
             <DialogContent className="sm:max-w-md">
@@ -168,7 +178,7 @@ export function QrGeneratorDialog({ text, disabled, isTextTooLong }: QrGenerator
                 <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
             </TooltipTrigger>
             <TooltipContent>
-                <p>{isTextTooLong ? t('qrCode.generate.tooLongTooltip') : t('qrCode.generate.tooltip')}</p>
+                    <p>{t('qrCode.generate.tooltip')}</p>
             </TooltipContent>
         </Tooltip>
         <DrawerContent>

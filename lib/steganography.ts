@@ -3,6 +3,7 @@
 import pako from 'pako';
 import JSZip from 'jszip';
 import { encryptMultiple, decryptMultiple, bufferToBase64, base64ToBuffer } from './crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 // --- Helper Functions ---
 
@@ -63,26 +64,24 @@ async function unarchiveFiles(zipData: Uint8Array): Promise<File[]> {
     return Promise.all(files);
 }
 
+// --- Steganography Core Logic ---
 
-// --- Core Steganography Logic ---
-
-const END_OF_MESSAGE_DELIMITER = stringToUint8Array("::EOM::");
+const MAGIC_BYTES = stringToUint8Array("SHFR"); // 4 bytes
+// Metadata structure:
+// MAGIC_BYTES (4) | SET_ID (36) | CHUNK_INDEX (4) | TOTAL_CHUNKS (4) | PAYLOAD
+const META_SIZE = 4 + 36 + 4 + 4;
 
 function embedData(originalPixels: Uint8ClampedArray, data: Uint8Array): Uint8ClampedArray {
     const pixels = new Uint8ClampedArray(originalPixels);
-    const dataWithDelimiter = new Uint8Array(data.length + END_OF_MESSAGE_DELIMITER.length);
-    dataWithDelimiter.set(data, 0);
-    dataWithDelimiter.set(END_OF_MESSAGE_DELIMITER, data.length);
-
     const dataBits: number[] = [];
-    dataWithDelimiter.forEach(byte => {
+    data.forEach(byte => {
         for (let i = 7; i >= 0; i--) {
             dataBits.push((byte >> i) & 1);
         }
     });
 
     if (dataBits.length > (pixels.length / 4 * 3)) {
-        throw new Error("Data is too large to hide in this image.");
+        throw new Error("Data chunk is too large for this image.");
     }
 
     let bitIndex = 0;
@@ -95,42 +94,40 @@ function embedData(originalPixels: Uint8ClampedArray, data: Uint8Array): Uint8Cl
     return pixels;
 }
 
-function findDelimiterIndex(source: Uint8Array, delimiter: Uint8Array): number {
-    for (let i = 0; i <= source.length - delimiter.length; i++) {
-        let found = true;
-        for (let j = 0; j < delimiter.length; j++) {
-            if (source[i + j] !== delimiter[j]) {
-                found = false;
-                break;
-            }
-        }
-        if (found) return i;
-    }
-    return -1;
-}
+function extractData(pixels: Uint8ClampedArray): { setId: string, chunkIndex: number, totalChunks: number, payload: Uint8Array } {
+    const extractedBytes: number[] = [];
+    let bitCount = 0;
+    let currentByte = 0;
 
-function extractData(pixels: Uint8ClampedArray): Uint8Array {
-    const extractedBits: number[] = [];
     for (let i = 0; i < pixels.length; i++) {
         if ((i + 1) % 4 === 0) continue;
-        extractedBits.push(pixels[i] & 1);
+
+        currentByte = (currentByte << 1) | (pixels[i] & 1);
+        bitCount++;
+
+        if (bitCount === 8) {
+            extractedBytes.push(currentByte);
+            currentByte = 0;
+            bitCount = 0;
+            // Stop reading after extracting metadata to check magic bytes
+            if (extractedBytes.length === META_SIZE) {
+                const header = new Uint8Array(extractedBytes);
+                const magic = new TextDecoder().decode(header.slice(0, 4));
+                if (magic !== 'SHFR') {
+                    throw new Error("Not a valid steganography image: magic bytes mismatch.");
+                }
+            }
+        }
     }
 
-    const bytes: number[] = [];
-    for (let i = 0; i < extractedBits.length; i += 8) {
-        if (i + 8 > extractedBits.length) break;
-        const byteString = extractedBits.slice(i, i + 8).join('');
-        bytes.push(parseInt(byteString, 2));
-    }
+    const allData = new Uint8Array(extractedBytes);
+    const setId = new TextDecoder().decode(allData.slice(4, 40));
+    const view = new DataView(allData.buffer);
+    const chunkIndex = view.getUint32(40);
+    const totalChunks = view.getUint32(44);
+    const payload = allData.slice(META_SIZE);
 
-    const bytesArray = new Uint8Array(bytes);
-    const delimiterIndex = findDelimiterIndex(bytesArray, END_OF_MESSAGE_DELIMITER);
-
-    if (delimiterIndex === -1) {
-        throw new Error("End-of-message delimiter not found. The image may be corrupt or not contain a message.");
-    }
-
-    return bytesArray.slice(0, delimiterIndex);
+    return { setId, chunkIndex, totalChunks, payload };
 }
 
 // --- Public API ---
@@ -140,10 +137,10 @@ const IS_NOT_ENCRYPTED_FLAG = new Uint8Array([0]);
 const IS_BINARY_FLAG = new Uint8Array([1]);
 const IS_TEXT_FLAG = new Uint8Array([0]);
 
-export async function hideDataInImage(imageFile: File, data: string | File[], passwords?: string[]): Promise<string> {
+export async function hideDataInImage(imageFile: File, data: string | File[], passwords?: string[]): Promise<string[]> {
     const canvas = await loadImageToCanvas(imageFile);
     const imageData = getPixelData(canvas);
-    const capacity = (imageData.data.length / 4 * 3) / 8;
+    const capacity = Math.floor(((imageData.data.length / 4) * 3) / 8) - META_SIZE;
 
     let initialData: Uint8Array;
     let dataTypeFlag: Uint8Array;
@@ -169,34 +166,83 @@ export async function hideDataInImage(imageFile: File, data: string | File[], pa
         dataToEmbed = compressedData;
     }
 
-    const finalPayload = new Uint8Array(dataTypeFlag.length + encryptionFlag.length + dataToEmbed.length);
-    finalPayload.set(dataTypeFlag, 0);
-    finalPayload.set(encryptionFlag, dataTypeFlag.length);
-    finalPayload.set(dataToEmbed, dataTypeFlag.length + encryptionFlag.length);
+    const taggedData = new Uint8Array(dataTypeFlag.length + encryptionFlag.length + dataToEmbed.length);
+    taggedData.set(dataTypeFlag, 0);
+    taggedData.set(encryptionFlag, dataTypeFlag.length);
+    taggedData.set(dataToEmbed, dataTypeFlag.length + encryptionFlag.length);
 
-    if (finalPayload.length > capacity * 0.9) {
-         throw new Error(`Data is too large for this image. Max capacity: ~${(capacity/1024/1024).toFixed(2)}MB`);
+    const totalChunks = Math.ceil(taggedData.length / capacity);
+    const setId = uuidv4();
+    const resultImageUrls: string[] = [];
+
+    for (let i = 0; i < totalChunks; i++) {
+        const chunk = taggedData.slice(i * capacity, (i + 1) * capacity);
+
+        const meta = new ArrayBuffer(META_SIZE);
+        const metaView = new DataView(meta);
+        const setIdBytes = new TextEncoder().encode(setId);
+
+        new Uint8Array(meta).set(MAGIC_BYTES, 0);
+        new Uint8Array(meta).set(setIdBytes, 4);
+        metaView.setUint32(40, i);
+        metaView.setUint32(44, totalChunks);
+
+        const finalPayload = new Uint8Array(META_SIZE + chunk.length);
+        finalPayload.set(new Uint8Array(meta), 0);
+        finalPayload.set(chunk, META_SIZE);
+
+        const newPixelData = embedData(imageData.data, finalPayload);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        if (!tempCtx) throw new Error("Could not create temp canvas context");
+        const newImageData = new ImageData(newPixelData, canvas.width, canvas.height);
+        tempCtx.putImageData(newImageData, 0, 0);
+        resultImageUrls.push(tempCanvas.toDataURL('image/png'));
     }
 
-    const newPixelData = embedData(imageData.data, finalPayload);
-    imageData.data.set(newPixelData);
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error("Could not get canvas context");
-    ctx.putImageData(imageData, 0, 0);
-
-    return canvas.toDataURL('image/png');
+    return resultImageUrls;
 }
 
-export async function revealDataFromImage(imageFile: File, passwords?: string[]): Promise<{ files: File[] | null, text: string | null }> {
-    const canvas = await loadImageToCanvas(imageFile);
-    const imageData = getPixelData(canvas);
+export async function revealDataFromImage(imageFiles: File[], passwords?: string[]): Promise<{ files: File[] | null, text: string | null }> {
+    const chunks = new Map<number, Uint8Array>();
+    let totalChunks = -1;
+    let setId = '';
 
-    const extractedData = extractData(imageData.data);
+    for (const imageFile of imageFiles) {
+        const canvas = await loadImageToCanvas(imageFile);
+        const imageData = getPixelData(canvas);
+        const extracted = extractData(imageData.data);
 
-    const dataTypeFlag = extractedData[0];
-    const isEncrypted = extractedData[1] === 1;
-    const payload = extractedData.slice(2);
+        if (!setId) {
+            setId = extracted.setId;
+            totalChunks = extracted.totalChunks;
+        } else if (extracted.setId !== setId) {
+            throw new Error("Image set ID mismatch. Please select images from the same set.");
+        }
+
+        if (chunks.has(extracted.chunkIndex)) {
+            throw new Error(`Duplicate chunk index found: ${extracted.chunkIndex}. Please check your files.`);
+        }
+        chunks.set(extracted.chunkIndex, extracted.payload);
+    }
+
+    if (chunks.size !== totalChunks) {
+        throw new Error(`Missing chunks. Expected ${totalChunks}, but received ${chunks.size}.`);
+    }
+
+    const sortedChunks = Array.from(chunks.keys()).sort((a, b) => a - b).map(key => chunks.get(key)!);
+    const combinedPayload = new Uint8Array(sortedChunks.reduce((acc, chunk) => acc + chunk.length, 0));
+    let offset = 0;
+    for(const chunk of sortedChunks) {
+        combinedPayload.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    const dataTypeFlag = combinedPayload[0];
+    const isEncrypted = combinedPayload[1] === 1;
+    const payload = combinedPayload.slice(2);
 
     let decompressedData: Uint8Array;
 

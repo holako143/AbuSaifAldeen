@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
+import pako from 'pako';
+import { base64ToBuffer } from "@/lib/crypto";
 import { useTranslation } from "@/hooks/use-translation";
 import { Button } from "./ui/button";
 import { Camera, Upload, XCircle } from "lucide-react";
@@ -46,7 +48,7 @@ export function QrReader({ onScanSuccess }: QrReaderProps) {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            onScanSuccess(decodedText);
+            handleScanSuccess(decodedText);
             stopScan();
           },
           (errorMessage) => {
@@ -82,7 +84,7 @@ export function QrReader({ onScanSuccess }: QrReaderProps) {
       const qrScanner = new Html5Qrcode(QR_READER_ID, true); // Use verbose mode for file scan
       try {
         const decodedText = await qrScanner.scanFile(file, false);
-        onScanSuccess(decodedText);
+        handleScanSuccess(decodedText);
       } catch (err: any) {
         setError(err.message || t('qrCode.reader.fileScanError'));
       } finally {
@@ -90,6 +92,31 @@ export function QrReader({ onScanSuccess }: QrReaderProps) {
         if(fileInputRef.current) fileInputRef.current.value = "";
       }
     }
+  };
+
+  const processDecodedText = (text: string): string => {
+    try {
+        // First, check if it's a base64 string. If not, return as is.
+        // A simple check is to see if it decodes without error.
+        atob(text);
+
+        const compressed = base64ToBuffer(text);
+        const decompressed = pako.inflate(compressed, { to: 'string' });
+
+        if (decompressed.startsWith('shfr://')) {
+            return decompressed.substring('shfr://'.length);
+        }
+        // If it's valid base64 but doesn't have our prefix, return original text.
+        return text;
+    } catch (e) {
+        // If any step fails (e.g., not base64), assume it's plain text.
+        return text;
+    }
+  };
+
+  const handleScanSuccess = (decodedText: string) => {
+    const processedText = processDecodedText(decodedText);
+    onScanSuccess(processedText);
   };
 
   return (
