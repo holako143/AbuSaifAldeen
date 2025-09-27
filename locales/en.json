@@ -135,6 +135,7 @@
       "textRequired": "Please enter a secret text.",
       "coverRequired": "Please select a cover image.",
       "filesRequired": "Please select a cover image and at least one secret file.",
+      "zipError": "Failed to read ZIP file. It may be corrupt.",
       "encodeSuccess": "Data hidden successfully!",
       "multipleImages": "{count} images were generated. Download them all.",
       "encodeFail": "Encoding failed",
