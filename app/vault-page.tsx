@@ -23,6 +23,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatRelativeTime, generatePassword } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { changeMasterPassword } from "@/lib/vault";
+import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 function ChangePasswordForm({ onPasswordChange, isLoading, newPassword, setNewPassword, confirmPassword, setConfirmPassword }: any) {
     const { t } = useTranslation();
@@ -275,6 +276,7 @@ export function VaultPage() {
                     <Button onClick={() => handleUnlock(localMasterPassword)} disabled={isLoading} className="w-full">
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('vaultPage.unlockButton')}
                     </Button>
+                    <ForgotPasswordDialog onImportClick={handleImportClick} />
                 </CardContent>
             </Card>
         );
