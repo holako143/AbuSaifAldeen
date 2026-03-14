@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shifrishan_flutter/views/home_view.dart';
+import 'package:shifrishan_flutter/views/calculator_view.dart';
 
 class CustomSidebar extends ConsumerWidget {
   const CustomSidebar({super.key});
@@ -17,7 +20,7 @@ class CustomSidebar extends ConsumerWidget {
           DrawerHeader(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade700, Colors.blue.shade400],
+                colors: [Colors.blue.shade800, Colors.blue.shade500],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -52,9 +55,14 @@ class CustomSidebar extends ConsumerWidget {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text("نسخة فلاتر الأصيلة v1.0", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: TextButton.icon(
+              onPressed: () => ref.read(isAppUnlockedProvider.notifier).state = false,
+              icon: const Icon(LucideIcons.lock, size: 16),
+              label: const Text("قفل التطبيق فوراً"),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey),
+            ),
           ),
         ],
       ),

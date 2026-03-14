@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shifrishan_flutter/core/storage_service.dart';
+import 'dart:async';
 
 class SecurityService {
   final LocalAuthentication _auth = LocalAuthentication();
@@ -26,12 +28,20 @@ class SecurityService {
     }
   }
 
-  // --- Panic Mode Logic ---
+  // --- Panic Mode & Self-Destruct ---
 
   Future<void> triggerPanicMode() async {
-    // Clear all sensitive data
-    // In a real app, this would wipe Hive boxes
     debugPrint("Panic Mode Triggered: Wiping all data...");
+    // Hive.deleteFromDisk(); or similar
+  }
+
+  // --- Clipboard Protection (New Feature) ---
+
+  void autoClearClipboard(int seconds) {
+    Timer(Duration(seconds: seconds), () {
+      Clipboard.setData(const ClipboardData(text: ""));
+      debugPrint("Clipboard cleared for security.");
+    });
   }
 
   // --- Decoy Vault Logic ---

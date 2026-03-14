@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shifrishan_flutter/views/home_view.dart';
+import 'package:shifrishan_flutter/views/calculator_view.dart';
 import 'package:shifrishan_flutter/core/storage_service.dart';
 
 void main() async {
@@ -17,11 +17,13 @@ void main() async {
   );
 }
 
-class ShifrishanApp extends StatelessWidget {
+class ShifrishanApp extends ConsumerWidget {
   const ShifrishanApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isUnlocked = ref.watch(isAppUnlockedProvider);
+
     return MaterialApp(
       title: 'Shifrishan',
       debugShowCheckedModeBanner: false,
@@ -42,7 +44,10 @@ class ShifrishanApp extends StatelessWidget {
         textTheme: GoogleFonts.notoKufiArabicTextTheme(),
       ),
       themeMode: ThemeMode.system,
-      home: const HomeView(),
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 800),
+        child: isUnlocked ? const HomeView() : const CalculatorView(),
+      ),
     );
   }
 }
