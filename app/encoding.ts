@@ -2,22 +2,45 @@ import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib
 
 export type EncryptionType = 'aes256';
 
-// --- Variation Selector (Emoji Hiding) Logic ---
+// --- Zero-Width & Variation Selector (Emoji Hiding) Logic ---
+
+// 100% invisible Zero-Width characters that render cleanly without boxes or question marks across all mobile devices, OS, and browsers
+// Using U+200B, U+200C, U+200D, U+2060 (All highly reliable zero-width invisible formatting characters)
+const ZERO_WIDTH_CHARS = ['\u200B', '\u200C', '\u200D', '\u2060'];
+
+const ZERO_WIDTH_MAP: Record<string, number> = {
+    '\u200B': 0, // Zero Width Space
+    '\u200C': 1, // Zero Width Non-Joiner
+    '\u200D': 2, // Zero Width Joiner
+    '\u2060': 3, // Word Joiner
+};
 
 const VARIATION_SELECTOR_START = 0xfe00;
 const VARIATION_SELECTOR_END = 0xfe0f;
 const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
 
+const isZeroWidthChar = (char: string): boolean => {
+    return ZERO_WIDTH_CHARS.includes(char);
+};
+
 const isVariationSelector = (code: number): boolean => {
     return (code >= VARIATION_SELECTOR_START && code <= VARIATION_SELECTOR_END) ||
            (code >= VARIATION_SELECTOR_SUPPLEMENT_START && code <= VARIATION_SELECTOR_SUPPLEMENT_END);
 };
 
-function toVariationSelector(byte: number): string | null {
-    if (byte >= 0 && byte < 16) return String.fromCodePoint(VARIATION_SELECTOR_START + byte);
-    if (byte >= 16 && byte < 256) return String.fromCodePoint(VARIATION_SELECTOR_SUPPLEMENT_START + byte - 16);
-    return null;
+const isHiddenDataChar = (char: string): boolean => {
+    if (isZeroWidthChar(char)) return true;
+    const code = char.codePointAt(0);
+    return code !== undefined ? isVariationSelector(code) : false;
+};
+
+function byteToZeroWidth(byte: number): string {
+    const p0 = (byte >> 6) & 3;
+    const p1 = (byte >> 4) & 3;
+    const p2 = (byte >> 2) & 3;
+    const p3 = byte & 3;
+    return ZERO_WIDTH_CHARS[p0] + ZERO_WIDTH_CHARS[p1] + ZERO_WIDTH_CHARS[p2] + ZERO_WIDTH_CHARS[p3];
 }
 
 function fromVariationSelector(codePoint: number): number | null {
@@ -30,32 +53,71 @@ function encodeToEmoji(emoji: string, text: string): string {
     const bytes = new TextEncoder().encode(text);
     let encoded = emoji;
     for (const byte of bytes) {
-        encoded += toVariationSelector(byte);
+        encoded += byteToZeroWidth(byte);
     }
     return encoded;
 }
 
 function decodeFromEmoji(text: string): string {
     if (!text) return "";
-    const decoded = [];
 
-    // Using an iterator to correctly handle multi-byte grapheme clusters
+    // The first character is the base emoji. Skip the first character to avoid treating emoji variation selectors (like \uFE0F) as payload.
     const iterator = text[Symbol.iterator]();
+    iterator.next(); // Skip base emoji
 
-    // The first item is the base emoji. We discard it.
-    iterator.next();
+    const hiddenChars: string[] = [];
+    let hasZeroWidth = false;
+    let hasLegacyVs = false;
 
     for (const char of iterator) {
-        const byte = fromVariationSelector(char.codePointAt(0)!);
-        // If we hit a non-data character, we can assume it's the end of our data.
-        if (byte === null) {
-            break;
+        if (isZeroWidthChar(char)) {
+            hiddenChars.push(char);
+            hasZeroWidth = true;
+        } else {
+            const code = char.codePointAt(0);
+            if (code !== undefined && isVariationSelector(code)) {
+                hiddenChars.push(char);
+                hasLegacyVs = true;
+            }
         }
-        decoded.push(byte);
     }
 
-    const decodedArray = new Uint8Array(decoded);
-    return new TextDecoder().decode(decodedArray);
+    if (hiddenChars.length === 0) return "";
+
+    let decodedBytes: Uint8Array;
+
+    if (hasZeroWidth) {
+        const bytes: number[] = [];
+        for (let i = 0; i < hiddenChars.length; i += 4) {
+            if (i + 3 < hiddenChars.length) {
+                const b0 = ZERO_WIDTH_MAP[hiddenChars[i]];
+                const b1 = ZERO_WIDTH_MAP[hiddenChars[i + 1]];
+                const b2 = ZERO_WIDTH_MAP[hiddenChars[i + 2]];
+                const b3 = ZERO_WIDTH_MAP[hiddenChars[i + 3]];
+                if (b0 !== undefined && b1 !== undefined && b2 !== undefined && b3 !== undefined) {
+                    const byte = (b0 << 6) | (b1 << 4) | (b2 << 2) | b3;
+                    bytes.push(byte);
+                }
+            }
+        }
+        decodedBytes = new Uint8Array(bytes);
+    } else if (hasLegacyVs) {
+        const bytes: number[] = [];
+        for (const char of hiddenChars) {
+            const code = char.codePointAt(0);
+            if (code !== undefined) {
+                const byte = fromVariationSelector(code);
+                if (byte !== null) {
+                    bytes.push(byte);
+                }
+            }
+        }
+        decodedBytes = new Uint8Array(bytes);
+    } else {
+        return "";
+    }
+
+    return new TextDecoder().decode(decodedBytes);
 }
 
 
@@ -93,13 +155,11 @@ interface DecodeParams {
 
 export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
     // 1. Split the input text into potential messages.
-    // A new message starts with a non-variation-selector character (the base emoji).
+    // A new message starts with a base character (not zero-width and not variation selector).
     const messages: string[] = [];
     let currentMessage = "";
     for (const char of text) {
-        // Use codePointAt for multi-byte characters
-        const code = char.codePointAt(0);
-        if (code && !isVariationSelector(code)) {
+        if (!isHiddenDataChar(char)) {
             // It's a base character, so the previous message (if any) has ended.
             if (currentMessage) messages.push(currentMessage);
             currentMessage = char; // Start a new message.
