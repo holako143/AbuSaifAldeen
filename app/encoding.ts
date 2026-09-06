@@ -112,6 +112,17 @@ function encodeToEmoji(emoji: string, text: string, useBrackets?: boolean, cover
     const compressed = pako.deflate(text, { level: 9 });
     const vsPayload = bytesToVsString(compressed);
 
+    // Mobile Grapheme Cluster Chunking:
+    // Mobile text controls and keyboards (iOS CoreText & Android HarfBuzz) truncate a grapheme cluster if it exceeds ~32 variation selectors per emoji.
+    // Chunking attaches up to 32 variation selectors (16 bytes) per emoji instance so each emoji grapheme cluster remains well within mobile OS limits.
+    const CHUNK_VS_LIMIT = 32;
+    const cleanEmoji = emoji.replace(/[\uFE0F\uFE0E]/g, "");
+    let chunkedBase = "";
+    for (let i = 0; i < vsPayload.length; i += CHUNK_VS_LIMIT) {
+        const vsChunk = vsPayload.slice(i, i + CHUNK_VS_LIMIT);
+        chunkedBase += (i === 0 ? emoji : cleanEmoji) + vsChunk;
+    }
+
     // Option 2: Cover Text Steganography
     if (coverText && coverText.trim()) {
         const words = coverText.trim().split(/\s+/);
@@ -121,13 +132,12 @@ function encodeToEmoji(emoji: string, text: string, useBrackets?: boolean, cover
     }
 
     // Option 1: Custom Bracket Framing
-    const base = emoji + vsPayload;
     if (useBrackets) {
         const lb = leftBracket || "⟦";
         const rb = rightBracket || "⟧";
-        return lb + base + rb;
+        return lb + chunkedBase + rb;
     }
-    return base;
+    return chunkedBase;
 }
 
 function decodeFromEmoji(text: string): string {
@@ -286,22 +296,49 @@ interface DecodeParams {
 }
 
 export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
-    // 1. Split the input text into potential messages.
-    // A new message starts with a base emoji/character (not a zero-width char or variation selector).
+    if (!text || !text.trim()) return "";
+
+    const activePasswords = passwords ? passwords.filter(Boolean) : [];
+
+    // 1. Try decoding the entire input text directly (handles chunked emojis, brackets, cover text, and multi-line payloads)
+    try {
+        const hiddenText = decodeFromEmoji(text);
+        if (hiddenText) {
+            if (type !== 'aes256') {
+                throw new Error(`Unsupported encryption type: ${type}`);
+            }
+
+            if (activePasswords.length === 0) {
+                if (hiddenText.startsWith('{"ct":') || hiddenText.startsWith('eyJ')) {
+                    throw new Error("هذا النص المرمز محمي بكلمة مرور. يرجى تفعيل كلمة المرور وإدخالها لفك التشفير.");
+                }
+                return hiddenText;
+            } else {
+                const decryptedText = activePasswords.length > 1
+                    ? await decryptMultiple(hiddenText, activePasswords) as string
+                    : await decryptAES(hiddenText, activePasswords[0]);
+                return decryptedText;
+            }
+        }
+    } catch (e: any) {
+        if (e.message && e.message.includes("كلمة مرور")) {
+            throw e;
+        }
+    }
+
+    // 2. Fallback: Split by lines or base characters if whole-text decode did not yield a valid payload
     const messages: string[] = [];
     let currentMessage = "";
     for (const char of text) {
         if (isMessageStartChar(char)) {
-            // It's a base character, so the previous message (if any) has ended.
             if (currentMessage) messages.push(currentMessage);
-            currentMessage = char; // Start a new message.
+            currentMessage = char;
         } else {
-            currentMessage += char; // It's part of the current message (base emoji variation selector or hidden payload).
+            currentMessage += char;
         }
     }
-    if (currentMessage) messages.push(currentMessage); // Add the last message.
+    if (currentMessage) messages.push(currentMessage);
 
-    // 2. Process each message individually.
     const decodedLines = [];
     for (const message of messages) {
         if (!message.trim()) continue;
@@ -314,21 +351,18 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
                 throw new Error(`Unsupported encryption type: ${type}`);
             }
 
-            if (!passwords || passwords.length === 0) {
-                // If the hidden payload is an encrypted JSON string (contains ct, s, iv) but no password was provided, throw a clear password error
+            if (activePasswords.length === 0) {
                 if (hiddenText.startsWith('{"ct":') || hiddenText.startsWith('eyJ')) {
                     throw new Error("هذا النص المرمز محمي بكلمة مرور. يرجى تفعيل كلمة المرور وإدخالها لفك التشفير.");
                 }
                 decodedLines.push(hiddenText);
             } else {
-                const decryptedText = passwords.length > 1
-                    ? await decryptMultiple(hiddenText, passwords)
-                    : await decryptAES(hiddenText, passwords[0]);
+                const decryptedText = activePasswords.length > 1
+                    ? await decryptMultiple(hiddenText, activePasswords) as string
+                    : await decryptAES(hiddenText, activePasswords[0]);
                 decodedLines.push(decryptedText);
             }
         } catch (e) {
-            // If one message fails, the whole operation fails.
-            // This is to prevent partially correct output which could be misleading.
             throw e;
         }
     }
