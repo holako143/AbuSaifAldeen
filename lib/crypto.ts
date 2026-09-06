@@ -58,13 +58,16 @@ export const encryptBinary = async (data: Uint8Array, password: string): Promise
         const salt = crypto.getRandomValues(new Uint8Array(16));
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const key = await deriveKey(password, salt);
-        const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
-        const packed = JSON.stringify({
-            ct: bufferToBase64(ciphertext),
-            s: bufferToBase64(salt),
-            iv: bufferToBase64(iv),
-        });
-        return btoa(packed);
+        const ciphertextBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+        const ciphertext = new Uint8Array(ciphertextBuffer);
+
+        // Raw compact binary packing: [16-byte salt][12-byte IV][ciphertext]
+        const rawPacked = new Uint8Array(16 + 12 + ciphertext.length);
+        rawPacked.set(salt, 0);
+        rawPacked.set(iv, 16);
+        rawPacked.set(ciphertext, 28);
+
+        return bufferToBase64(rawPacked);
     } catch (error) {
         console.error("Binary encryption failed:", error);
         throw new Error("Binary encryption failed.");
@@ -73,6 +76,24 @@ export const encryptBinary = async (data: Uint8Array, password: string): Promise
 
 export const decryptBinary = async (encryptedPayload: string, password: string): Promise<Uint8Array> => {
     try {
+        const rawBytes = base64ToBuffer(encryptedPayload);
+
+        // Check if raw compact binary format ([16-byte salt][12-byte IV][ciphertext])
+        if (rawBytes.length >= 28) {
+            try {
+                const salt = rawBytes.subarray(0, 16);
+                const ivBuffer = rawBytes.subarray(16, 28);
+                const ciphertext = rawBytes.subarray(28);
+
+                const key = await deriveKey(password, salt);
+                const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivBuffer }, key, ciphertext);
+                return new Uint8Array(decrypted);
+            } catch (rawError) {
+                // If raw compact decryption fails, fallback to JSON format decoding below
+            }
+        }
+
+        // Backward compatibility for JSON base64 packed payloads
         const packed = atob(encryptedPayload);
         const { ct, s, iv } = JSON.parse(packed);
         const ciphertext = base64ToBuffer(ct);
