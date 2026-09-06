@@ -94,6 +94,29 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
+    test('should encode and decode extremely long multi-line texts (1000+ lines) with 100% data integrity', async () => {
+        const lines = [];
+        for (let i = 1; i <= 1000; i++) {
+            lines.push(`Line ${i}: وهذا نص تجريبي طويل جداً لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل.`);
+        }
+        const longText = lines.join('\n');
+
+        const encoded = await encode({
+            emoji: '🔑',
+            text: longText,
+            type: 'aes256',
+            passwords: ['secretPass123']
+        });
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256',
+            passwords: ['secretPass123']
+        });
+
+        expect(decoded).toBe(longText);
+    })
+
     test('should maintain backward compatibility with legacy variation selector encoded payloads', async () => {
         // Legacy variation selector payload encoding "Hi" without encryption
         const legacyEncoded = "😀" + String.fromCodePoint(0xe0138) + String.fromCodePoint(0xe0159);

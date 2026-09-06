@@ -4,20 +4,22 @@ export type EncryptionType = 'aes256';
 
 // --- Zero-Width & Variation Selector (Emoji Hiding) Logic ---
 
-// Safe non-joining Zero-Width characters that NEVER trigger OS emoji ZWJ sequence ligatures or missing glyph symbols ('?' / '') on iOS / Android / Windows
-// U+200C (ZWNJ) explicitly breaks emoji ligatures, U+200B (ZWSP), U+200E (LRM), U+200F (RLM)
-const SAFE_ZERO_WIDTH_CHARS = ['\u200C', '\u200B', '\u200E', '\u200F'];
+// Universal Zero-Width characters that NEVER display question marks ('?') or boxes ('[]') on ANY device or chat app (WhatsApp, Telegram, iOS, Android, Windows)
+// \u200B = Zero Width Space (0), \u200C = Zero Width Non-Joiner (1)
+const ZERO_WIDTH_0 = '\u200B';
+const ZERO_WIDTH_1 = '\u200C';
 
-// Full lookup map supporting current safe characters and previous zero-width variants for seamless decoding
-const ZERO_WIDTH_MAP: Record<string, number> = {
-    '\u200C': 0, // Zero Width Non-Joiner
-    '\u200B': 1, // Zero Width Space
-    '\u200E': 2, // Left-To-Right Mark
-    '\u200F': 3, // Right-To-Left Mark
+// Legacy zero-width characters mapping for backward decoding support (Base-4 and Base-2)
+const BASE4_MAP: Record<string, number> = {
+    '\u200C': 0,
+    '\u200B': 1,
+    '\u200E': 2,
+    '\u200F': 3,
+    '\u200D': 2,
+    '\u2060': 3,
 };
 
-// Legacy zero-width characters for backward decoding support
-const ALL_ZERO_WIDTH_CHARS = ['\u200C', '\u200B', '\u200E', '\u200F', '\u200D', '\u2060', '\uFEFF'];
+const ALL_ZERO_WIDTH_CHARS = ['\u200B', '\u200C', '\u200E', '\u200F', '\u200D', '\u2060', '\uFEFF'];
 
 const VARIATION_SELECTOR_START = 0xfe00;
 const VARIATION_SELECTOR_END = 0xfe0f;
@@ -50,12 +52,13 @@ const isMessageStartChar = (char: string): boolean => {
     return true;
 };
 
-function byteToZeroWidth(byte: number): string {
-    const p0 = (byte >> 6) & 3;
-    const p1 = (byte >> 4) & 3;
-    const p2 = (byte >> 2) & 3;
-    const p3 = byte & 3;
-    return SAFE_ZERO_WIDTH_CHARS[p0] + SAFE_ZERO_WIDTH_CHARS[p1] + SAFE_ZERO_WIDTH_CHARS[p2] + SAFE_ZERO_WIDTH_CHARS[p3];
+function byteToZeroWidthBinary(byte: number): string {
+    let result = "";
+    for (let i = 7; i >= 0; i--) {
+        const bit = (byte >> i) & 1;
+        result += bit === 1 ? ZERO_WIDTH_1 : ZERO_WIDTH_0;
+    }
+    return result;
 }
 
 function fromVariationSelector(codePoint: number): number | null {
@@ -69,7 +72,7 @@ function encodeToEmoji(emoji: string, text: string): string {
     const bytes = new TextEncoder().encode(text);
     let encoded = emoji;
     for (const byte of bytes) {
-        encoded += byteToZeroWidth(byte);
+        encoded += byteToZeroWidthBinary(byte);
     }
     return encoded;
 }
@@ -78,7 +81,8 @@ function decodeFromEmoji(text: string): string {
     if (!text) return "";
 
     const hiddenChars: string[] = [];
-    let hasZeroWidth = false;
+    let hasBinaryZeroWidth = false;
+    let hasBase4ZeroWidth = false;
     let hasLegacyVs = false;
 
     const iterator = text[Symbol.iterator]();
@@ -86,7 +90,11 @@ function decodeFromEmoji(text: string): string {
     for (const char of iterator) {
         if (isZeroWidthChar(char)) {
             hiddenChars.push(char);
-            hasZeroWidth = true;
+            if (char === ZERO_WIDTH_0 || char === ZERO_WIDTH_1) {
+                hasBinaryZeroWidth = true;
+            } else {
+                hasBase4ZeroWidth = true;
+            }
         } else {
             const code = char.codePointAt(0);
             if (code !== undefined && isLegacyVariationSelector(code)) {
@@ -100,14 +108,28 @@ function decodeFromEmoji(text: string): string {
 
     let decodedBytes: Uint8Array;
 
-    if (hasZeroWidth) {
+    if (!hasBase4ZeroWidth && hasBinaryZeroWidth && hiddenChars.length % 8 === 0) {
+        // Binary (Base-2) decoding using U+200B and U+200C
+        const bytes: number[] = [];
+        for (let i = 0; i < hiddenChars.length; i += 8) {
+            let byte = 0;
+            for (let b = 0; b < 8; b++) {
+                const char = hiddenChars[i + b];
+                const bit = char === ZERO_WIDTH_1 ? 1 : 0;
+                byte = (byte << 1) | bit;
+            }
+            bytes.push(byte);
+        }
+        decodedBytes = new Uint8Array(bytes);
+    } else if (hasBase4ZeroWidth || hasBinaryZeroWidth) {
+        // Legacy Base-4 decoding
         const bytes: number[] = [];
         for (let i = 0; i < hiddenChars.length; i += 4) {
             if (i + 3 < hiddenChars.length) {
-                const b0 = ZERO_WIDTH_MAP[hiddenChars[i]];
-                const b1 = ZERO_WIDTH_MAP[hiddenChars[i + 1]];
-                const b2 = ZERO_WIDTH_MAP[hiddenChars[i + 2]];
-                const b3 = ZERO_WIDTH_MAP[hiddenChars[i + 3]];
+                const b0 = BASE4_MAP[hiddenChars[i]];
+                const b1 = BASE4_MAP[hiddenChars[i + 1]];
+                const b2 = BASE4_MAP[hiddenChars[i + 2]];
+                const b3 = BASE4_MAP[hiddenChars[i + 3]];
                 if (b0 !== undefined && b1 !== undefined && b2 !== undefined && b3 !== undefined) {
                     const byte = (b0 << 6) | (b1 << 4) | (b2 << 2) | b3;
                     bytes.push(byte);
