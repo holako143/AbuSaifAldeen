@@ -52,7 +52,7 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('encoded emoji string should not contain visible non-emoji or variation selector supplement characters', async () => {
+    test('encoded emoji string should not contain visible non-emoji, variation selector supplement, or U+200B space characters', async () => {
         const text = "Test zero-width clean display";
         const emoji = "🚀";
 
@@ -62,10 +62,12 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256'
         });
 
-        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF) are present
+        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF), ZWJ (\u200D), or ZWSP (\u200B) are present
         for (const char of encoded) {
             const code = char.codePointAt(0)!;
             expect(code >= 0xe0100 && code <= 0xe01ef).toBe(false);
+            expect(char).not.toBe('\u200D'); // No ZWJ
+            expect(char).not.toBe('\u200B'); // No Zero-Width Space (prevents accidental whitespace stripping)
         }
 
         const decoded = await decode({
@@ -73,6 +75,65 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256'
         });
         expect(decoded).toBe(text);
+    })
+
+    test('should decode correctly even if user trims spaces or pastes with surrounding whitespace', async () => {
+        const text = "Message with surrounding spaces test";
+        const encoded = await encode({
+            emoji: "🔑",
+            text: text,
+            type: 'aes256'
+        });
+
+        // Add surrounding whitespace and trim it, mimicking copying/pasting in chat apps
+        const paddedText = `   \n\t ${encoded} \n  `;
+        const decoded = await decode({
+            text: paddedText.trim(),
+            type: 'aes256'
+        });
+
+        expect(decoded).toBe(text);
+    })
+
+    test('should correctly encode and decode when base emoji contains variation selector 16 (e.g. ❤️ or ⚠️)', async () => {
+        const text = "Secret message behind heart emoji";
+        const emojiWithVS16 = "❤️"; // Contains \u2764 and \uFE0F
+
+        const encoded = await encode({
+            emoji: emojiWithVS16,
+            text: text,
+            type: 'aes256'
+        });
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256'
+        });
+
+        expect(decoded).toBe(text);
+    })
+
+    test('should encode and decode extremely long multi-line texts (1000+ lines) with 100% data integrity', async () => {
+        const lines = [];
+        for (let i = 1; i <= 1000; i++) {
+            lines.push(`Line ${i}: وهذا نص تجريبي طويل جداً لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل.`);
+        }
+        const longText = lines.join('\n');
+
+        const encoded = await encode({
+            emoji: '🔑',
+            text: longText,
+            type: 'aes256',
+            passwords: ['secretPass123']
+        });
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256',
+            passwords: ['secretPass123']
+        });
+
+        expect(decoded).toBe(longText);
     })
 
     test('should maintain backward compatibility with legacy variation selector encoded payloads', async () => {
