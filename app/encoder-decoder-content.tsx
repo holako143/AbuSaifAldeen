@@ -42,6 +42,8 @@ export function Base64EncoderDecoderContent() {
   const [defaultTab, setDefaultTab] = useState("emoji");
   const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
   const [useBrackets, setUseBrackets] = useState(false);
+  const [leftBracket, setLeftBracket] = useState("⟦");
+  const [rightBracket, setRightBracket] = useState("⟧");
   const [useCoverText, setUseCoverText] = useState(false);
   const [coverText, setCoverText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -100,7 +102,7 @@ export function Base64EncoderDecoderContent() {
       setErrorText("");
       try {
         const result = isEncoding
-          ? await encode({ emoji: selectedEmoji, text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [], useBrackets, coverText: useCoverText ? coverText : undefined })
+          ? await encode({ emoji: selectedEmoji, text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [], useBrackets, leftBracket, rightBracket, coverText: useCoverText ? coverText : undefined })
           : await decode({ text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] });
 
         setOutputText(result);
@@ -125,7 +127,7 @@ export function Base64EncoderDecoderContent() {
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, useBrackets, useCoverText, coverText, autoCopy, toast, t]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, useBrackets, leftBracket, rightBracket, useCoverText, coverText, autoCopy, toast, t]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && typeof navigator.share === 'function') setShowShare(true); }, []);
@@ -253,11 +255,30 @@ export function Base64EncoderDecoderContent() {
         {isEncoding && (
             <div className="space-y-3">
                 <div className="flex flex-col space-y-2 p-3 border rounded-lg animate-in">
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <Checkbox id="use-brackets" checked={useBrackets} onCheckedChange={(c) => setUseBrackets(!!c)} />
-                        <Label htmlFor="use-brackets" className="text-sm font-medium cursor-pointer">
-                            {t('encoderDecoder.useBracketsLabel')}
-                        </Label>
+                    <div className="flex flex-col space-y-2">
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            <Checkbox id="use-brackets" checked={useBrackets} onCheckedChange={(c) => setUseBrackets(!!c)} />
+                            <Label htmlFor="use-brackets" className="text-sm font-medium cursor-pointer">
+                                {t('encoderDecoder.useBracketsLabel')}
+                            </Label>
+                        </div>
+                        {useBrackets && (
+                            <div className="flex items-center gap-2 pt-1">
+                                <Label className="text-xs text-muted-foreground whitespace-nowrap">القوس الأيمن/الأيسر:</Label>
+                                <Input
+                                    value={leftBracket}
+                                    onChange={(e) => setLeftBracket(e.target.value)}
+                                    className="w-16 h-8 text-center text-sm"
+                                    placeholder="⟦"
+                                />
+                                <Input
+                                    value={rightBracket}
+                                    onChange={(e) => setRightBracket(e.target.value)}
+                                    className="w-16 h-8 text-center text-sm"
+                                    placeholder="⟧"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col space-y-2 pt-1">

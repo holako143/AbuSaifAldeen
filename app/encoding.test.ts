@@ -146,17 +146,19 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe("Hi");
     })
 
-    test('should encode and decode with Option 1 (bracket framing)', async () => {
-        const secret = "Top secret message inside brackets";
+    test('should encode and decode with Option 1 (custom bracket framing)', async () => {
+        const secret = "Top secret message inside custom brackets";
         const encoded = await encode({
             emoji: "🔑",
             text: secret,
             type: 'aes256',
-            useBrackets: true
+            useBrackets: true,
+            leftBracket: "✨",
+            rightBracket: "✨"
         });
 
-        expect(encoded.startsWith("⟦")).toBe(true);
-        expect(encoded.endsWith("⟧")).toBe(true);
+        expect(encoded.startsWith("✨")).toBe(true);
+        expect(encoded.endsWith("✨")).toBe(true);
 
         const decoded = await decode({
             text: encoded,

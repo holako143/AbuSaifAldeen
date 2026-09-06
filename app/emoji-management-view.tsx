@@ -89,7 +89,6 @@ function ListManager({ list, setList, onSave, onReset }: { list: string[], setLi
               value={item}
               onChange={(e) => handleItemChange(index, e.target.value)}
               className="flex-1"
-              maxLength={2}
             />
             <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(index)}>
               <Trash2 className="h-4 w-4 text-red-500" />
