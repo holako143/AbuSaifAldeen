@@ -76,6 +76,12 @@ export function Base64EncoderDecoderContent() {
   }, [textToDecode, setTextToDecode]);
 
   useEffect(() => {
+    if (inputText.trim() === "") {
+      setOutputText("");
+      setErrorText("");
+      return;
+    }
+
     const processText = async () => {
       if (inputText.trim() === "") { setOutputText(""); setErrorText(""); return; }
 

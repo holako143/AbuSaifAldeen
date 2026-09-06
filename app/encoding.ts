@@ -72,11 +72,12 @@ function fromVariationSelector(codePoint: number): number | null {
 
 function encodeToEmoji(emoji: string, text: string): string {
     const bytes = new TextEncoder().encode(text);
-    let encoded = emoji;
+    let payload = "";
     for (const byte of bytes) {
-        encoded += byteToZeroWidthBinary(byte);
+        payload += byteToZeroWidthBinary(byte);
     }
-    return encoded;
+    // Place zero-width payload before the base emoji so that pressing backspace behind the emoji immediately deletes the visible emoji
+    return payload + emoji;
 }
 
 function decodeFromEmoji(text: string): string {
@@ -230,6 +231,7 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
 
         try {
             const hiddenText = decodeFromEmoji(message);
+            if (!hiddenText) continue;
 
             if (type !== 'aes256') {
                 throw new Error(`Unsupported encryption type: ${type}`);
