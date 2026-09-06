@@ -83,30 +83,32 @@ function fromVariationSelector(codePoint: number): number | null {
     return null;
 }
 
-function byteToZeroWidthBase4(byte: number): string {
-    // Base-4 zero-width encoding: 2 bits per character (4 zero-width chars per byte)
-    // Using U+200B (00), U+200C (01), U+200E (10), U+200F (11)
-    const BASE4_CHARS = ['\u200B', '\u200C', '\u200E', '\u200F'];
-    const p0 = (byte >> 6) & 3;
-    const p1 = (byte >> 4) & 3;
-    const p2 = (byte >> 2) & 3;
-    const p3 = byte & 3;
-    return BASE4_CHARS[p0] + BASE4_CHARS[p1] + BASE4_CHARS[p2] + BASE4_CHARS[p3];
+/**
+ * Converts bytes to 4-bit Standard Unicode Variation Selectors (U+FE00 - U+FE0F / VS1 - VS16).
+ * Standard variation selectors are native Unicode font modifiers that NEVER render question marks or box symbols.
+ */
+function bytesToVsString(bytes: Uint8Array): string {
+    let result = "";
+    for (let i = 0; i < bytes.length; i++) {
+        const byte = bytes[i];
+        const highNibble = (byte >> 4) & 0x0F;
+        const lowNibble = byte & 0x0F;
+        result += String.fromCodePoint(VARIATION_SELECTOR_START + highNibble) + String.fromCodePoint(VARIATION_SELECTOR_START + lowNibble);
+    }
+    return result;
 }
 
 function encodeToEmoji(emoji: string, text: string): string {
     const bytes = new TextEncoder().encode(text);
-    let payload = "";
-    for (let i = 0; i < bytes.length; i++) {
-        payload += byteToZeroWidthBase4(bytes[i]);
-    }
-    // Attach zero-width payload directly AFTER the base emoji
-    return emoji + payload;
+    const vsPayload = bytesToVsString(bytes);
+    // Attach standard Variation Selector payload directly AFTER the base emoji
+    return emoji + vsPayload;
 }
 
 function decodeFromEmoji(text: string): string {
     if (!text) return "";
 
+    const vsNibbles: number[] = [];
     const tagNibbles: number[] = [];
     const legacyTagBytes: number[] = [];
     const zeroWidthChars: string[] = [];
@@ -118,7 +120,10 @@ function decodeFromEmoji(text: string): string {
         const code = char.codePointAt(0);
         if (code === undefined) continue;
 
-        if (code >= TAG_SPACE && code <= TAG_SPACE + 15) {
+        if (code >= VARIATION_SELECTOR_START && code <= VARIATION_SELECTOR_END) {
+            // Standard Variation Selector (U+FE00 - U+FE0F) -> 4-bit nibble (0..15)
+            vsNibbles.push(code - VARIATION_SELECTOR_START);
+        } else if (code >= TAG_SPACE && code <= TAG_SPACE + 15) {
             tagNibbles.push(code - TAG_SPACE);
         } else if (isTagChar(code)) {
             legacyTagBytes.push(code - TAG_START);
@@ -130,10 +135,25 @@ function decodeFromEmoji(text: string): string {
         }
     }
 
+    // Safeguard for base emoji variation selectors (like \uFE0F in ❤️):
+    // If vsNibbles has an odd length and starts with 15 (VS16) or 14 (VS15), shift it off
+    if (vsNibbles.length % 2 !== 0 && (vsNibbles[0] === 15 || vsNibbles[0] === 14)) {
+        vsNibbles.shift();
+    }
+
     let decodedBytes: Uint8Array | null = null;
 
-    if (tagNibbles.length > 0 && tagNibbles.length % 2 === 0) {
-        // 4-bit Tag Character Payload (2 tag characters = 1 byte)
+    if (vsNibbles.length > 0 && vsNibbles.length % 2 === 0) {
+        // Standard Variation Selector 4-bit Nibbles (2 variation selectors = 1 byte)
+        const bytes: number[] = [];
+        for (let i = 0; i < vsNibbles.length; i += 2) {
+            const highNibble = vsNibbles[i];
+            const lowNibble = vsNibbles[i + 1];
+            bytes.push((highNibble << 4) | lowNibble);
+        }
+        decodedBytes = new Uint8Array(bytes);
+    } else if (tagNibbles.length > 0 && tagNibbles.length % 2 === 0) {
+        // 4-bit Tag Character Payload
         const bytes: number[] = [];
         for (let i = 0; i < tagNibbles.length; i += 2) {
             const highNibble = tagNibbles[i];
@@ -142,15 +162,12 @@ function decodeFromEmoji(text: string): string {
         }
         decodedBytes = new Uint8Array(bytes);
     } else if (legacyTagBytes.length > 0) {
-        // Legacy Tag Bytes
         decodedBytes = new Uint8Array(legacyTagBytes);
     } else if (zeroWidthChars.length > 0) {
-        // Zero-Width Payload
         const uniqueChars = new Set(zeroWidthChars);
         const isBase4 = zeroWidthChars.includes('\u200F') || uniqueChars.size > 2 || (zeroWidthChars.length % 8 !== 0);
 
         if (!isBase4 && zeroWidthChars.length % 8 === 0) {
-            // Binary (Base-2) decoding
             const isZwjBinary = zeroWidthChars.includes('\u200D');
             const isLrmBinary = zeroWidthChars.includes('\u200E');
             const bit1Char = isZwjBinary ? '\u200D' : (isLrmBinary ? '\u200E' : '\u200C');
@@ -166,7 +183,6 @@ function decodeFromEmoji(text: string): string {
             }
             decodedBytes = new Uint8Array(bytes);
         } else if (zeroWidthChars.length % 4 === 0) {
-            // Base-4 decoding
             const BASE4_MAP: Record<string, number> = {
                 '\u200B': 0, '\u200C': 1, '\u200E': 2, '\u200F': 3, '\u200D': 2, '\u2060': 3,
             };
