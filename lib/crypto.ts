@@ -7,8 +7,10 @@ import { sha256 } from '@noble/hashes/sha2.js';
 export const bufferToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
   const uint8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   let binary = '';
-  for (let i = 0; i < uint8Array.length; i++) {
-    binary += String.fromCharCode(uint8Array[i]);
+  const CHUNK_SIZE = 0x4000; // 16KB chunk size to avoid call stack limits on huge arrays
+  for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+    const chunk = uint8Array.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
   }
   return btoa(binary);
 };

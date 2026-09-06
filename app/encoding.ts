@@ -89,12 +89,20 @@ function fromVariationSelector(codePoint: number): number | null {
  * Standard variation selectors are native Unicode font modifiers that NEVER render question marks or box symbols.
  */
 function bytesToVsString(bytes: Uint8Array): string {
-    let result = "";
+    const codePoints: number[] = new Array(bytes.length * 2);
     for (let i = 0; i < bytes.length; i++) {
         const byte = bytes[i];
         const highNibble = (byte >> 4) & 0x0F;
         const lowNibble = byte & 0x0F;
-        result += String.fromCodePoint(VARIATION_SELECTOR_START + highNibble) + String.fromCodePoint(VARIATION_SELECTOR_START + lowNibble);
+        codePoints[i * 2] = VARIATION_SELECTOR_START + highNibble;
+        codePoints[i * 2 + 1] = VARIATION_SELECTOR_START + lowNibble;
+    }
+    // Convert codePoints in 8KB chunks for extreme speed on huge strings
+    let result = "";
+    const CHUNK_SIZE = 0x2000;
+    for (let i = 0; i < codePoints.length; i += CHUNK_SIZE) {
+        const chunk = codePoints.slice(i, i + CHUNK_SIZE);
+        result += String.fromCodePoint(...chunk);
     }
     return result;
 }

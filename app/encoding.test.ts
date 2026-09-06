@@ -111,10 +111,10 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('should encode and decode extremely long multi-line texts (1000+ lines) with 100% data integrity', async () => {
+    test('should encode and decode extremely long multi-line texts (3000+ lines / millions of chars) with 100% data integrity', async () => {
         const lines = [];
-        for (let i = 1; i <= 1000; i++) {
-            lines.push(`Line ${i}: وهذا نص تجريبي طويل جداً لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل.`);
+        for (let i = 1; i <= 3000; i++) {
+            lines.push(`Line ${i}: وهذا نص تجريبي ضخم جداً يحتوي على آلاف الكلمات والجمل لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل في المتصفح أو التطبيقات.`);
         }
         const longText = lines.join('\n');
 
