@@ -4,12 +4,14 @@ export type EncryptionType = 'aes256';
 
 // --- Zero-Width & Variation Selector (Emoji Hiding) Logic ---
 
-// Universal Zero-Width characters that NEVER display question marks ('?') or boxes ('[]') on ANY device or chat app (WhatsApp, Telegram, iOS, Android, Windows)
-// \u200B = Zero Width Space (0), \u200C = Zero Width Non-Joiner (1)
-const ZERO_WIDTH_0 = '\u200B';
-const ZERO_WIDTH_1 = '\u200C';
+// Universal Non-Space Zero-Width Formatting characters (Unicode category Cf).
+// We avoid U+200B (Zero Width Space) because software/users often treat U+200B as a space and strip it.
+// U+200C = Zero Width Non-Joiner (bit 0)
+// U+200E = Left-To-Right Mark (bit 1)
+const ZERO_WIDTH_0 = '\u200C';
+const ZERO_WIDTH_1 = '\u200E';
 
-// Legacy zero-width characters mapping for backward decoding support (Base-4 and Base-2)
+// Legacy zero-width characters mapping for backward decoding support
 const BASE4_MAP: Record<string, number> = {
     '\u200C': 0,
     '\u200B': 1,
@@ -19,7 +21,7 @@ const BASE4_MAP: Record<string, number> = {
     '\u2060': 3,
 };
 
-const ALL_ZERO_WIDTH_CHARS = ['\u200B', '\u200C', '\u200E', '\u200F', '\u200D', '\u2060', '\uFEFF'];
+const ALL_ZERO_WIDTH_CHARS = ['\u200C', '\u200E', '\u200B', '\u200F', '\u200D', '\u2060', '\uFEFF'];
 
 const VARIATION_SELECTOR_START = 0xfe00;
 const VARIATION_SELECTOR_END = 0xfe0f;
@@ -108,17 +110,33 @@ function decodeFromEmoji(text: string): string {
 
     let decodedBytes: Uint8Array;
 
-    if (!hasBase4ZeroWidth && hasBinaryZeroWidth && hiddenChars.length % 8 === 0) {
-        // Binary (Base-2) decoding using U+200B and U+200C
+    if (hasBinaryZeroWidth && hiddenChars.length % 8 === 0) {
+        // Binary (Base-2) decoding using U+200C (0) and U+200E (1), or U+200B (0) and U+200C (1)
         const bytes: number[] = [];
-        for (let i = 0; i < hiddenChars.length; i += 8) {
-            let byte = 0;
-            for (let b = 0; b < 8; b++) {
-                const char = hiddenChars[i + b];
-                const bit = char === ZERO_WIDTH_1 ? 1 : 0;
-                byte = (byte << 1) | bit;
+        // Detect binary variant: if U+200E is present or U+200B is present
+        const isNewBinary = hiddenChars.includes('\u200E');
+        const isPrevBinary = hiddenChars.includes('\u200B');
+
+        if (isNewBinary || (!isPrevBinary && hiddenChars.includes('\u200C'))) {
+            for (let i = 0; i < hiddenChars.length; i += 8) {
+                let byte = 0;
+                for (let b = 0; b < 8; b++) {
+                    const char = hiddenChars[i + b];
+                    const bit = char === '\u200E' ? 1 : 0;
+                    byte = (byte << 1) | bit;
+                }
+                bytes.push(byte);
             }
-            bytes.push(byte);
+        } else {
+            for (let i = 0; i < hiddenChars.length; i += 8) {
+                let byte = 0;
+                for (let b = 0; b < 8; b++) {
+                    const char = hiddenChars[i + b];
+                    const bit = char === '\u200C' ? 1 : 0;
+                    byte = (byte << 1) | bit;
+                }
+                bytes.push(byte);
+            }
         }
         decodedBytes = new Uint8Array(bytes);
     } else if (hasBase4ZeroWidth || hasBinaryZeroWidth) {

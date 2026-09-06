@@ -52,7 +52,7 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('encoded emoji string should not contain visible non-emoji or variation selector supplement characters', async () => {
+    test('encoded emoji string should not contain visible non-emoji, variation selector supplement, or U+200B space characters', async () => {
         const text = "Test zero-width clean display";
         const emoji = "🚀";
 
@@ -62,17 +62,36 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256'
         });
 
-        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF) or ZWJ (\u200D) are present
+        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF), ZWJ (\u200D), or ZWSP (\u200B) are present
         for (const char of encoded) {
             const code = char.codePointAt(0)!;
             expect(code >= 0xe0100 && code <= 0xe01ef).toBe(false);
-            expect(char).not.toBe('\u200D'); // No ZWJ that could trigger ligatures or missing glyphs
+            expect(char).not.toBe('\u200D'); // No ZWJ
+            expect(char).not.toBe('\u200B'); // No Zero-Width Space (prevents accidental whitespace stripping)
         }
 
         const decoded = await decode({
             text: encoded,
             type: 'aes256'
         });
+        expect(decoded).toBe(text);
+    })
+
+    test('should decode correctly even if user trims spaces or pastes with surrounding whitespace', async () => {
+        const text = "Message with surrounding spaces test";
+        const encoded = await encode({
+            emoji: "🔑",
+            text: text,
+            type: 'aes256'
+        });
+
+        // Add surrounding whitespace and trim it, mimicking copying/pasting in chat apps
+        const paddedText = `   \n\t ${encoded} \n  `;
+        const decoded = await decode({
+            text: paddedText.trim(),
+            type: 'aes256'
+        });
+
         expect(decoded).toBe(text);
     })
 
