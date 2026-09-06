@@ -2,31 +2,28 @@ import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib
 
 export type EncryptionType = 'aes256';
 
-// --- Zero-Width & Variation Selector (Emoji Hiding) Logic ---
+// --- Tag Character & Zero-Width Steganography Logic ---
 
-// Universal Non-Joining Invisible Zero-Width Formatting characters (Category Cf - Format Control).
-// We avoid U+200D (Zero Width Joiner) because ZWJ directly following an emoji causes mobile OS font engines (iOS CoreText / Android HarfBuzz) and social media app sanitizers (WhatsApp, X/Twitter, Telegram) to attempt forming complex emoji ligatures, failing and stripping the emoji upon paste.
-// Instead, we use U+200C (Zero Width Non-Joiner - ZWNJ) for bit 0 and U+200E (Left-To-Right Mark - LRM) for bit 1.
-// Both characters are completely invisible, non-joining, and preserved when pasted into any input field or app across iOS, Android, Windows, and Web.
-const ZERO_WIDTH_0 = '\u200C';
-const ZERO_WIDTH_1 = '\u200E';
+// Unicode Tag Characters (U+E0020 - U+E007E)
+// Tag characters are officially defined by the Unicode Consortium as invisible non-rendering metadata tags.
+// They are 100% invisible on all operating systems (iOS, Android, Windows, macOS) and are preserved 100% reliably
+// when copied and pasted into social media chat inputs (WhatsApp, Telegram, X/Twitter, Instagram, etc.).
+const TAG_START = 0xe0000;
+const TAG_SPACE = 0xe0020; // Represents byte 0x20 (' ') or byte value offset
+const TAG_END = 0xe007f;
 
-// Legacy zero-width characters mapping for backward decoding support
-const BASE4_MAP: Record<string, number> = {
-    '\u200C': 0,
-    '\u200B': 1,
-    '\u200E': 2,
-    '\u200F': 3,
-    '\u200D': 2,
-    '\u2060': 3,
-};
+const ZERO_WIDTH_0 = '\u200C'; // Zero Width Non-Joiner
+const ZERO_WIDTH_1 = '\u200E'; // Left-To-Right Mark
 
 const ALL_ZERO_WIDTH_CHARS = ['\u200C', '\u200E', '\u200B', '\u200F', '\u200D', '\u2060', '\uFEFF'];
-
 const VARIATION_SELECTOR_START = 0xfe00;
 const VARIATION_SELECTOR_END = 0xfe0f;
 const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
+
+const isTagChar = (code: number): boolean => {
+    return code >= TAG_START && code <= TAG_END;
+};
 
 const isZeroWidthChar = (char: string): boolean => {
     return ALL_ZERO_WIDTH_CHARS.includes(char);
@@ -43,16 +40,32 @@ const isStandardVariationSelector = (code: number): boolean => {
 const isHiddenDataChar = (char: string): boolean => {
     if (isZeroWidthChar(char)) return true;
     const code = char.codePointAt(0);
-    return code !== undefined ? isLegacyVariationSelector(code) : false;
+    if (code === undefined) return false;
+    return isTagChar(code) || isLegacyVariationSelector(code);
 };
 
 const isMessageStartChar = (char: string): boolean => {
     if (isZeroWidthChar(char)) return false;
     const code = char.codePointAt(0);
     if (code === undefined) return false;
-    if (isStandardVariationSelector(code) || isLegacyVariationSelector(code)) return false;
+    if (isTagChar(code) || isStandardVariationSelector(code) || isLegacyVariationSelector(code)) return false;
     return true;
 };
+
+/**
+ * Converts bytes to 4-bit Unicode Tag Characters (U+E0020 - U+E002F).
+ * Each byte (0-255) is converted to 2 tag characters: high nibble and low nibble.
+ */
+function bytesToTagString(bytes: Uint8Array): string {
+    let result = "";
+    for (let i = 0; i < bytes.length; i++) {
+        const byte = bytes[i];
+        const highNibble = (byte >> 4) & 0x0F;
+        const lowNibble = byte & 0x0F;
+        result += String.fromCodePoint(TAG_SPACE + highNibble) + String.fromCodePoint(TAG_SPACE + lowNibble);
+    }
+    return result;
+}
 
 function byteToZeroWidthBinary(byte: number): string {
     let result = "";
@@ -72,116 +85,92 @@ function fromVariationSelector(codePoint: number): number | null {
 
 function encodeToEmoji(emoji: string, text: string): string {
     const bytes = new TextEncoder().encode(text);
-    let payload = "";
-    for (const byte of bytes) {
-        payload += byteToZeroWidthBinary(byte);
-    }
-    // Attach zero-width payload directly AFTER the base emoji so it forms a unified grapheme cluster that is preserved when copied or pasted in chat apps
-    return emoji + payload;
+    // Convert bytes directly to invisible Tag Characters attached directly AFTER the base emoji
+    const tagPayload = bytesToTagString(bytes);
+    return emoji + tagPayload;
 }
 
 function decodeFromEmoji(text: string): string {
     if (!text) return "";
 
-    const hiddenChars: string[] = [];
-    let hasBinaryZeroWidth = false;
-    let hasBase4ZeroWidth = false;
-    let hasLegacyVs = false;
+    const tagNibbles: number[] = [];
+    const legacyTagBytes: number[] = [];
+    const zeroWidthChars: string[] = [];
+    const legacyVsBytes: number[] = [];
 
     const iterator = text[Symbol.iterator]();
 
     for (const char of iterator) {
-        if (isZeroWidthChar(char)) {
-            hiddenChars.push(char);
-            if (char === ZERO_WIDTH_0 || char === ZERO_WIDTH_1) {
-                hasBinaryZeroWidth = true;
-            } else {
-                hasBase4ZeroWidth = true;
-            }
-        } else {
-            const code = char.codePointAt(0);
-            if (code !== undefined && isLegacyVariationSelector(code)) {
-                hiddenChars.push(char);
-                hasLegacyVs = true;
-            }
+        const code = char.codePointAt(0);
+        if (code === undefined) continue;
+
+        if (code >= TAG_SPACE && code <= TAG_SPACE + 15) {
+            tagNibbles.push(code - TAG_SPACE);
+        } else if (isTagChar(code)) {
+            legacyTagBytes.push(code - TAG_START);
+        } else if (isZeroWidthChar(char)) {
+            zeroWidthChars.push(char);
+        } else if (isLegacyVariationSelector(code)) {
+            const byte = fromVariationSelector(code);
+            if (byte !== null) legacyVsBytes.push(byte);
         }
     }
 
-    if (hiddenChars.length === 0) return "";
+    let decodedBytes: Uint8Array | null = null;
 
-    let decodedBytes: Uint8Array;
-
-    if (hasBinaryZeroWidth && hiddenChars.length % 8 === 0) {
-        // Binary (Base-2) decoding:
-        // Current primary: U+200C (bit 0) and U+200D (bit 1)
-        // Previous variants: U+200C (0) / U+200E (1), or U+200B (0) / U+200C (1)
+    if (tagNibbles.length > 0 && tagNibbles.length % 2 === 0) {
+        // 4-bit Tag Character Payload (2 tag characters = 1 byte)
         const bytes: number[] = [];
-        const isZwjBinary = hiddenChars.includes('\u200D');
-        const isLrmBinary = hiddenChars.includes('\u200E');
-
-        if (isZwjBinary) {
-            for (let i = 0; i < hiddenChars.length; i += 8) {
-                let byte = 0;
-                for (let b = 0; b < 8; b++) {
-                    const char = hiddenChars[i + b];
-                    const bit = char === '\u200D' ? 1 : 0;
-                    byte = (byte << 1) | bit;
-                }
-                bytes.push(byte);
-            }
-        } else if (isLrmBinary) {
-            for (let i = 0; i < hiddenChars.length; i += 8) {
-                let byte = 0;
-                for (let b = 0; b < 8; b++) {
-                    const char = hiddenChars[i + b];
-                    const bit = char === '\u200E' ? 1 : 0;
-                    byte = (byte << 1) | bit;
-                }
-                bytes.push(byte);
-            }
-        } else {
-            for (let i = 0; i < hiddenChars.length; i += 8) {
-                let byte = 0;
-                for (let b = 0; b < 8; b++) {
-                    const char = hiddenChars[i + b];
-                    const bit = char === '\u200C' ? 1 : 0;
-                    byte = (byte << 1) | bit;
-                }
-                bytes.push(byte);
-            }
+        for (let i = 0; i < tagNibbles.length; i += 2) {
+            const highNibble = tagNibbles[i];
+            const lowNibble = tagNibbles[i + 1];
+            bytes.push((highNibble << 4) | lowNibble);
         }
         decodedBytes = new Uint8Array(bytes);
-    } else if (hasBase4ZeroWidth || hasBinaryZeroWidth) {
-        // Legacy Base-4 decoding
-        const bytes: number[] = [];
-        for (let i = 0; i < hiddenChars.length; i += 4) {
-            if (i + 3 < hiddenChars.length) {
-                const b0 = BASE4_MAP[hiddenChars[i]];
-                const b1 = BASE4_MAP[hiddenChars[i + 1]];
-                const b2 = BASE4_MAP[hiddenChars[i + 2]];
-                const b3 = BASE4_MAP[hiddenChars[i + 3]];
+    } else if (legacyTagBytes.length > 0) {
+        // Legacy Tag Bytes
+        decodedBytes = new Uint8Array(legacyTagBytes);
+    } else if (zeroWidthChars.length > 0) {
+        // Zero-Width Payload (Backward Compatibility)
+        const isZwjBinary = zeroWidthChars.includes('\u200D');
+        const isLrmBinary = zeroWidthChars.includes('\u200E');
+        const isZwspBinary = zeroWidthChars.includes('\u200B');
+
+        if ((isZwjBinary || isLrmBinary || isZwspBinary) && zeroWidthChars.length % 8 === 0) {
+            const bytes: number[] = [];
+            const bit1Char = isZwjBinary ? '\u200D' : (isLrmBinary ? '\u200E' : '\u200C');
+            for (let i = 0; i < zeroWidthChars.length; i += 8) {
+                let byte = 0;
+                for (let b = 0; b < 8; b++) {
+                    const char = zeroWidthChars[i + b];
+                    const bit = char === bit1Char ? 1 : 0;
+                    byte = (byte << 1) | bit;
+                }
+                bytes.push(byte);
+            }
+            decodedBytes = new Uint8Array(bytes);
+        } else if (zeroWidthChars.length % 4 === 0) {
+            // Base-4 decoding
+            const BASE4_MAP: Record<string, number> = {
+                '\u200C': 0, '\u200B': 1, '\u200E': 2, '\u200F': 3, '\u200D': 2, '\u2060': 3,
+            };
+            const bytes: number[] = [];
+            for (let i = 0; i < zeroWidthChars.length; i += 4) {
+                const b0 = BASE4_MAP[zeroWidthChars[i]];
+                const b1 = BASE4_MAP[zeroWidthChars[i + 1]];
+                const b2 = BASE4_MAP[zeroWidthChars[i + 2]];
+                const b3 = BASE4_MAP[zeroWidthChars[i + 3]];
                 if (b0 !== undefined && b1 !== undefined && b2 !== undefined && b3 !== undefined) {
-                    const byte = (b0 << 6) | (b1 << 4) | (b2 << 2) | b3;
-                    bytes.push(byte);
+                    bytes.push((b0 << 6) | (b1 << 4) | (b2 << 2) | b3);
                 }
             }
+            decodedBytes = new Uint8Array(bytes);
         }
-        decodedBytes = new Uint8Array(bytes);
-    } else if (hasLegacyVs) {
-        const bytes: number[] = [];
-        for (const char of hiddenChars) {
-            const code = char.codePointAt(0);
-            if (code !== undefined) {
-                const byte = fromVariationSelector(code);
-                if (byte !== null) {
-                    bytes.push(byte);
-                }
-            }
-        }
-        decodedBytes = new Uint8Array(bytes);
-    } else {
-        return "";
+    } else if (legacyVsBytes.length > 0) {
+        decodedBytes = new Uint8Array(legacyVsBytes);
     }
+
+    if (!decodedBytes || decodedBytes.length === 0) return "";
 
     return new TextDecoder().decode(decodedBytes);
 }
@@ -249,6 +238,10 @@ export async function decode({ text, type, passwords }: DecodeParams): Promise<s
             }
 
             if (!passwords || passwords.length === 0) {
+                // If the hidden payload is an encrypted JSON string (contains ct, s, iv) but no password was provided, throw a clear password error
+                if (hiddenText.startsWith('{"ct":') || hiddenText.startsWith('eyJ')) {
+                    throw new Error("هذا النص المرمز محمي بكلمة مرور. يرجى تفعيل كلمة المرور وإدخالها لفك التشفير.");
+                }
                 decodedLines.push(hiddenText);
             } else {
                 const decryptedText = passwords.length > 1
