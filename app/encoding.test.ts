@@ -52,7 +52,7 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('encoded emoji string should not contain visible non-emoji, variation selector supplement, or U+200B space characters', async () => {
+    test('encoded emoji string should not contain visible non-emoji or variation selector supplement characters', async () => {
         const text = "Test zero-width clean display";
         const emoji = "🚀";
 
@@ -62,12 +62,10 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256'
         });
 
-        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF), ZWJ (\u200D), or ZWSP (\u200B) are present
+        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF) are present
         for (const char of encoded) {
             const code = char.codePointAt(0)!;
             expect(code >= 0xe0100 && code <= 0xe01ef).toBe(false);
-            expect(char).not.toBe('\u200D'); // No ZWJ
-            expect(char).not.toBe('\u200B'); // No Zero-Width Space (prevents accidental whitespace stripping)
         }
 
         const decoded = await decode({

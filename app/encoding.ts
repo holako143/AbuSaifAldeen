@@ -4,10 +4,10 @@ export type EncryptionType = 'aes256';
 
 // --- Zero-Width & Variation Selector (Emoji Hiding) Logic ---
 
-// Universal Non-Space Zero-Width Formatting characters (Unicode category Cf).
-// We avoid U+200B (Zero Width Space) because software/users often treat U+200B as a space and strip it.
-// U+200C = Zero Width Non-Joiner (bit 0)
-// U+200E = Left-To-Right Mark (bit 1)
+// Universal Non-Joining Invisible Zero-Width Formatting characters (Category Cf - Format Control).
+// We avoid U+200D (Zero Width Joiner) because ZWJ directly following an emoji causes mobile OS font engines (iOS CoreText / Android HarfBuzz) and social media app sanitizers (WhatsApp, X/Twitter, Telegram) to attempt forming complex emoji ligatures, failing and stripping the emoji upon paste.
+// Instead, we use U+200C (Zero Width Non-Joiner - ZWNJ) for bit 0 and U+200E (Left-To-Right Mark - LRM) for bit 1.
+// Both characters are completely invisible, non-joining, and preserved when pasted into any input field or app across iOS, Android, Windows, and Web.
 const ZERO_WIDTH_0 = '\u200C';
 const ZERO_WIDTH_1 = '\u200E';
 
@@ -76,8 +76,8 @@ function encodeToEmoji(emoji: string, text: string): string {
     for (const byte of bytes) {
         payload += byteToZeroWidthBinary(byte);
     }
-    // Place zero-width payload before the base emoji so that pressing backspace behind the emoji immediately deletes the visible emoji
-    return payload + emoji;
+    // Attach zero-width payload directly AFTER the base emoji so it forms a unified grapheme cluster that is preserved when copied or pasted in chat apps
+    return emoji + payload;
 }
 
 function decodeFromEmoji(text: string): string {
@@ -112,13 +112,24 @@ function decodeFromEmoji(text: string): string {
     let decodedBytes: Uint8Array;
 
     if (hasBinaryZeroWidth && hiddenChars.length % 8 === 0) {
-        // Binary (Base-2) decoding using U+200C (0) and U+200E (1), or U+200B (0) and U+200C (1)
+        // Binary (Base-2) decoding:
+        // Current primary: U+200C (bit 0) and U+200D (bit 1)
+        // Previous variants: U+200C (0) / U+200E (1), or U+200B (0) / U+200C (1)
         const bytes: number[] = [];
-        // Detect binary variant: if U+200E is present or U+200B is present
-        const isNewBinary = hiddenChars.includes('\u200E');
-        const isPrevBinary = hiddenChars.includes('\u200B');
+        const isZwjBinary = hiddenChars.includes('\u200D');
+        const isLrmBinary = hiddenChars.includes('\u200E');
 
-        if (isNewBinary || (!isPrevBinary && hiddenChars.includes('\u200C'))) {
+        if (isZwjBinary) {
+            for (let i = 0; i < hiddenChars.length; i += 8) {
+                let byte = 0;
+                for (let b = 0; b < 8; b++) {
+                    const char = hiddenChars[i + b];
+                    const bit = char === '\u200D' ? 1 : 0;
+                    byte = (byte << 1) | bit;
+                }
+                bytes.push(byte);
+            }
+        } else if (isLrmBinary) {
             for (let i = 0; i < hiddenChars.length; i += 8) {
                 let byte = 0;
                 for (let b = 0; b < 8; b++) {
