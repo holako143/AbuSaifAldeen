@@ -1,3 +1,4 @@
+import pako from 'pako';
 import { encryptAES, decryptAES, encryptMultiple, decryptMultiple } from "../lib/crypto";
 
 export type EncryptionType = 'aes256';
@@ -99,8 +100,9 @@ function bytesToVsString(bytes: Uint8Array): string {
 }
 
 function encodeToEmoji(emoji: string, text: string): string {
-    const bytes = new TextEncoder().encode(text);
-    const vsPayload = bytesToVsString(bytes);
+    // Compress unencrypted text with max deflate compression (level 9) for ultra-compact payloads
+    const compressed = pako.deflate(text, { level: 9 });
+    const vsPayload = bytesToVsString(compressed);
     // Attach standard Variation Selector payload directly AFTER the base emoji
     return emoji + vsPayload;
 }
@@ -204,7 +206,12 @@ function decodeFromEmoji(text: string): string {
 
     if (!decodedBytes || decodedBytes.length === 0) return "";
 
-    return new TextDecoder().decode(decodedBytes);
+    // Try decompressing pako deflate payload first, fallback to raw UTF-8 string decoding
+    try {
+        return pako.inflate(decodedBytes, { to: 'string' });
+    } catch (e) {
+        return new TextDecoder().decode(decodedBytes);
+    }
 }
 
 
