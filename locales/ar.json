@@ -146,7 +146,7 @@
     }
   },
   "topbar": {
-    "appName": "شفريشن",
+    "appName": "حلميشن",
     "logoTooltip": "اضغط مرة للرئيسية، ومرتين للوضع الآمن",
     "safeModeEnabled": "تم تفعيل الوضع الآمن",
     "safeModeEnabledDesc": "سيتم الآن تشفير البيانات باستخدام AES-256.",
