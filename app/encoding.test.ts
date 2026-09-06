@@ -145,4 +145,45 @@ describe('emoji encoder/decoder', () => {
 
         expect(decoded).toBe("Hi");
     })
+
+    test('should encode and decode with Option 1 (bracket framing)', async () => {
+        const secret = "Top secret message inside brackets";
+        const encoded = await encode({
+            emoji: "🔑",
+            text: secret,
+            type: 'aes256',
+            useBrackets: true
+        });
+
+        expect(encoded.startsWith("⟦")).toBe(true);
+        expect(encoded.endsWith("⟧")).toBe(true);
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256'
+        });
+
+        expect(decoded).toBe(secret);
+    })
+
+    test('should encode and decode with Option 2 (cover text steganography)', async () => {
+        const secret = "Covert operation payload";
+        const coverText = "مساء الخير أتمنى لك يوماً سعيداً وموفقاً";
+
+        const encoded = await encode({
+            emoji: "🔑",
+            text: secret,
+            type: 'aes256',
+            coverText: coverText
+        });
+
+        expect(encoded).toContain("مساء الخير");
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256'
+        });
+
+        expect(decoded).toBe(secret);
+    })
 })

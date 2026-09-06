@@ -5,6 +5,7 @@ import { Copy, Share, ClipboardPaste, X, ArrowRightLeft, KeyRound, ShieldCheck, 
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,9 @@ export function Base64EncoderDecoderContent() {
   const [errorText, setErrorText] = useState("");
   const [defaultTab, setDefaultTab] = useState("emoji");
   const [passwords, setPasswords] = useState([{ id: 1, value: "" }]);
+  const [useBrackets, setUseBrackets] = useState(false);
+  const [useCoverText, setUseCoverText] = useState(false);
+  const [coverText, setCoverText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
@@ -96,7 +100,7 @@ export function Base64EncoderDecoderContent() {
       setErrorText("");
       try {
         const result = isEncoding
-          ? await encode({ emoji: selectedEmoji, text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] })
+          ? await encode({ emoji: selectedEmoji, text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [], useBrackets, coverText: useCoverText ? coverText : undefined })
           : await decode({ text: inputText, type: 'aes256', passwords: isPasswordGloballyEnabled ? activePasswords : [] });
 
         setOutputText(result);
@@ -121,7 +125,7 @@ export function Base64EncoderDecoderContent() {
     };
     const debounceTimeout = setTimeout(() => { processText(); }, 500);
     return () => clearTimeout(debounceTimeout);
-  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, autoCopy, toast, t]);
+  }, [mode, selectedEmoji, inputText, isPasswordGloballyEnabled, passwords, useBrackets, useCoverText, coverText, autoCopy, toast, t]);
 
   const handleModeToggle = (checked: boolean) => setModeState(checked ? "encode" : "decode");
   useEffect(() => { if (typeof navigator !== "undefined" && typeof navigator.share === 'function') setShowShare(true); }, []);
@@ -247,14 +251,42 @@ export function Base64EncoderDecoderContent() {
         </div>
 
         {isEncoding && (
-            <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full animate-in">
-                <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="emoji" disabled={!isEncoding}>{t('encoderDecoder.iconsTab')}</TabsTrigger>
-                <TabsTrigger value="alphabet" disabled={!isEncoding}>{t('encoderDecoder.alphabetsTab')}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
-                <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
-            </Tabs>
+            <div className="space-y-3">
+                <div className="flex flex-col space-y-2 p-3 border rounded-lg animate-in">
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <Checkbox id="use-brackets" checked={useBrackets} onCheckedChange={(c) => setUseBrackets(!!c)} />
+                        <Label htmlFor="use-brackets" className="text-sm font-medium cursor-pointer">
+                            {t('encoderDecoder.useBracketsLabel')}
+                        </Label>
+                    </div>
+
+                    <div className="flex flex-col space-y-2 pt-1">
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            <Checkbox id="use-cover-text" checked={useCoverText} onCheckedChange={(c) => setUseCoverText(!!c)} />
+                            <Label htmlFor="use-cover-text" className="text-sm font-medium cursor-pointer">
+                                {t('encoderDecoder.useCoverTextLabel')}
+                            </Label>
+                        </div>
+                        {useCoverText && (
+                            <Input
+                                placeholder={t('encoderDecoder.coverTextPlaceholder')}
+                                value={coverText}
+                                onChange={(e) => setCoverText(e.target.value)}
+                                className="mt-1 text-sm"
+                            />
+                        )}
+                    </div>
+                </div>
+
+                <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full animate-in">
+                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="emoji" disabled={!isEncoding}>{t('encoderDecoder.iconsTab')}</TabsTrigger>
+                    <TabsTrigger value="alphabet" disabled={!isEncoding}>{t('encoderDecoder.alphabetsTab')}</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="emoji"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={emojiList} disabled={!isEncoding} /></TabsContent>
+                    <TabsContent value="alphabet"><EmojiSelector onEmojiSelect={setSelectedEmoji} selectedEmoji={selectedEmoji} emojiList={alphabetList} disabled={!isEncoding} /></TabsContent>
+                </Tabs>
+            </div>
         )}
 
         <div>

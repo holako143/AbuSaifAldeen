@@ -107,12 +107,22 @@ function bytesToVsString(bytes: Uint8Array): string {
     return result;
 }
 
-function encodeToEmoji(emoji: string, text: string): string {
+function encodeToEmoji(emoji: string, text: string, useBrackets?: boolean, coverText?: string): string {
     // Compress text with max deflate compression (level 9) for ultra-compact payloads
     const compressed = pako.deflate(text, { level: 9 });
     const vsPayload = bytesToVsString(compressed);
-    // Attach standard Variation Selector payload directly AFTER the base emoji
-    return emoji + vsPayload;
+
+    // Option 2: Cover Text Steganography
+    if (coverText && coverText.trim()) {
+        const words = coverText.trim().split(/\s+/);
+        if (words.length === 1) return words[0] + vsPayload;
+        const mid = Math.floor(words.length / 2);
+        return words.slice(0, mid).join(" ") + " " + vsPayload + " " + words.slice(mid).join(" ");
+    }
+
+    // Option 1: Bracket Framing (e.g. ⟦🔑...⟧)
+    const base = emoji + vsPayload;
+    return useBrackets ? "⟦" + base + "⟧" : base;
 }
 
 function decodeFromEmoji(text: string): string {
@@ -241,22 +251,24 @@ interface EncodeParams {
     text: string;
     type: EncryptionType;
     passwords?: string[];
+    useBrackets?: boolean;
+    coverText?: string;
 }
 
-export async function encode({ emoji, text, type, passwords }: EncodeParams): Promise<string> {
+export async function encode({ emoji, text, type, passwords, useBrackets, coverText }: EncodeParams): Promise<string> {
     if (type !== 'aes256') {
         throw new Error(`Unsupported encryption type: ${type}`);
     }
     if (!passwords || passwords.length === 0) {
         // If no password, just encode the text directly without encryption.
-        return encodeToEmoji(emoji, text);
+        return encodeToEmoji(emoji, text, useBrackets, coverText);
     }
 
     // Use multiple encryption if more than one password is provided, otherwise use single encryption
     const encryptedText = passwords.length > 1
         ? await encryptMultiple(text, passwords)
         : await encryptAES(text, passwords[0]);
-    return encodeToEmoji(emoji, encryptedText);
+    return encodeToEmoji(emoji, encryptedText, useBrackets, coverText);
 }
 
 
