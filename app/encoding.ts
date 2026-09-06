@@ -108,7 +108,7 @@ function bytesToVsString(bytes: Uint8Array): string {
 }
 
 function encodeToEmoji(emoji: string, text: string): string {
-    // Compress unencrypted text with max deflate compression (level 9) for ultra-compact payloads
+    // Compress text with max deflate compression (level 9) for ultra-compact payloads
     const compressed = pako.deflate(text, { level: 9 });
     const vsPayload = bytesToVsString(compressed);
     // Attach standard Variation Selector payload directly AFTER the base emoji
@@ -125,6 +125,8 @@ function decodeFromEmoji(text: string): string {
     const legacyVsBytes: number[] = [];
 
     const iterator = text[Symbol.iterator]();
+    // Skip base emoji symbol
+    iterator.next();
 
     for (const char of iterator) {
         const code = char.codePointAt(0);
@@ -153,15 +155,24 @@ function decodeFromEmoji(text: string): string {
 
     let decodedBytes: Uint8Array | null = null;
 
-    if (vsNibbles.length > 0 && vsNibbles.length % 2 === 0) {
-        // Standard Variation Selector 4-bit Nibbles (2 variation selectors = 1 byte)
-        const bytes: number[] = [];
-        for (let i = 0; i < vsNibbles.length; i += 2) {
-            const highNibble = vsNibbles[i];
-            const lowNibble = vsNibbles[i + 1];
-            bytes.push((highNibble << 4) | lowNibble);
+    if (vsNibbles.length > 0) {
+        if (vsNibbles.length % 2 === 0) {
+            // Standard Variation Selector 4-bit Nibbles (2 variation selectors = 1 byte)
+            const bytes: number[] = [];
+            for (let i = 0; i < vsNibbles.length; i += 2) {
+                const highNibble = vsNibbles[i];
+                const lowNibble = vsNibbles[i + 1];
+                bytes.push((highNibble << 4) | lowNibble);
+            }
+            decodedBytes = new Uint8Array(bytes);
+        } else {
+            // Legacy single-byte variation selectors (VS1-VS16 for 0..15)
+            const bytes: number[] = [];
+            for (const nibble of vsNibbles) {
+                bytes.push(nibble);
+            }
+            decodedBytes = new Uint8Array(bytes);
         }
-        decodedBytes = new Uint8Array(bytes);
     } else if (tagNibbles.length > 0 && tagNibbles.length % 2 === 0) {
         // 4-bit Tag Character Payload
         const bytes: number[] = [];
