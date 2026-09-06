@@ -54,8 +54,8 @@ export function TopBar() {
             >
               <ShieldCheck className={cn("h-6 w-6 text-primary transition-colors", isPasswordEnabled && "text-green-500")} />
               <h1 className="text-xl font-bold">{t('topbar.appName')}</h1>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                مرحباً بك التجربة رقم 13
+              <span className="text-sm px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                🇶🇦
               </span>
             </button>
         </div>
