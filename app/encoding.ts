@@ -83,11 +83,25 @@ function fromVariationSelector(codePoint: number): number | null {
     return null;
 }
 
+function byteToZeroWidthBase4(byte: number): string {
+    // Base-4 zero-width encoding: 2 bits per character (4 zero-width chars per byte)
+    // Using U+200B (00), U+200C (01), U+200E (10), U+200F (11)
+    const BASE4_CHARS = ['\u200B', '\u200C', '\u200E', '\u200F'];
+    const p0 = (byte >> 6) & 3;
+    const p1 = (byte >> 4) & 3;
+    const p2 = (byte >> 2) & 3;
+    const p3 = byte & 3;
+    return BASE4_CHARS[p0] + BASE4_CHARS[p1] + BASE4_CHARS[p2] + BASE4_CHARS[p3];
+}
+
 function encodeToEmoji(emoji: string, text: string): string {
     const bytes = new TextEncoder().encode(text);
-    // Convert bytes directly to invisible Tag Characters attached directly AFTER the base emoji
-    const tagPayload = bytesToTagString(bytes);
-    return emoji + tagPayload;
+    let payload = "";
+    for (let i = 0; i < bytes.length; i++) {
+        payload += byteToZeroWidthBase4(bytes[i]);
+    }
+    // Attach zero-width payload directly AFTER the base emoji
+    return emoji + payload;
 }
 
 function decodeFromEmoji(text: string): string {
@@ -131,14 +145,16 @@ function decodeFromEmoji(text: string): string {
         // Legacy Tag Bytes
         decodedBytes = new Uint8Array(legacyTagBytes);
     } else if (zeroWidthChars.length > 0) {
-        // Zero-Width Payload (Backward Compatibility)
-        const isZwjBinary = zeroWidthChars.includes('\u200D');
-        const isLrmBinary = zeroWidthChars.includes('\u200E');
-        const isZwspBinary = zeroWidthChars.includes('\u200B');
+        // Zero-Width Payload
+        const uniqueChars = new Set(zeroWidthChars);
+        const isBase4 = zeroWidthChars.includes('\u200F') || uniqueChars.size > 2 || (zeroWidthChars.length % 8 !== 0);
 
-        if ((isZwjBinary || isLrmBinary || isZwspBinary) && zeroWidthChars.length % 8 === 0) {
-            const bytes: number[] = [];
+        if (!isBase4 && zeroWidthChars.length % 8 === 0) {
+            // Binary (Base-2) decoding
+            const isZwjBinary = zeroWidthChars.includes('\u200D');
+            const isLrmBinary = zeroWidthChars.includes('\u200E');
             const bit1Char = isZwjBinary ? '\u200D' : (isLrmBinary ? '\u200E' : '\u200C');
+            const bytes: number[] = [];
             for (let i = 0; i < zeroWidthChars.length; i += 8) {
                 let byte = 0;
                 for (let b = 0; b < 8; b++) {
@@ -152,7 +168,7 @@ function decodeFromEmoji(text: string): string {
         } else if (zeroWidthChars.length % 4 === 0) {
             // Base-4 decoding
             const BASE4_MAP: Record<string, number> = {
-                '\u200C': 0, '\u200B': 1, '\u200E': 2, '\u200F': 3, '\u200D': 2, '\u2060': 3,
+                '\u200B': 0, '\u200C': 1, '\u200E': 2, '\u200F': 3, '\u200D': 2, '\u2060': 3,
             };
             const bytes: number[] = [];
             for (let i = 0; i < zeroWidthChars.length; i += 4) {
