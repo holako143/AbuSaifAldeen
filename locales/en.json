@@ -3,6 +3,9 @@
     "title": "Encoder & Decoder",
     "encodeLabel": "Encode Text",
     "decodeLabel": "Decode Text",
+    "useBracketsLabel": "Add framing brackets ⟦😀⟧ (prevents data loss & easy to select)",
+    "useCoverTextLabel": "Cover Text Steganography (hide inside normal text)",
+    "coverTextPlaceholder": "Enter cover text/sentence (e.g., Good evening, hope you have a great day)",
     "passwordRequiredError": "At least one password is required when the password option is enabled.",
     "genericError": "Error in {mode}",
     "encodeError": "encoding",
@@ -143,7 +146,7 @@
     }
   },
   "topbar": {
-    "appName": "Shifrishan",
+    "appName": "Hilmishan",
     "logoTooltip": "Click once for Home, double-click for Secure Mode",
     "safeModeEnabled": "Secure Mode Enabled",
     "safeModeEnabledDesc": "Data will now be encrypted using AES-256.",

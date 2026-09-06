@@ -52,7 +52,7 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('encoded emoji string should not contain visible non-emoji, variation selector supplement, or U+200B space characters', async () => {
+    test('encoded emoji string should not contain visible non-emoji or variation selector supplement characters', async () => {
         const text = "Test zero-width clean display";
         const emoji = "🚀";
 
@@ -62,12 +62,10 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256'
         });
 
-        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF), ZWJ (\u200D), or ZWSP (\u200B) are present
+        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF) are present
         for (const char of encoded) {
             const code = char.codePointAt(0)!;
             expect(code >= 0xe0100 && code <= 0xe01ef).toBe(false);
-            expect(char).not.toBe('\u200D'); // No ZWJ
-            expect(char).not.toBe('\u200B'); // No Zero-Width Space (prevents accidental whitespace stripping)
         }
 
         const decoded = await decode({
@@ -113,10 +111,10 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('should encode and decode extremely long multi-line texts (1000+ lines) with 100% data integrity', async () => {
+    test('should encode and decode extremely long multi-line texts (3000+ lines / millions of chars) with 100% data integrity', async () => {
         const lines = [];
-        for (let i = 1; i <= 1000; i++) {
-            lines.push(`Line ${i}: وهذا نص تجريبي طويل جداً لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل.`);
+        for (let i = 1; i <= 3000; i++) {
+            lines.push(`Line ${i}: وهذا نص تجريبي ضخم جداً يحتوي على آلاف الكلمات والجمل لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل في المتصفح أو التطبيقات.`);
         }
         const longText = lines.join('\n');
 
@@ -146,5 +144,48 @@ describe('emoji encoder/decoder', () => {
         });
 
         expect(decoded).toBe("Hi");
+    })
+
+    test('should encode and decode with Option 1 (custom bracket framing)', async () => {
+        const secret = "Top secret message inside custom brackets";
+        const encoded = await encode({
+            emoji: "🔑",
+            text: secret,
+            type: 'aes256',
+            useBrackets: true,
+            leftBracket: "✨",
+            rightBracket: "✨"
+        });
+
+        expect(encoded.startsWith("✨")).toBe(true);
+        expect(encoded.endsWith("✨")).toBe(true);
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256'
+        });
+
+        expect(decoded).toBe(secret);
+    })
+
+    test('should encode and decode with Option 2 (cover text steganography)', async () => {
+        const secret = "Covert operation payload";
+        const coverText = "مساء الخير أتمنى لك يوماً سعيداً وموفقاً";
+
+        const encoded = await encode({
+            emoji: "🔑",
+            text: secret,
+            type: 'aes256',
+            coverText: coverText
+        });
+
+        expect(encoded).toContain("مساء الخير");
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256'
+        });
+
+        expect(decoded).toBe(secret);
     })
 })

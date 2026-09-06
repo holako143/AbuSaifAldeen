@@ -1,6 +1,6 @@
 {
-  "name": "شفريشن",
-  "short_name": "شفريشن",
+  "name": "حلميشن",
+  "short_name": "حلميشن",
   "description": "تطبيق تشفير احترافي لإخفاء النصوص والرسائل.",
   "start_url": "/?standalone=true",
   "display": "standalone",

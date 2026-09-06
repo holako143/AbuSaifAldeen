@@ -3,7 +3,7 @@ import { AppProvider } from "@/components/app-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "شفريشن",
+  title: "حلميشن",
   description: "تطبيق تشفير احترافي",
   manifest: "/manifest.json",
   icons: {
