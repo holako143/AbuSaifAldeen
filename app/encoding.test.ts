@@ -62,16 +62,35 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256'
         });
 
-        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF) are present
+        // Ensure no characters in the supplementary variation selector range (0xE0100 - 0xE01EF) or ZWJ (\u200D) are present
         for (const char of encoded) {
             const code = char.codePointAt(0)!;
             expect(code >= 0xe0100 && code <= 0xe01ef).toBe(false);
+            expect(char).not.toBe('\u200D'); // No ZWJ that could trigger ligatures or missing glyphs
         }
 
         const decoded = await decode({
             text: encoded,
             type: 'aes256'
         });
+        expect(decoded).toBe(text);
+    })
+
+    test('should correctly encode and decode when base emoji contains variation selector 16 (e.g. ❤️ or ⚠️)', async () => {
+        const text = "Secret message behind heart emoji";
+        const emojiWithVS16 = "❤️"; // Contains \u2764 and \uFE0F
+
+        const encoded = await encode({
+            emoji: emojiWithVS16,
+            text: text,
+            type: 'aes256'
+        });
+
+        const decoded = await decode({
+            text: encoded,
+            type: 'aes256'
+        });
+
         expect(decoded).toBe(text);
     })
 

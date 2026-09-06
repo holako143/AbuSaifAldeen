@@ -4,16 +4,20 @@ export type EncryptionType = 'aes256';
 
 // --- Zero-Width & Variation Selector (Emoji Hiding) Logic ---
 
-// 100% invisible Zero-Width characters that render cleanly without boxes or question marks across all mobile devices, OS, and browsers
-// Using U+200B, U+200C, U+200D, U+2060 (All highly reliable zero-width invisible formatting characters)
-const ZERO_WIDTH_CHARS = ['\u200B', '\u200C', '\u200D', '\u2060'];
+// Safe non-joining Zero-Width characters that NEVER trigger OS emoji ZWJ sequence ligatures or missing glyph symbols ('?' / '') on iOS / Android / Windows
+// U+200C (ZWNJ) explicitly breaks emoji ligatures, U+200B (ZWSP), U+200E (LRM), U+200F (RLM)
+const SAFE_ZERO_WIDTH_CHARS = ['\u200C', '\u200B', '\u200E', '\u200F'];
 
+// Full lookup map supporting current safe characters and previous zero-width variants for seamless decoding
 const ZERO_WIDTH_MAP: Record<string, number> = {
-    '\u200B': 0, // Zero Width Space
-    '\u200C': 1, // Zero Width Non-Joiner
-    '\u200D': 2, // Zero Width Joiner
-    '\u2060': 3, // Word Joiner
+    '\u200C': 0, // Zero Width Non-Joiner
+    '\u200B': 1, // Zero Width Space
+    '\u200E': 2, // Left-To-Right Mark
+    '\u200F': 3, // Right-To-Left Mark
 };
+
+// Legacy zero-width characters for backward decoding support
+const ALL_ZERO_WIDTH_CHARS = ['\u200C', '\u200B', '\u200E', '\u200F', '\u200D', '\u2060', '\uFEFF'];
 
 const VARIATION_SELECTOR_START = 0xfe00;
 const VARIATION_SELECTOR_END = 0xfe0f;
@@ -21,18 +25,29 @@ const VARIATION_SELECTOR_SUPPLEMENT_START = 0xe0100;
 const VARIATION_SELECTOR_SUPPLEMENT_END = 0xe01ef;
 
 const isZeroWidthChar = (char: string): boolean => {
-    return ZERO_WIDTH_CHARS.includes(char);
+    return ALL_ZERO_WIDTH_CHARS.includes(char);
 };
 
-const isVariationSelector = (code: number): boolean => {
-    return (code >= VARIATION_SELECTOR_START && code <= VARIATION_SELECTOR_END) ||
-           (code >= VARIATION_SELECTOR_SUPPLEMENT_START && code <= VARIATION_SELECTOR_SUPPLEMENT_END);
+const isLegacyVariationSelector = (code: number): boolean => {
+    return code >= VARIATION_SELECTOR_SUPPLEMENT_START && code <= VARIATION_SELECTOR_SUPPLEMENT_END;
+};
+
+const isStandardVariationSelector = (code: number): boolean => {
+    return code >= VARIATION_SELECTOR_START && code <= VARIATION_SELECTOR_END;
 };
 
 const isHiddenDataChar = (char: string): boolean => {
     if (isZeroWidthChar(char)) return true;
     const code = char.codePointAt(0);
-    return code !== undefined ? isVariationSelector(code) : false;
+    return code !== undefined ? isLegacyVariationSelector(code) : false;
+};
+
+const isMessageStartChar = (char: string): boolean => {
+    if (isZeroWidthChar(char)) return false;
+    const code = char.codePointAt(0);
+    if (code === undefined) return false;
+    if (isStandardVariationSelector(code) || isLegacyVariationSelector(code)) return false;
+    return true;
 };
 
 function byteToZeroWidth(byte: number): string {
@@ -40,12 +55,13 @@ function byteToZeroWidth(byte: number): string {
     const p1 = (byte >> 4) & 3;
     const p2 = (byte >> 2) & 3;
     const p3 = byte & 3;
-    return ZERO_WIDTH_CHARS[p0] + ZERO_WIDTH_CHARS[p1] + ZERO_WIDTH_CHARS[p2] + ZERO_WIDTH_CHARS[p3];
+    return SAFE_ZERO_WIDTH_CHARS[p0] + SAFE_ZERO_WIDTH_CHARS[p1] + SAFE_ZERO_WIDTH_CHARS[p2] + SAFE_ZERO_WIDTH_CHARS[p3];
 }
 
 function fromVariationSelector(codePoint: number): number | null {
-    if (codePoint >= VARIATION_SELECTOR_START && codePoint <= VARIATION_SELECTOR_END) return codePoint - VARIATION_SELECTOR_START;
-    if (codePoint >= VARIATION_SELECTOR_SUPPLEMENT_START && codePoint <= VARIATION_SELECTOR_SUPPLEMENT_END) return codePoint - VARIATION_SELECTOR_SUPPLEMENT_START + 16;
+    if (codePoint >= VARIATION_SELECTOR_SUPPLEMENT_START && codePoint <= VARIATION_SELECTOR_SUPPLEMENT_END) {
+        return codePoint - VARIATION_SELECTOR_SUPPLEMENT_START + 16;
+    }
     return null;
 }
 
@@ -61,13 +77,11 @@ function encodeToEmoji(emoji: string, text: string): string {
 function decodeFromEmoji(text: string): string {
     if (!text) return "";
 
-    // The first character is the base emoji. Skip the first character to avoid treating emoji variation selectors (like \uFE0F) as payload.
-    const iterator = text[Symbol.iterator]();
-    iterator.next(); // Skip base emoji
-
     const hiddenChars: string[] = [];
     let hasZeroWidth = false;
     let hasLegacyVs = false;
+
+    const iterator = text[Symbol.iterator]();
 
     for (const char of iterator) {
         if (isZeroWidthChar(char)) {
@@ -75,7 +89,7 @@ function decodeFromEmoji(text: string): string {
             hasZeroWidth = true;
         } else {
             const code = char.codePointAt(0);
-            if (code !== undefined && isVariationSelector(code)) {
+            if (code !== undefined && isLegacyVariationSelector(code)) {
                 hiddenChars.push(char);
                 hasLegacyVs = true;
             }
@@ -155,16 +169,16 @@ interface DecodeParams {
 
 export async function decode({ text, type, passwords }: DecodeParams): Promise<string> {
     // 1. Split the input text into potential messages.
-    // A new message starts with a base character (not zero-width and not variation selector).
+    // A new message starts with a base emoji/character (not a zero-width char or variation selector).
     const messages: string[] = [];
     let currentMessage = "";
     for (const char of text) {
-        if (!isHiddenDataChar(char)) {
+        if (isMessageStartChar(char)) {
             // It's a base character, so the previous message (if any) has ended.
             if (currentMessage) messages.push(currentMessage);
             currentMessage = char; // Start a new message.
         } else {
-            currentMessage += char; // It's part of the current message's data.
+            currentMessage += char; // It's part of the current message (base emoji variation selector or hidden payload).
         }
     }
     if (currentMessage) messages.push(currentMessage); // Add the last message.
