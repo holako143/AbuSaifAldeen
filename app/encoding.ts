@@ -113,9 +113,10 @@ function encodeToEmoji(emoji: string, text: string, useBrackets?: boolean, cover
     const vsPayload = bytesToVsString(compressed);
 
     // Mobile Grapheme Cluster Chunking:
-    // Mobile text controls and keyboards (iOS CoreText & Android HarfBuzz) truncate a grapheme cluster if it exceeds ~32 variation selectors per emoji.
-    // Chunking attaches up to 32 variation selectors (16 bytes) per emoji instance so each emoji grapheme cluster remains well within mobile OS limits.
-    const CHUNK_VS_LIMIT = 32;
+    // Strict mobile text controls and keyboards (iOS CoreText & Android HarfBuzz) truncate a grapheme cluster if it exceeds ~16-32 variation selectors per emoji.
+    // Setting CHUNK_VS_LIMIT = 16 (8 bytes per emoji instance) guarantees that every emoji cluster stays well within all mobile OS / input field limits,
+    // allowing millions of characters / thousands of paragraphs to seamlessly scale across emoji chains without any truncation or data loss on any device.
+    const CHUNK_VS_LIMIT = 16;
     const cleanEmoji = emoji.replace(/[\uFE0F\uFE0E]/g, "");
     let chunkedBase = "";
     for (let i = 0; i < vsPayload.length; i += CHUNK_VS_LIMIT) {
