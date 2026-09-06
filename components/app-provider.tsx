@@ -85,7 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
     const [masterPassword, setMasterPassword] = useState<string | null>(null);
     const [textToDecode, setTextToDecode] = useState<string | null>(null);
-    const [autoCopy, setAutoCopy] = useState(true);
+    const [autoCopy, setAutoCopy] = useState(false);
     const [isSteganographyVisible, setIsSteganographyVisible] = useState(false);
     const [themeMode, setThemeMode] = useState<ThemeMode>('light');
     const [primaryColor, setPrimaryColor] = useState('#3b82f6');
