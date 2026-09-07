@@ -112,17 +112,9 @@ function encodeToEmoji(emoji: string, text: string, useBrackets?: boolean, cover
     const compressed = pako.deflate(text, { level: 9 });
     const vsPayload = bytesToVsString(compressed);
 
-    // Mobile Grapheme Cluster Chunking:
-    // Strict mobile text controls and keyboards (iOS CoreText & Android HarfBuzz) truncate a grapheme cluster if it exceeds ~16-32 variation selectors per emoji.
-    // Setting CHUNK_VS_LIMIT = 16 (8 bytes per emoji instance) guarantees that every emoji cluster stays well within all mobile OS / input field limits,
-    // allowing millions of characters / thousands of paragraphs to seamlessly scale across emoji chains without any truncation or data loss on any device.
-    const CHUNK_VS_LIMIT = 16;
-    const cleanEmoji = emoji.replace(/[\uFE0F\uFE0E]/g, "");
-    let chunkedBase = "";
-    for (let i = 0; i < vsPayload.length; i += CHUNK_VS_LIMIT) {
-        const vsChunk = vsPayload.slice(i, i + CHUNK_VS_LIMIT);
-        chunkedBase += (i === 0 ? emoji : cleanEmoji) + vsChunk;
-    }
+    // Guaranteed single base emoji anchor:
+    // Attach all variation selectors directly to a single base emoji anchor without repeating the emoji.
+    const singleBase = emoji + vsPayload;
 
     // Option 2: Cover Text Steganography
     if (coverText && coverText.trim()) {
@@ -136,9 +128,9 @@ function encodeToEmoji(emoji: string, text: string, useBrackets?: boolean, cover
     if (useBrackets) {
         const lb = leftBracket || "⟦";
         const rb = rightBracket || "⟧";
-        return lb + chunkedBase + rb;
+        return lb + singleBase + rb;
     }
-    return chunkedBase;
+    return singleBase;
 }
 
 function decodeFromEmoji(text: string): string {

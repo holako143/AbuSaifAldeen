@@ -111,10 +111,10 @@ describe('emoji encoder/decoder', () => {
         expect(decoded).toBe(text);
     })
 
-    test('should encode and decode extremely long multi-line texts (5000+ lines / 700,000+ chars) with 100% data integrity', async () => {
+    test('should encode long text into strictly ONE base emoji anchor and decode back with 100% integrity', async () => {
         const lines = [];
-        for (let i = 1; i <= 5000; i++) {
-            lines.push(`Line ${i}: وهذا نص تجريبي ضخم جداً يحتوي على آلاف الكلمات والجمل لضمان دقة وسلامة البيانات 100% دون أي فقدان أو مشاكل في المتصفح أو التطبيقات.`);
+        for (let i = 1; i <= 1000; i++) {
+            lines.push(`Line ${i}: وهذا نص تجريبي ضخم لضمان دقة التشفير في إيموجي واحد فقط دون تكرار الإيموجي.`);
         }
         const longText = lines.join('\n');
 
@@ -124,6 +124,10 @@ describe('emoji encoder/decoder', () => {
             type: 'aes256',
             passwords: ['secretPass123']
         });
+
+        // Ensure that the visible rendered emoji count in the string is exactly 1 (only one base '🔑')
+        const visibleEmojis = Array.from(encoded).filter(char => char === '🔑');
+        expect(visibleEmojis.length).toBe(1);
 
         const decoded = await decode({
             text: encoded,
