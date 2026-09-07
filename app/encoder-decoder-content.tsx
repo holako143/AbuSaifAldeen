@@ -312,6 +312,17 @@ export function Base64EncoderDecoderContent() {
 
         <div>
             <Textarea placeholder={isProcessing ? t('encoderDecoder.processingPlaceholder') : t('encoderDecoder.outputTextPlaceholder')} value={outputText} readOnly className="min-h-[100px] sm:min-h-[120px]" />
+            {isEncoding && outputText && inputText && (
+                <div className="mt-2 text-center">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 animate-in fade-in">
+                        {t('encoderDecoder.compressionBadge', {
+                            ratio: Math.max(0, Math.round(((inputText.length - outputText.length) / inputText.length) * 100)),
+                            orig: inputText.length.toLocaleString(),
+                            compressed: outputText.length.toLocaleString()
+                        })}
+                    </span>
+                </div>
+            )}
             <div className="flex justify-center items-center gap-2 mt-2">
                 <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputText} aria-label={t('encoderDecoder.a11y.copyOutput')}><Copy className="h-5 w-5" /></Button>
                 {showShare && <Button variant="ghost" size="icon" onClick={() => navigator.share({ text: outputText })} disabled={!outputText} aria-label={t('encoderDecoder.a11y.shareOutput')}><Share className="h-5 w-5" /></Button>}
