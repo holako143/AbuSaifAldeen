@@ -3,6 +3,7 @@
     "title": "Encoder & Decoder",
     "encodeLabel": "Encode Text",
     "decodeLabel": "Decode Text",
+    "compressionBadge": "⚡ Compressed by {ratio}% (from {orig} chars to {compressed} chars)",
     "useBracketsLabel": "Add framing brackets ⟦😀⟧ (prevents data loss & easy to select)",
     "useCoverTextLabel": "Cover Text Steganography (hide inside normal text)",
     "coverTextPlaceholder": "Enter cover text/sentence (e.g., Good evening, hope you have a great day)",

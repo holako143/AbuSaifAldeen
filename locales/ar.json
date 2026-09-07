@@ -3,6 +3,7 @@
     "title": "التشفير وفك التشفير",
     "encodeLabel": "تشفير النص",
     "decodeLabel": "فك التشفير",
+    "compressionBadge": "⚡ تم ضغط الحجم بنسبة {ratio}% (من {orig} حرف إلى {compressed} حرف)",
     "useBracketsLabel": "إضافة أقواس تحديد الشفرة ⟦😀⟧ (تمنع فقدان البيانات وسهلة النسخ)",
     "useCoverTextLabel": "تشفير تمويهي بداخل نص/جملة عادية",
     "coverTextPlaceholder": "أدخل النص/الجملة التمويهية (مثال: مساء الخير أتمنى لك يوماً سعيداً)",
